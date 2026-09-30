@@ -28,6 +28,9 @@ async function seedDatabase(force = false, populated = false) {
 
   console.log('🌱 Resetting / Initializing GadgetGuard database to clean baseline state...');
 
+  const token1 = 'gg_dev_9a4f210d';
+  const qr1 = await generateSampleQRCode(token1);
+
   const cleanUsers = [
     {
       id: 'usr_admin_01',
@@ -42,20 +45,8 @@ async function seedDatabase(force = false, populated = false) {
       avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       createdAt: '2026-09-01T08:00:00.000Z',
       updatedAt: '2026-09-01T08:00:00.000Z'
-    }
-  ];
-
-  let cleanGadgets = [];
-  let cleanMissing = [];
-  let cleanFound = [];
-  let cleanClaims = [];
-  let cleanReturns = [];
-  let cleanScans = [];
-
-  if (populated) {
-    const token1 = 'gg_dev_9a4f210d';
-    const qr1 = await generateSampleQRCode(token1);
-    cleanUsers.push({
+    },
+    {
       id: 'usr_student_01',
       name: 'Denzel Kalingking',
       email: 'dkalingking@gmail.com',
@@ -68,8 +59,11 @@ async function seedDatabase(force = false, populated = false) {
       avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Denzel%20Kalingking',
       createdAt: '2026-09-05T09:30:00.000Z',
       updatedAt: '2026-09-05T09:30:00.000Z'
-    });
-    cleanGadgets.push({
+    }
+  ];
+
+  const cleanGadgets = [
+    {
       id: 'gdt_01',
       userId: 'usr_student_01',
       category: 'Smartphone',
@@ -88,8 +82,15 @@ async function seedDatabase(force = false, populated = false) {
       approvedBy: 'usr_admin_01',
       createdAt: '2026-09-06T14:20:00.000Z',
       updatedAt: '2026-09-07T09:10:00.000Z'
-    });
-  }
+    }
+  ];
+
+  const cleanMissing = [];
+  const cleanFound = [];
+  const cleanClaims = [];
+  const cleanReturns = [];
+  const cleanScans = [];
+  const cleanNotifs = [];
 
   const seedData = {
     users: cleanUsers,
@@ -99,6 +100,7 @@ async function seedDatabase(force = false, populated = false) {
     claims: cleanClaims,
     returns: cleanReturns,
     qr_scans: cleanScans,
+    notifications: cleanNotifs,
     audit_logs: [
       {
         id: 'log_init_' + Date.now().toString(36),
