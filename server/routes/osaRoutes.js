@@ -90,9 +90,9 @@ router.post('/return', authMiddleware, requireRole('osa_admin'), (req, res) => {
       signedReceiptAck: true
     });
 
-    // Update gadget status to RETURNED
+    // Update gadget status back to active REGISTERED
     db.update('gadgets', gadgetId, { 
-      status: 'RETURNED',
+      status: 'REGISTERED',
       custodyLocation: null 
     });
 

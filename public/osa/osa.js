@@ -524,7 +524,7 @@ function renderVaultTable(gadgets) {
             <td>${renderStatusBadge(g.status)}</td>
             <td class="text-right">
               <div class="table-action-btns" style="display:inline-flex; align-items:center; gap:6px; justify-content:flex-end;">
-                ${g.status === 'REGISTERED' ? `
+                ${(g.status === 'REGISTERED' || g.status === 'RETURNED') ? `
                   <button class="btn btn-sm" onclick="openOsaMarkMissingModal('${g.id}')" style="background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; font-weight:700; display:inline-flex; align-items:center; gap:5px;" title="Report as missing on behalf of student">
                     🚨 Report Missing
                   </button>
