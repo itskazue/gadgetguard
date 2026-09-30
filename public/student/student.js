@@ -371,7 +371,7 @@ function openGadgetDetailsModal(gadgetId) {
         </ul>
       </div>
     `;
-  } else if (gadget.status === 'REGISTERED') {
+  } else if (gadget.status === 'REGISTERED' || gadget.status === 'RETURNED') {
     actionHtml += `
       <div style="display: flex; gap: 8px; flex-wrap: wrap;">
         <button class="btn btn-danger btn-sm" onclick="initiateMissingReportFor('${gadget.id}')">
@@ -736,7 +736,7 @@ function populateMissingFormDropdown() {
   const select = document.getElementById('missing-form-gadget-select');
   if (!select) return;
 
-  const eligible = myGadgetsData.filter(g => g.status === 'REGISTERED');
+  const eligible = myGadgetsData.filter(g => g.status === 'REGISTERED' || g.status === 'RETURNED');
   if (eligible.length === 0) {
     select.innerHTML = `<option value="">No eligible registered gadgets to report missing</option>`;
     return;

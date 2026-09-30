@@ -910,13 +910,18 @@ async function openDispatchReturnModal() {
   if (!select) return;
 
   const res = await api.getAllGadgets();
-  const eligible = (res.gadgets || []).filter(g => g.status === 'FOUND_IN_CUSTODY' || g.status === 'MISSING' || g.status === 'REGISTERED');
+  // Filter exclusively to gadgets currently held in OSA custody / vault locker
+  const eligible = (res.gadgets || []).filter(g => g.status === 'FOUND_IN_CUSTODY');
 
-  select.innerHTML = `<option value="">-- Choose Gadget for Handover --</option>` + eligible.map(g => `
-    <option value="${g.id}" data-owner="${escapeHtml(g.owner?.name || '')}" data-idnum="${escapeHtml(g.owner?.idNumber || '')}">
-      ${g.brand} ${g.model} (S/N: ${g.serialNumber}) — Owner: ${g.owner?.name} [${g.status}]
-    </option>
-  `).join('');
+  if (eligible.length === 0) {
+    select.innerHTML = `<option value="">-- No Gadgets Currently in Vault Locker --</option>`;
+  } else {
+    select.innerHTML = `<option value="">-- Choose Vault Gadget for Handover (${eligible.length} in Custody) --</option>` + eligible.map(g => `
+      <option value="${g.id}" data-owner="${escapeHtml(g.owner?.name || '')}" data-idnum="${escapeHtml(g.owner?.idNumber || '')}">
+        ${escapeHtml(g.brand)} ${escapeHtml(g.model)} (S/N: ${escapeHtml(g.serialNumber)}) — Owner: ${escapeHtml(g.owner?.name || 'Student')} [Locker: ${escapeHtml(g.custodyLocation || 'Vault')}]
+      </option>
+    `).join('');
+  }
 
   document.getElementById('dispatch-return-modal').classList.add('active');
 }
