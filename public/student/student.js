@@ -379,7 +379,7 @@ function openGadgetDetailsModal(gadgetId) {
     `;
   } else if (gadget.status === 'MISSING') {
     actionHtml += `
-      <button class="btn btn-success btn-sm" onclick="cancelMissingReportFor('${gadget.missingReport?.id}')">
+      <button class="btn btn-success btn-sm" onclick="cancelMissingReportFor('${gadget.missingReport?.id || gadget.id}')">
         ✅ Mark as Recovered / Safe
       </button>
     `;
@@ -745,12 +745,95 @@ function populateMissingFormDropdown() {
   `).join('');
 }
 
+// Seamless Direct Missing Report Trigger from Gadget Details Modal
+async function initiateMissingReportFor(gadgetId) {
+  closeModal('gadget-details-modal');
+  const gadget = myGadgetsData.find(g => g.id === gadgetId);
+  if (!gadget) return;
+
+  if (gadget.status !== 'REGISTERED') {
+    await SwalHelper.warning('Unable to Report', `This gadget is currently marked as ${gadget.status}.`);
+    return;
+  }
+
+  const nowLocal = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+
+  const { value: formValues } = await Swal.fire({
+    title: `🚨 Report ${escapeHtml(gadget.brand)} ${escapeHtml(gadget.model)} as Missing`,
+    html: `
+      <div style="text-align: left; font-size: 0.85rem; color: #334155; margin-top: 10px;">
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 0.8rem; color: #991b1b; line-height: 1.4;">
+          <strong>Security Notice:</strong> Broadcasting this alert changes your gadget's QR code to <strong>RECOVERY MODE</strong> and alerts campus security and the Office of Student Affairs (Room 204).
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="font-weight: 700; color: #1e293b; display: block; margin-bottom: 4px;">Last Known Campus Location *</label>
+          <input id="swal-missing-loc" class="swal2-input" style="width: 100%; margin: 0; font-size: 0.875rem; box-sizing: border-box;" placeholder="e.g. Library 3rd Floor, Cafeteria, Room 302" required autofocus>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="font-weight: 700; color: #1e293b; display: block; margin-bottom: 4px;">Approximate Date & Time Lost *</label>
+          <input type="datetime-local" id="swal-missing-datetime" class="swal2-input" style="width: 100%; margin: 0; font-size: 0.875rem; box-sizing: border-box;" value="${nowLocal}" required>
+        </div>
+        <div style="margin-bottom: 6px;">
+          <label style="font-weight: 700; color: #1e293b; display: block; margin-bottom: 4px;">Additional Circumstances / Identifying Marks</label>
+          <textarea id="swal-missing-notes" class="swal2-textarea" style="width: 100%; margin: 0; font-size: 0.85rem; height: 60px; box-sizing: border-box;" placeholder="e.g. Left in black casing, sticker on back..."></textarea>
+        </div>
+      </div>
+    `,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: '🚨 Broadcast Missing Alert',
+    cancelButtonText: 'Cancel',
+    reverseButtons: true,
+    focusConfirm: false,
+    preConfirm: () => {
+      const loc = document.getElementById('swal-missing-loc').value.trim();
+      const dt = document.getElementById('swal-missing-datetime').value;
+      const notes = document.getElementById('swal-missing-notes').value.trim();
+      if (!loc) {
+        Swal.showValidationMessage('Please specify the last known location.');
+        return false;
+      }
+      return { lastSeenLocation: loc, lastSeenDate: dt, details: notes };
+    }
+  });
+
+  if (!formValues) return;
+
+  try {
+    const res = await api.reportMissing({
+      gadgetId: gadget.id,
+      lastSeenLocation: formValues.lastSeenLocation,
+      lastSeenDate: formValues.lastSeenDate,
+      details: formValues.details
+    });
+
+    if (res.success) {
+      await Swal.fire({
+        icon: 'success',
+        title: 'Missing Alert Broadcasted! 🚨',
+        html: `
+          <p>Your <strong>${escapeHtml(gadget.brand)} ${escapeHtml(gadget.model)}</strong> is now marked as <strong>MISSING</strong>.</p>
+          <p style="font-size:0.85rem; color:#64748b; margin-top:8px;">
+            Anyone who scans its QR sticker will be instructed to surrender it to the Office of Student Affairs (OSA Room 204).
+          </p>
+        `,
+        confirmButtonColor: '#142a6d'
+      });
+      await loadMyGadgetsData();
+      navigateStudent('lost-status');
+    } else {
+      await SwalHelper.error('Report Failed', res.error || 'Could not report gadget as missing.');
+    }
+  } catch (err) {
+    await SwalHelper.error('Report Failed', err.message || 'Error reporting device missing.');
+  }
+}
+
 function triggerReportMissingFor(gadgetId) {
-  navigateStudent('missing-form');
-  setTimeout(() => {
-    const select = document.getElementById('missing-form-gadget-select');
-    if (select) select.value = gadgetId;
-  }, 100);
+  closeModal('gadget-details-modal');
+  initiateMissingReportFor(gadgetId);
 }
 
 function handleMissingFormSubmit(e) {
@@ -762,7 +845,7 @@ function handleMissingFormSubmit(e) {
   const contactRewardOffer = document.getElementById('missing-form-reward').value.trim();
 
   if (!gadgetId) {
-    showToast('warning', 'Please Select Gadget', 'Choose a registered gadget to report missing.');
+    SwalHelper.warning('Please Select Gadget', 'Choose a registered gadget to report missing.');
     return;
   }
 
@@ -770,9 +853,13 @@ function handleMissingFormSubmit(e) {
   pendingMissingReportData = { gadgetId, lastSeenLocation, lastSeenDate, details, contactRewardOffer };
 
   // Populate confirmation dialog
-  document.getElementById('confirm-missing-device-name').textContent = gadget ? `${gadget.brand} ${gadget.model}` : 'this device';
-  document.getElementById('confirm-missing-loc-val').textContent = lastSeenLocation;
-  document.getElementById('confirm-missing-date-val').textContent = lastSeenDate ? new Date(lastSeenDate).toLocaleString() : 'Now';
+  const nameEl = document.getElementById('confirm-missing-device-name');
+  const locEl = document.getElementById('confirm-missing-loc-val');
+  const dateEl = document.getElementById('confirm-missing-date-val');
+
+  if (nameEl) nameEl.textContent = gadget ? `${gadget.brand} ${gadget.model}` : 'this device';
+  if (locEl) locEl.textContent = lastSeenLocation;
+  if (dateEl) dateEl.textContent = lastSeenDate ? new Date(lastSeenDate).toLocaleString() : 'Now';
 
   document.getElementById('confirm-missing-modal').classList.add('active');
 }
@@ -794,7 +881,8 @@ async function executeMissingSubmission() {
   try {
     await api.reportMissing(pendingMissingReportData);
     closeModal('confirm-missing-modal');
-    document.getElementById('missing-report-form').reset();
+    const form = document.getElementById('report-missing-main-form') || document.getElementById('missing-report-form');
+    if (form) form.reset();
     pendingMissingReportData = null;
 
     await SwalHelper.warning('Missing Alert Active 🚨', 'Campus security officers and OSA have been alerted. Your device is now listed on the Lost & Found Board.');
@@ -805,40 +893,39 @@ async function executeMissingSubmission() {
   }
 }
 
-async function cancelMissingReportFor(reportId) {
-  if (!reportId) return;
+async function cancelMissingReportFor(reportOrGadgetId) {
+  if (!reportOrGadgetId) return;
 
-  if (typeof Swal !== 'undefined') {
-    const result = await Swal.fire({
-      title: 'Mark Gadget as Recovered?',
-      text: 'Has this gadget been safely returned to your possession? This will cancel the missing alert and restore the QR sticker to normal registered status.',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#16a34a',
-      cancelButtonColor: '#64748b',
-      confirmButtonText: 'Yes, Gadget is Safe',
-      cancelButtonText: 'Keep as Missing',
-      reverseButtons: true
-    });
-    if (!result.isConfirmed) return;
-  }
+  const result = await Swal.fire({
+    title: 'Mark Gadget as Recovered?',
+    text: 'Has this gadget been safely returned to your possession? This will cancel the missing alert and restore the QR sticker to normal registered status.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#16a34a',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'Yes, Gadget is Safe',
+    cancelButtonText: 'Keep as Missing',
+    reverseButtons: true
+  });
+  if (!result.isConfirmed) return;
 
   try {
-    await api.cancelMissing(reportId);
-    if (typeof Swal !== 'undefined') {
-      Swal.fire({
+    const res = await api.cancelMissing(reportOrGadgetId);
+    if (res.success) {
+      await Swal.fire({
         icon: 'success',
         title: 'Gadget Recovered! 🛡️',
         text: 'The missing report is resolved and your QR code status is restored to REGISTERED.',
         confirmButtonColor: '#142a6d'
       });
+      closeModal('gadget-details-modal');
+      await loadMyGadgetsData();
+      navigateStudent('gadgets');
     } else {
-      showToast('success', 'Status Updated', 'Missing report cancelled. Your device is marked safe.');
+      await SwalHelper.error('Update Failed', res.error || 'Could not cancel missing report.');
     }
-    closeModal('gadget-details-modal');
-    await loadMyGadgetsData();
   } catch (err) {
-    showToast('error', 'Action Failed', err.message);
+    await SwalHelper.error('Action Failed', err.message || 'Error cancelling missing report.');
   }
 }
 

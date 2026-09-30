@@ -128,9 +128,18 @@ router.get('/active', (req, res) => {
 // POST /api/missing/:id/cancel (Cancel missing status if owner found it or OSA verified safe)
 router.post('/:id/cancel', authMiddleware, (req, res) => {
   try {
-    const report = db.findById('missing_reports', req.params.id);
+    let report = db.findById('missing_reports', req.params.id);
     if (!report) {
-      return res.status(404).json({ success: false, error: 'Report not found.' });
+      report = db.findOne('missing_reports', m => m.gadgetId === req.params.id && m.status === 'ACTIVE');
+    }
+    if (!report) {
+      // Check if gadget exists and is MISSING
+      const gadget = db.findById('gadgets', req.params.id);
+      if (gadget && gadget.status === 'MISSING') {
+        db.update('gadgets', gadget.id, { status: 'REGISTERED' });
+        return res.json({ success: true, message: 'Gadget status restored to REGISTERED.' });
+      }
+      return res.status(404).json({ success: false, error: 'Active missing report not found.' });
     }
 
     if (report.userId !== req.user.id && req.user.role !== 'osa_admin') {
