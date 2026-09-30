@@ -75,7 +75,7 @@ router.post('/report', authMiddleware, (req, res) => {
     db.addNotification({
       userId: gadget.userId,
       title: 'Missing Alert Broadcasted 📡',
-      message: `Your ${gadget.brand} ${gadget.model} has been marked MISSING. Anyone scanning its QR code will see safety instructions to return it to OSA Room 204.`,
+      message: `Your ${gadget.brand} ${gadget.model} has been marked MISSING. Anyone scanning its QR code will see safety instructions to return it to OSA Room 1109.`,
       type: 'MISSING_ALERT',
       linkUrl: '/student/#lost-status'
     });

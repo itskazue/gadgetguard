@@ -122,7 +122,7 @@
   ],
   "settings": {
     "schoolName": "National College of Science and Technology",
-    "osaOfficeLocation": "Room 204, Student Affairs Building",
+    "osaOfficeLocation": "Room 1109, Student Affairs Building",
     "osaContactPhone": "+63 917 555 4234",
     "osaEmail": "osa@ncst.edu.ph",
     "operatingHours": "Mon - Fri: 8:00 AM - 5:00 PM",
@@ -309,8 +309,8 @@
       "reportedByRole": "osa_admin",
       "lastSeenLocation": "Library",
       "lastSeenDate": "2026-09-30T06:12:00.000Z",
-      "details": "Student reported misplaced equipment in person at the Office of Student Affairs (OSA Room 204).",
-      "contactRewardOffer": "Please surrender immediately to OSA Room 204 or Main Gate Security.",
+      "details": "Student reported misplaced equipment in person at the Office of Student Affairs (OSA Room 1109).",
+      "contactRewardOffer": "Please surrender immediately to OSA Room 1109 or Main Gate Security.",
       "status": "CANCELLED",
       "createdAt": "2026-09-30T06:13:11.570Z",
       "updatedAt": "2026-09-30T06:14:29.405Z"
@@ -401,7 +401,7 @@
       "id": "notif_1790748791572_b7lw2",
       "userId": "usr_munpbdsj7dd",
       "title": "Missing Alert Broadcasted 📡",
-      "message": "Your Apple Iphone 14 Pro Max has been marked MISSING. Anyone scanning its QR code will see safety instructions to return it to OSA Room 204.",
+      "message": "Your Apple Iphone 14 Pro Max has been marked MISSING. Anyone scanning its QR code will see safety instructions to return it to OSA Room 1109.",
       "type": "MISSING_ALERT",
       "read": false,
       "linkUrl": "/student/#lost-status",

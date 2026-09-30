@@ -17,7 +17,7 @@ let dbData = {
   system_settings: {
     schoolName: "National College of Science and Technology (NCST)",
     campusName: "Main Campus - Emilio Aguinaldo Hwy, Dasmariñas, Cavite",
-    osaOfficeLocation: "Office of Student Affairs (OSA) — Room 204, NCST Main Campus",
+    osaOfficeLocation: "Office of Student Affairs (OSA) — Room 1109, NCST Main Campus",
     osaContactPhone: "(046) 416-0166 / +63 917 555 6278",
     osaEmail: "osa@ncst.edu.ph",
     operatingHours: "Monday - Friday: 8:00 AM - 5:00 PM",
@@ -111,7 +111,7 @@ const db = {
   getSettings() {
     return dbData.system_settings || dbData.settings || {
       schoolName: 'National College of Science and Technology',
-      osaOfficeLocation: 'Room 204, Student Affairs Building',
+      osaOfficeLocation: 'Room 1109, Student Affairs Building',
       osaContactPhone: '+63 917 555 4234',
       osaEmail: 'osa@ncst.edu.ph',
       operatingHours: 'Mon - Fri: 8:00 AM - 5:00 PM',

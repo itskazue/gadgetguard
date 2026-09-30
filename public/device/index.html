@@ -394,15 +394,15 @@
           <div class="qr-location-header" id="qr-location-header-title">
             📍 Surrender Location
           </div>
-          <div class="qr-location-name">
+          <div id="qr-location-name" class="qr-location-name">
             Office of Student Affairs (OSA)
           </div>
-          <div class="qr-location-sub">
-            Room 204<br>
+          <div id="qr-location-sub" class="qr-location-sub">
+            Room 1109<br>
             NCST — National College of Science and Technology<br>
             Emilio Aguinaldo Hwy, Dasmariñas, Cavite
           </div>
-          <div class="qr-location-contact">
+          <div id="qr-location-contact" class="qr-location-contact">
             📞 Official Tel: (046) 416-0166 &nbsp;|&nbsp; ✉️ osa@ncst.edu.ph
           </div>
         </div>
@@ -431,12 +431,12 @@
           Unrecognized QR Code
         </h2>
         <p class="qr-scan-desc" style="margin-top: 8px;">
-          This QR code is not registered in the GadgetGuard campus system. If you found this item on campus, please bring it to the <strong>Office of Student Affairs (Room 204)</strong>.
+          This QR code is not registered in the GadgetGuard campus system. If you found this item on campus, please bring it to the <strong>Office of Student Affairs (Room 1109)</strong>.
         </p>
         <div class="qr-location-card">
           <div class="qr-location-header">📍 Surrender Location</div>
           <div class="qr-location-name">Office of Student Affairs (OSA)</div>
-          <div class="qr-location-sub">Room 204, NCST Main Campus</div>
+          <div class="qr-location-sub">Room 1109, NCST Main Campus</div>
         </div>
         <a href="/" class="btn-qr-action btn-qr-blue">Return to Homepage</a>
       </div>
@@ -456,7 +456,7 @@
       <form onsubmit="handleFinderFormSubmit(event)">
         <div class="modal-body">
           <p style="font-size: 0.85rem; color: #475569; margin-bottom: 14px; line-height: 1.45;">
-            Thank you for helping our school community! Please provide your information below and bring the item to <strong>OSA Room 204</strong> or hand it to an on-duty Campus Security Guard.
+            Thank you for helping our school community! Please provide your information below and bring the item to <strong>OSA Room 1109</strong> or hand it to an on-duty Campus Security Guard.
           </p>
 
           <div class="form-group">
@@ -477,13 +477,13 @@
 
           <div class="form-group">
             <label class="form-label">Where did you find this device? *</label>
-            <input type="text" id="modal-finder-location" class="form-control" placeholder="e.g. Library 3rd Floor, Room 204, Cafeteria" required>
+            <input type="text" id="modal-finder-location" class="form-control" placeholder="e.g. Library 3rd Floor, Room 1109, Cafeteria" required>
           </div>
 
           <div class="form-group">
             <label class="form-label">Turn-in Plan *</label>
             <select id="modal-finder-turnin" class="form-control">
-              <option value="SUBMITTED_TO_OSA">I am surrendering it directly to OSA (Room 204) / Security Guard</option>
+              <option value="SUBMITTED_TO_OSA">I am surrendering it directly to OSA (Room 1109) / Security Guard</option>
               <option value="KEPT_SAFE_CONTACT_ME">I am keeping it safe, please contact me immediately</option>
             </select>
           </div>
@@ -612,6 +612,26 @@
             </button>
           `;
         }
+
+        // Dynamically bind location, room, and contact info from OSA Database Settings
+        if (res.osaContact) {
+          const locNameEl = document.getElementById('qr-location-name');
+          const locSubEl = document.getElementById('qr-location-sub');
+          const locContactEl = document.getElementById('qr-location-contact');
+
+          if (locNameEl && res.osaContact.officeLocation) {
+            locNameEl.textContent = res.osaContact.officeLocation;
+          }
+          if (locSubEl) {
+            const school = res.osaContact.schoolName || 'National College of Science and Technology (NCST)';
+            locSubEl.innerHTML = `Room 1109<br>${escapeHtml(school)}<br>Emilio Aguinaldo Hwy, Dasmariñas, Cavite`;
+          }
+          if (locContactEl) {
+            const phone = res.osaContact.phone || '(046) 416-0166';
+            const email = res.osaContact.email || 'osa@ncst.edu.ph';
+            locContactEl.innerHTML = `📞 Official Tel: ${escapeHtml(phone)} &nbsp;|&nbsp; ✉️ ${escapeHtml(email)}`;
+          }
+        }
       } catch (err) {
         document.getElementById('qr-loading-box').style.display = 'none';
         document.getElementById('qr-error-box').style.display = 'block';
@@ -661,7 +681,7 @@
                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; font-size:0.85rem; text-align:left; margin:12px 0;">
                  <div>👤 <strong>Finder:</strong> ${escapeHtml(finderName)}</div>
                  <div>📍 <strong>Found At:</strong> ${escapeHtml(location)}</div>
-                 <div>🏢 <strong>Turn-in Method:</strong> ${turnInMethod === 'SUBMITTED_TO_OSA' ? 'Surrendering to OSA Office (Room 204)' : 'Keeping safe for direct contact'}</div>
+                 <div>🏢 <strong>Turn-in Method:</strong> ${turnInMethod === 'SUBMITTED_TO_OSA' ? 'Surrendering to OSA Office (Room 1109)' : 'Keeping safe for direct contact'}</div>
                </div>`,
         icon: 'question',
         confirmText: 'Yes, Submit Report',
@@ -687,7 +707,7 @@
         document.getElementById('qr-action-wrap').innerHTML = `
           <div style="background: #ecfdf5; border: 2px solid #a7f3d0; border-radius: 12px; padding: 16px; color: #047857; font-size: 0.9rem; text-align: center; margin-bottom: 10px;">
             <div style="font-weight: 800; font-size: 1.05rem; margin-bottom: 4px;">✅ Report Successfully Logged!</div>
-            Please surrender the device to <strong>OSA Room 204</strong> or to any on-duty Security Guard on campus.
+            Please surrender the device to <strong>OSA Room 1109</strong> or to any on-duty Security Guard on campus.
           </div>
         `;
       } catch (err) {

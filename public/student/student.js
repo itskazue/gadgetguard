@@ -364,7 +364,7 @@ function openGadgetDetailsModal(gadgetId) {
         <div>To verify device ownership and receive your official printed QR code sticker:</div>
         <ul style="margin: 6px 0 0 16px; padding: 0;">
           <li>Bring your <strong>physical Student ID card</strong> to prove your university enrollment.</li>
-          <li>Bring your <strong>${escapeHtml(gadget.brand)} ${escapeHtml(gadget.model)}</strong> (S/N: <code>${escapeHtml(gadget.serialNumber)}</code>) to OSA Room 204.</li>
+          <li>Bring your <strong>${escapeHtml(gadget.brand)} ${escapeHtml(gadget.model)}</strong> (S/N: <code>${escapeHtml(gadget.serialNumber)}</code>) to OSA Room 1109.</li>
           <li>The OSA officer will inspect the device on-site and release your printed QR sticker.</li>
         </ul>
       </div>
@@ -387,7 +387,7 @@ function openGadgetDetailsModal(gadgetId) {
     actionHtml += `
       <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: var(--radius-md); padding: 12px; font-size: 0.825rem; color: #065f46;">
         🌟 <strong>Device Secured in OSA Custody!</strong><br>
-        Please visit the Office of Student Affairs (Room 204) with your student ID to claim your gadget.
+        Please visit the Office of Student Affairs (Room 1109) with your student ID to claim your gadget.
       </div>
     `;
   }
@@ -709,7 +709,7 @@ async function executeFinalGadgetSubmit() {
     
     await SwalHelper.success(
       'Device Submitted for Review! 🎉',
-      'Your gadget is now registered as PENDING_APPROVAL. Please present the device at the Office of Student Affairs (OSA Room 204) for physical inspection and official QR code sticker issuance.'
+      'Your gadget is now registered as PENDING_APPROVAL. Please present the device at the Office of Student Affairs (OSA Room 1109) for physical inspection and official QR code sticker issuance.'
     );
 
     const form = document.querySelector('#register-gadget-modal form');
@@ -763,7 +763,7 @@ async function initiateMissingReportFor(gadgetId) {
     html: `
       <div style="text-align: left; font-size: 0.85rem; color: #334155; margin-top: 10px;">
         <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 0.8rem; color: #991b1b; line-height: 1.4;">
-          <strong>Security Notice:</strong> Broadcasting this alert changes your gadget's QR code to <strong>RECOVERY MODE</strong> and alerts campus security and the Office of Student Affairs (Room 204).
+          <strong>Security Notice:</strong> Broadcasting this alert changes your gadget's QR code to <strong>RECOVERY MODE</strong> and alerts campus security and the Office of Student Affairs (Room 1109).
         </div>
         <div style="margin-bottom: 12px;">
           <label style="font-weight: 700; color: #1e293b; display: block; margin-bottom: 4px;">Last Known Campus Location *</label>
@@ -816,7 +816,7 @@ async function initiateMissingReportFor(gadgetId) {
         html: `
           <p>Your <strong>${escapeHtml(gadget.brand)} ${escapeHtml(gadget.model)}</strong> is now marked as <strong>MISSING</strong>.</p>
           <p style="font-size:0.85rem; color:#64748b; margin-top:8px;">
-            Anyone who scans its QR sticker will be instructed to surrender it to the Office of Student Affairs (OSA Room 204).
+            Anyone who scans its QR sticker will be instructed to surrender it to the Office of Student Affairs (OSA Room 1109).
           </p>
         `,
         confirmButtonColor: '#142a6d'
@@ -992,7 +992,7 @@ async function loadLostStatusScreen() {
               "${escapeHtml(r.details || 'Reported lost on campus grounds.')}"
             </div>
             <div class="gadget-item-footer">
-              <a href="/device/${r.gadget?.secureToken}" target="_blank" class="btn btn-warning btn-sm" style="width: 100%; font-weight: 700; text-align: center;" title="Found this item? Click to submit a surrender report to OSA Room 204.">
+              <a href="/device/${r.gadget?.secureToken}" target="_blank" class="btn btn-warning btn-sm" style="width: 100%; font-weight: 700; text-align: center;" title="Found this item? Click to submit a surrender report to OSA Room 1109.">
                 📢 Found This? Surrender to OSA
               </a>
             </div>
@@ -1127,7 +1127,7 @@ async function handleClaimSubmit(e) {
       verificationIdNumber
     });
     closeModal('submit-claim-modal');
-    await SwalHelper.success('Claim Submitted! 📋', `Claim ID ${res.claim ? res.claim.id : ''} recorded. OSA will review your verification proof at Room 204.`, 2400);
+    await SwalHelper.success('Claim Submitted! 📋', `Claim ID ${res.claim ? res.claim.id : ''} recorded. OSA will review your verification proof at Room 1109.`, 2400);
     navigateStudent('claims');
   } catch (err) {
     await SwalHelper.error('Claim Submission Failed', err.message || 'Unable to submit claim.');

@@ -188,7 +188,7 @@ router.post('/:id/receive', authMiddleware, requireRole('osa_admin'), (req, res)
     db.addNotification({
       userId: gadget.userId,
       title: 'Your Gadget is in OSA Custody! 🏢',
-      message: `Your ${gadget.brand} ${gadget.model} has been received into OSA Custody (${custodyLocation || 'OSA Office Room 204'}). Please submit your claim form or visit OSA with your student ID!`,
+      message: `Your ${gadget.brand} ${gadget.model} has been received into OSA Custody (${custodyLocation || 'OSA Office Room 1109'}). Please submit your claim form or visit OSA with your student ID!`,
       type: 'GADGET_FOUND',
       linkUrl: '/student/#claims'
     });

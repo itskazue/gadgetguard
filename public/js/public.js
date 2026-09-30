@@ -331,7 +331,7 @@ async function executeFinalRegisterSubmission() {
       }
       await SwalHelper.success(
         'Application Submitted! 🎉',
-        'Your registration application has been submitted to the Office of Student Affairs (OSA). Please visit Room 204 for physical verification.',
+        'Your registration application has been submitted to the Office of Student Affairs (OSA). Please visit Room 1109 for physical verification.',
         2500
       );
       return;

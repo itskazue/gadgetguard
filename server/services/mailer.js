@@ -163,7 +163,7 @@ async function sendApprovalEmail({ studentEmail, studentName, studentId, gadgetI
       </div>
 
       <p style="font-size: 13px; color: #64748b; line-height: 1.5; text-align: center; margin-top: 24px;">
-        💡 <em>Reminder: Use the password you designated upon registration. If you ever need assistance, please visit the Office of Student Affairs (OSA Room 204).</em>
+        💡 <em>Reminder: Use the password you designated upon registration. If you ever need assistance, please visit the Office of Student Affairs (OSA Room 1109).</em>
       </p>
     </div>
     <div class="footer">
@@ -219,7 +219,7 @@ async function sendPreRegistrationEmail({ studentEmail, studentName, studentId, 
       </div>
 
       <p style="color: #475569; font-size: 14px; line-height: 1.6;">
-        Please proceed to the <strong>Office of Student Affairs (Room 204)</strong> with your physical Student ID and registered device to complete verification. You will receive an approval confirmation email once your account is activated.
+        Please proceed to the <strong>Office of Student Affairs (Room 1109)</strong> with your physical Student ID and registered device to complete verification. You will receive an approval confirmation email once your account is activated.
       </p>
     </div>
     <div class="footer">

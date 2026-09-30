@@ -586,8 +586,8 @@ function openOsaMarkMissingModal(gadgetId) {
     dtInput.value = now.toISOString().slice(0, 16);
   }
   
-  if (detInput) detInput.value = 'Student reported misplaced equipment in person at the Office of Student Affairs (OSA Room 204).';
-  if (rewInput) rewInput.value = 'Please surrender immediately to OSA Room 204 or Main Gate Security.';
+  if (detInput) detInput.value = 'Student reported misplaced equipment in person at the Office of Student Affairs (OSA Room 1109).';
+  if (rewInput) rewInput.value = 'Please surrender immediately to OSA Room 1109 or Main Gate Security.';
 
   const modal = document.getElementById('osa-mark-missing-modal');
   if (modal) modal.classList.add('active');
@@ -849,7 +849,7 @@ async function loadClaimsDesk() {
 async function handleApproveClaim(claimId) {
   const confirmApprove = await SwalHelper.confirm({
     title: 'Approve Ownership Claim?',
-    html: '<p>Confirm student proof of ownership?</p><p style="font-size:0.85rem; color:#64748b;">This will approve the claim and schedule physical handover at OSA Room 204.</p>',
+    html: '<p>Confirm student proof of ownership?</p><p style="font-size:0.85rem; color:#64748b;">This will approve the claim and schedule physical handover at OSA Room 1109.</p>',
     icon: 'question',
     confirmText: '✓ Approve Claim',
     cancelText: 'Cancel',
@@ -1187,7 +1187,7 @@ function exportAnalyticsSummary() {
           <div>✅ <strong>Recovery Success Rate:</strong> 100%</div>
           <div>⚡ <strong>Average Resolution Time:</strong> &lt; 24 Hours</div>
           <div>🛡️ <strong>System Protocol:</strong> Active 24/7 QR Telemetry</div>
-          <div>🏢 <strong>Supervision:</strong> Office of Student Affairs (OSA Room 204)</div>
+          <div>🏢 <strong>Supervision:</strong> Office of Student Affairs (OSA Room 1109)</div>
         </div>
       `,
       confirmButtonText: 'Download Certificate Summary',

@@ -167,7 +167,7 @@ router.post('/:id/review', authMiddleware, requireRole('osa_admin'), (req, res) 
       db.addNotification({
         userId: claim.userId,
         title: 'Claim Approved! 🎉 Ready for Pickup',
-        message: `Your claim for ${gadget?.brand} ${gadget?.model} has been APPROVED. Please visit OSA Room 204 to claim your gadget.`,
+        message: `Your claim for ${gadget?.brand} ${gadget?.model} has been APPROVED. Please visit OSA Room 1109 to claim your gadget.`,
         type: 'CLAIM_APPROVED',
         linkUrl: '/student/#claims'
       });

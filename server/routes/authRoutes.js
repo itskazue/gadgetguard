@@ -181,7 +181,7 @@ router.post('/register', async (req, res) => {
       user: userSafe,
       device: registeredDevice,
       osaInstruction: {
-        location: 'Office of Student Affairs (OSA) — Room 204, Student Services Building',
+        location: 'Office of Student Affairs (OSA) — Room 1109, Student Services Building',
         hours: 'Monday – Friday, 8:00 AM – 5:00 PM',
         steps: [
           'Bring your physical Student ID to verify active student enrollment.',
@@ -236,7 +236,7 @@ router.post('/login', (req, res) => {
     if (user.status === 'PENDING_APPROVAL') {
       return res.status(403).json({ 
         success: false, 
-        error: 'Your account is pending face-to-face verification at the Office of Student Affairs (Room 204). Please bring your Student ID and device to complete verification.' 
+        error: 'Your account is pending face-to-face verification at the Office of Student Affairs (Room 1109). Please bring your Student ID and device to complete verification.' 
       });
     }
 

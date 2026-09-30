@@ -39,7 +39,7 @@ const cleanData = {
   ],
   settings: {
     schoolName: 'National College of Science and Technology',
-    osaOfficeLocation: 'Room 204, Student Affairs Building',
+    osaOfficeLocation: 'Room 1109, Student Affairs Building',
     osaContactPhone: '+63 917 555 4234',
     osaEmail: 'osa@ncst.edu.ph',
     operatingHours: 'Mon - Fri: 8:00 AM - 5:00 PM',
