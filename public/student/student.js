@@ -387,19 +387,38 @@ function openGadgetDetailsModal(gadgetId) {
     `;
     if (gadget.finderInfo) {
       actionHtml += `
-        <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: var(--radius-md); padding: 14px; margin-top: 12px; text-align: left;">
-          <div style="font-weight: 800; color: #047857; font-size: 0.88rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+        <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: var(--radius-md); padding: 16px; margin-top: 14px; text-align: left;">
+          <div style="font-weight: 800; color: #047857; font-size: 0.9rem; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
             <span>🌟</span> Good Samaritan Contact Information:
           </div>
-          <div style="font-size: 0.825rem; color: #065f46; line-height: 1.55;">
-            <div>👤 <strong>Finder:</strong> ${escapeHtml(gadget.finderInfo.finderName)}</div>
-            <div>📞 <strong>Phone:</strong> <a href="tel:${escapeHtml(gadget.finderInfo.finderContact)}" style="font-weight: 800; color: #1e40af; text-decoration: underline;">${escapeHtml(gadget.finderInfo.finderContact)}</a></div>
+          <div style="font-size: 0.825rem; color: #065f46; line-height: 1.55; background: #ffffff; border: 1px solid #d1fae5; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+            <div>👤 <strong>Finder Name:</strong> ${escapeHtml(gadget.finderInfo.finderName)}</div>
+            <div>📞 <strong>Contact Number:</strong> <a href="tel:${escapeHtml(gadget.finderInfo.finderContact)}" style="font-weight: 800; color: #1e40af; text-decoration: underline;">${escapeHtml(gadget.finderInfo.finderContact)}</a></div>
             ${gadget.finderInfo.finderEmail ? `<div>✉️ <strong>Email:</strong> <a href="mailto:${escapeHtml(gadget.finderInfo.finderEmail)}">${escapeHtml(gadget.finderInfo.finderEmail)}</a></div>` : ''}
             <div>📍 <strong>Found Location:</strong> ${escapeHtml(gadget.finderInfo.foundLocation)}</div>
             ${gadget.finderInfo.message ? `<div>📝 <strong>Notes:</strong> "${escapeHtml(gadget.finderInfo.message)}"</div>` : ''}
           </div>
-          <div style="margin-top: 8px; font-size: 0.76rem; color: #047857; font-weight: 600;">
-            💡 Contact the finder directly to coordinate safe handover of your device!
+
+          <div style="font-size: 0.78rem; color: #047857; font-weight: 600; line-height: 1.45; margin-bottom: 10px;">
+            💡 You may contact the finder to arrange the return of your gadget. For your safety, we recommend completing the return through the OSA whenever possible.
+          </div>
+
+          <div style="background: #fffbeb; border: 1px solid #fef3c7; border-left: 3.5px solid #f59e0b; border-radius: 6px; padding: 10px 12px; font-size: 0.74rem; color: #92400e; line-height: 1.5;">
+            <div style="font-weight: 800; color: #b45309; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
+              <span>⚠️</span> Safety & Liability Notice
+            </div>
+            <p style="margin-bottom: 4px;">
+              Please prioritize your safety when arranging the return of a missing gadget.
+            </p>
+            <p style="margin-bottom: 4px;">
+              GadgetGuard and the school/OSA provide this platform to facilitate communication between the gadget owner and finder. Any personal meetup or arrangement outside the school/OSA is the responsibility of the individuals involved.
+            </p>
+            <p style="margin-bottom: 4px;">
+              The school/OSA is not responsible for incidents, injuries, losses, or other circumstances arising from personal meetups conducted outside official school premises or OSA-supervised procedures.
+            </p>
+            <p>
+              For your safety, we strongly recommend arranging the return through the <strong>Office of Student Affairs (OSA Room 1109)</strong>. If a personal meetup is necessary, choose a safe and public location, such as a police station or busy mall, and inform someone you trust.
+            </p>
           </div>
         </div>
       `;
@@ -999,19 +1018,38 @@ async function loadLostStatusScreen() {
         let finderCardHtml = '';
         if (g.finderInfo) {
           finderCardHtml = `
-            <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 10px; padding: 14px; margin-top: 6px;">
-              <div style="font-weight: 800; color: #047857; font-size: 0.88rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                <span>🌟</span> Good Samaritan is Keeping Your Gadget Safe!
+            <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 12px; padding: 16px; margin-top: 10px; text-align: left;">
+              <div style="font-weight: 800; color: #047857; font-size: 0.9rem; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                <span>🌟</span> Good Samaritan Contact Information:
               </div>
-              <div style="font-size: 0.825rem; color: #065f46; line-height: 1.55;">
+              <div style="font-size: 0.825rem; color: #065f46; line-height: 1.55; background: #ffffff; border: 1px solid #d1fae5; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
                 <div>👤 <strong>Finder Name:</strong> ${escapeHtml(g.finderInfo.finderName)}</div>
                 <div>📞 <strong>Contact Number:</strong> <a href="tel:${escapeHtml(g.finderInfo.finderContact)}" style="font-weight: 800; color: #1e40af; text-decoration: underline;">${escapeHtml(g.finderInfo.finderContact)}</a></div>
                 ${g.finderInfo.finderEmail ? `<div>✉️ <strong>Email:</strong> <a href="mailto:${escapeHtml(g.finderInfo.finderEmail)}">${escapeHtml(g.finderInfo.finderEmail)}</a></div>` : ''}
                 <div>📍 <strong>Found Location:</strong> ${escapeHtml(g.finderInfo.foundLocation)}</div>
                 ${g.finderInfo.message ? `<div>📝 <strong>Notes:</strong> "${escapeHtml(g.finderInfo.message)}"</div>` : ''}
               </div>
-              <div style="margin-top: 8px; font-size: 0.76rem; color: #047857; font-weight: 600;">
-                💡 You can directly call or text the finder above to meet up and safely retrieve your gadget!
+
+              <div style="font-size: 0.78rem; color: #047857; font-weight: 600; line-height: 1.45; margin-bottom: 10px;">
+                💡 You may contact the finder to arrange the return of your gadget. For your safety, we recommend completing the return through the OSA whenever possible.
+              </div>
+
+              <div style="background: #fffbeb; border: 1px solid #fef3c7; border-left: 3.5px solid #f59e0b; border-radius: 6px; padding: 10px 12px; font-size: 0.74rem; color: #92400e; line-height: 1.5;">
+                <div style="font-weight: 800; color: #b45309; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
+                  <span>⚠️</span> Safety & Liability Notice
+                </div>
+                <p style="margin-bottom: 4px;">
+                  Please prioritize your safety when arranging the return of a missing gadget.
+                </p>
+                <p style="margin-bottom: 4px;">
+                  GadgetGuard and the school/OSA provide this platform to facilitate communication between the gadget owner and finder. Any personal meetup or arrangement outside the school/OSA is the responsibility of the individuals involved.
+                </p>
+                <p style="margin-bottom: 4px;">
+                  The school/OSA is not responsible for incidents, injuries, losses, or other circumstances arising from personal meetups conducted outside official school premises or OSA-supervised procedures.
+                </p>
+                <p>
+                  For your safety, we strongly recommend arranging the return through the <strong>Office of Student Affairs (OSA Room 1109)</strong>. If a personal meetup is necessary, choose a safe and public location, such as a police station or busy mall, and inform someone you trust.
+                </p>
               </div>
             </div>
           `;

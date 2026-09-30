@@ -81,7 +81,7 @@ router.post('/report', (req, res) => {
     const isKeeping = (turnInMethod === 'KEPT_SAFE_CONTACT_ME' || turnInMethod === 'FINDER_HOLDING');
     const ownerNotifTitle = isKeeping ? 'Someone Found Your Gadget (Finder Direct Contact) 🌟' : 'Found Gadget Surrendered to OSA 📦';
     const ownerNotifMsg = isKeeping 
-      ? `Good news! ${finderName} found your ${targetGadget.brand} ${targetGadget.model} and is keeping it safe for you.\n\n👤 Finder: ${finderName}\n📞 Contact: ${finderContact || 'Not provided'}${finderEmail ? '\n✉️ Email: ' + finderEmail : ''}\n📍 Found At: ${foundLocation}${message ? '\n📝 Notes: ' + message : ''}\n\n💡 You may call or message the finder directly to coordinate retrieval!`
+      ? `Good news! ${finderName} found your ${targetGadget.brand} ${targetGadget.model} and is keeping it safe for you.\n\n👤 Finder: ${finderName}\n📞 Contact: ${finderContact || 'Not provided'}${finderEmail ? '\n✉️ Email: ' + finderEmail : ''}\n📍 Found At: ${foundLocation}${message ? '\n📝 Notes: ' + message : ''}\n\n💡 You may contact the finder to arrange the return of your gadget. For your safety, we recommend completing the return through the OSA (Room 1109) whenever possible.`
       : `A finder (${finderName}) reported surrendering your ${targetGadget.brand} ${targetGadget.model} found at "${foundLocation}" to OSA Room 1109.`;
 
     db.addNotification({
