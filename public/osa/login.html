@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OSA Administrator Login — NCST GadgetGuard</title>
+  <meta name="description" content="Official administrative login portal for the National College of Science and Technology (NCST) Office of Student Affairs.">
+  <link rel="icon" type="image/png" href="/assets/ncst_logo.png">
+  
+  <link rel="stylesheet" href="/css/sweetalert2.min.css?v=3.1">
+  <script src="/js/sweetalert2.all.min.js?v=3.1"></script>
+  <link rel="stylesheet" href="/css/style.css?v=3.1">
+
+  <style>
+    :root {
+      --ncst-navy: #142a6d;
+      --ncst-navy-dark: #0a1740;
+      --ncst-yellow: #ffc72c;
+      --ncst-gold: #d99b00;
+      --ncst-light: #f8fafc;
+      --card-bg: #ffffff;
+      --border-color: #e2e8f0;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: radial-gradient(circle at 10% 20%, rgba(20, 42, 109, 0.95), rgba(10, 23, 64, 0.98)), url('/assets/ncst_logo.png');
+      background-size: cover;
+      background-position: center;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #0f172a;
+      box-sizing: border-box;
+      padding: 24px 16px;
+    }
+
+    .osa-login-card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--card-bg);
+      border-radius: 20px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      animation: fadeInScale 0.3s ease-out;
+    }
+
+    @keyframes fadeInScale {
+      from {
+        opacity: 0;
+        transform: scale(0.97) translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .osa-card-header {
+      background: linear-gradient(135deg, #142a6d 0%, #0d1e52 100%);
+      padding: 32px 24px;
+      text-align: center;
+      color: #ffffff;
+      border-bottom: 4px solid var(--ncst-yellow);
+      position: relative;
+    }
+
+    .osa-logo-wrap {
+      width: 68px;
+      height: 68px;
+      background: #ffffff;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+      border: 3px solid var(--ncst-yellow);
+    }
+
+    .osa-logo-wrap img {
+      width: 46px;
+      height: 46px;
+      object-fit: contain;
+    }
+
+    .osa-card-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin: 0;
+      letter-spacing: -0.01em;
+      color: #ffffff;
+    }
+
+    .osa-card-sub {
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      margin-top: 6px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .osa-card-body {
+      padding: 30px 28px;
+    }
+
+    .osa-restricted-banner {
+      background: #fffbeb;
+      border: 1px solid #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 12px 14px;
+      border-radius: 8px;
+      margin-bottom: 22px;
+      font-size: 0.8rem;
+      color: #92400e;
+      line-height: 1.45;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .sample-account-box {
+      background: #f1f5f9;
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 22px;
+    }
+
+    .sample-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .sample-tag {
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      background: #142a6d;
+      color: #ffffff;
+      padding: 3px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.04em;
+    }
+
+    .sample-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 0.8rem;
+      margin-bottom: 10px;
+    }
+
+    .sample-field-label {
+      color: #64748b;
+      font-size: 0.725rem;
+      margin-bottom: 2px;
+    }
+
+    .sample-field-val {
+      font-weight: 700;
+      color: #0f172a;
+      font-family: monospace;
+    }
+
+    .btn-quick-fill {
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #142a6d;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-quick-fill:hover {
+      background: #e2e8f0;
+      border-color: #94a3b8;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+
+    .form-control {
+      width: 100%;
+      height: 44px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 0 14px;
+      font-size: 0.9rem;
+      box-sizing: border-box;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--ncst-navy);
+      box-shadow: 0 0 0 3px rgba(20, 42, 109, 0.15);
+    }
+
+    .btn-osa-login {
+      width: 100%;
+      height: 46px;
+      background: var(--ncst-navy);
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(20, 42, 109, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-osa-login:hover {
+      background: #0d1e52;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(20, 42, 109, 0.4);
+    }
+
+    .osa-card-footer {
+      background: #f8fafc;
+      padding: 16px 24px;
+      border-top: 1px solid #f1f5f9;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    .osa-card-footer a {
+      color: var(--ncst-navy);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .osa-card-footer a:hover {
+      text-decoration: underline;
+    }
+
+    .brand-copyright {
+      margin-top: 20px;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 0.75rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="osa-login-card">
+    <!-- Header -->
+    <div class="osa-card-header">
+      <div class="osa-logo-wrap">
+        <img src="/assets/ncst_logo.png" alt="NCST Logo">
+      </div>
+      <h1 class="osa-card-title">Office of Student Affairs</h1>
+      <div class="osa-card-sub">Administrative Command Console</div>
+    </div>
+
+    <!-- Body -->
+    <div class="osa-card-body">
+      
+      <!-- Notice Banner -->
+      <div class="osa-restricted-banner">
+        <span style="font-size: 1.1rem; line-height: 1;">🛡️</span>
+        <div>
+          <strong>Authorized Personnel Only:</strong> Access is restricted to NCST Student Affairs staff, security dispatchers, and campus administrators.
+        </div>
+      </div>
+
+      <!-- Sample Account Preset Box -->
+      <div class="sample-account-box">
+        <div class="sample-header">
+          <span style="font-size: 0.8rem; font-weight: 700; color: #334155;">📋 Official Sample Credentials:</span>
+          <span class="sample-tag">Admin Account</span>
+        </div>
+        <div class="sample-grid">
+          <div>
+            <div class="sample-field-label">Official Email / ID:</div>
+            <div class="sample-field-val">osa.admin@univ.edu</div>
+          </div>
+          <div>
+            <div class="sample-field-label">Password:</div>
+            <div class="sample-field-val">admin123</div>
+          </div>
+        </div>
+        <button type="button" class="btn-quick-fill" onclick="autoFillAdminCredentials()">
+          ⚡ Auto-Fill OSA Admin Credentials
+        </button>
+      </div>
+
+      <!-- Login Form -->
+      <form onsubmit="handleOsaAdminLogin(event)">
+        <div class="form-group">
+          <label class="form-label" for="osa-email">Staff Email / Employee ID</label>
+          <input type="text" id="osa-email" class="form-control" placeholder="e.g. osa.admin@univ.edu or OSA-DIR-001" required autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" for="osa-password" style="margin: 0;">Password</label>
+            <span style="font-size: 0.75rem; color: #64748b;">(Default: admin123)</span>
+          </div>
+          <div style="position: relative;">
+            <input type="password" id="osa-password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+            <button type="button" onclick="togglePasswordVisibility()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1rem; cursor: pointer; color: #64748b;">
+              👁️
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-osa-login" id="btn-submit-osa">
+          🔑 Sign In to OSA Console
+        </button>
+      </form>
+    </div>
+
+    <!-- Footer Switcher -->
+    <div class="osa-card-footer">
+      Are you an enrolled student? 
+      <a href="/student/">Switch to Student Portal &rarr;</a>
+      <div style="margin-top: 6px;">
+        <a href="/" style="color: #64748b; font-weight: normal;">&larr; Back to Public Lost & Found Website</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="brand-copyright">
+    &copy; 2026 National College of Science and Technology • Office of Student Affairs (Room 204)
+  </div>
+
+  <script src="/js/api.js?v=3.7"></script>
+  <script>
+    // Check if error query parameter is present
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('error') === 'unauthorized') {
+        SwalHelper.warning('Access Denied', 'Your account does not have OSA administrative privileges. Please log in with an authorized OSA staff account.');
+      }
+    });
+
+    function autoFillAdminCredentials() {
+      document.getElementById('osa-email').value = 'osa.admin@univ.edu';
+      document.getElementById('osa-password').value = 'admin123';
+      SwalHelper.toast ? SwalHelper.toast('info', 'Credentials Populated', 'Click "Sign In to OSA Console" to proceed.') : null;
+    }
+
+    function togglePasswordVisibility() {
+      const pass = document.getElementById('osa-password');
+      if (pass.type === 'password') {
+        pass.type = 'text';
+      } else {
+        pass.type = 'password';
+      }
+    }
+
+    async function handleOsaAdminLogin(e) {
+      e.preventDefault();
+      const emailOrId = document.getElementById('osa-email').value.trim();
+      const password = document.getElementById('osa-password').value;
+
+      const submitBtn = document.getElementById('btn-submit-osa');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Verifying Administrative Credentials...';
+
+      try {
+        const res = await api.login(emailOrId, password);
+
+        if (!res.success) {
+          throw new Error(res.error || 'Login failed.');
+        }
+
+        // Validate that user is strictly an OSA Admin
+        if (res.user.role !== 'osa_admin') {
+          api.logout();
+          await SwalHelper.warning(
+            'Student Account Detected',
+            'This portal is exclusively for Office of Student Affairs staff. You are signed in as an Enrolled Student (' + res.user.name + '). Please log in via the Student Tech Portal.'
+          );
+          submitBtn.disabled = false;
+          submitBtn.textContent = '🔑 Sign In to OSA Console';
+          return;
+        }
+
+        await SwalHelper.success('Welcome, ' + res.user.name + '!', 'Administrative credentials verified. Entering OSA Console...', 1200);
+
+        setTimeout(() => {
+          window.location.href = '/osa/';
+        }, 400);
+
+      } catch (err) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '🔑 Sign In to OSA Console';
+        await SwalHelper.error('Administrative Authentication Failed', err.message || 'Invalid staff email or password.');
+      }
+    }
+  </script>
+</body>
+</html>

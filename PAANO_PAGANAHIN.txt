@@ -1,0 +1,73 @@
+========================================================================
+   NCST GADGETGUARD — GABAY SA PAGPAPAGANA (PARA SA KAKLASE)
+   National College of Science and Technology
+========================================================================
+
+Mabilis at madaling paraan para mapagana ang project sa computer o laptop:
+
+------------------------------------------------------------------------
+HAKBANG 1: KINAKAILANGAN (REQUIREMENT)
+------------------------------------------------------------------------
+Kailangan mayroong naka-install na Node.js sa iyong PC/Laptop.
+Kung wala pa, i-download at i-install ito mula sa official website:
+👉 https://nodejs.org/ (I-click at i-install ang "LTS Version")
+
+------------------------------------------------------------------------
+HAKBANG 2: 1-CLICK RUN (NAPAKADALI!)
+------------------------------------------------------------------------
+1. I-extract ang ZIP file o buksan ang folder na ito.
+2. I-double click lamang ang file na:
+   👉 START_SYSTEM.bat
+
+3. Awtomatikong magbubukas ang server at ang website sa iyong browser sa:
+   👉 http://localhost:3000/
+
+------------------------------------------------------------------------
+MGA DEMO ACCOUNTS (PARA SA PAG-TEST AT PRESENTATION):
+------------------------------------------------------------------------
+1. 🏢 OSA ADMINISTRATOR (Director Carlos Mendoza)
+   - Email: osa.admin@univ.edu
+   - Password: admin123
+   - Direct link: http://localhost:3000/osa/
+   - Gamit: Pag-approve ng registered gadgets, pag-issue ng QR code,
+     pagtanggap ng napulot na gamit sa Custody Vault, pag-approve ng claims,
+     at pag-dispatch ng opisyal na return handover receipt.
+
+2. 👨‍🎓 STUDENT 1 (Juan Dela Cruz)
+   - Email: juan.delacruz@student.univ.edu
+   - Password: student123
+   - Direct link: http://localhost:3000/student/
+   - Gamit: Pag-register ng device, pag-report kapag nawawala, pag-claim,
+     at pag-print ng official QR sticker.
+
+3. 👩‍🎓 STUDENT 2 (Maria Santos)
+   - Email: maria.santos@student.univ.edu
+   - Password: student123
+
+4. 👨‍🏫 FACULTY (Prof. Arthur Reyes)
+   - Email: prof.reyes@faculty.univ.edu
+   - Password: faculty123
+
+⚡ PRO-TIP: Sa bawat pahina sa bandang itaas, may "⚡ Fast Switch Account"
+button para sa 1-click na pagpapalit ng user nang hindi na kailangang
+mag-logout o mag-type ng password!
+
+------------------------------------------------------------------------
+MGA PORTAL / PAGES NA KASAMA:
+------------------------------------------------------------------------
+1. Site 1 (Public Website):       http://localhost:3000/
+2. Site 2 (Student App):          http://localhost:3000/student/
+3. Site 3 (OSA Admin Center):     http://localhost:3000/osa/
+4. Public QR Scan Verification:   http://localhost:3000/device/gg_dev_7c3b881e
+
+------------------------------------------------------------------------
+KULAY AT DISENYO (NCST OFFICIAL THEME):
+------------------------------------------------------------------------
+- Royal Navy Blue (#142a6d)
+- Bright Canary Yellow (#ffc72c)
+- Pure White (#ffffff)
+- May error handling, confirmations, at SweetAlert2 sa bawat button!
+
+========================================================================
+Handang-handa na ito para i-upload sa Google Drive at i-present! 🎉
+========================================================================

@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OSA Administrator Console — GadgetGuard</title>
+  <meta name="description" content="Office of Student Affairs administrative portal for gadget verification, QR sticker management, lost & found custody, and claim approvals.">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#142a6d">
+  
+  <link rel="icon" type="image/png" href="/assets/ncst_logo.png">
+  <link rel="stylesheet" href="/css/sweetalert2.min.css">
+  <script src="/js/sweetalert2.all.min.js"></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/osa/osa.css">
+</head>
+<body>
+
+  <script src="/js/api.js"></script>
+
+  <div class="osa-admin-layout">
+    
+    <!-- Sidebar -->
+    <aside class="osa-sidebar" id="osa-sidebar">
+      <div class="osa-sidebar-header" style="display:flex; align-items:center; gap:12px; padding:16px; border-bottom:1px solid var(--sidebar-border);">
+        <img src="/assets/ncst_logo.png" alt="NCST Logo" style="height:44px; width:auto; object-fit:contain;">
+        <div>
+          <div style="font-weight:800; font-size:1.05rem; color:#ffffff;">NCST <span style="color:#ffc72c;">OSA</span></div>
+          <div style="font-size:0.65rem; color:#ffc72c; font-weight:700; letter-spacing:0.04em; text-transform:uppercase;">Student Affairs Portal</div>
+        </div>
+      </div>
+
+      <!-- Navigation Menu -->
+      <ul class="osa-menu-list">
+        <li>
+          <div class="osa-nav-link active" onclick="navigateOsa('dashboard')" id="nav-osa-dashboard">
+            <div class="osa-nav-link-content">📊 Dashboard</div>
+          </div>
+        </li>
+        <li>
+          <div class="osa-nav-link" onclick="navigateOsa('approvals')" id="nav-osa-approvals">
+            <div class="osa-nav-link-content">⏳ Gadget Registrations</div>
+            <span class="osa-badge-counter" id="badge-pending-count" style="background:#d97706; display:none;">0</span>
+          </div>
+        </li>
+        <li>
+          <div class="osa-nav-link" onclick="navigateOsa('registered')" id="nav-osa-registered">
+            <div class="osa-nav-link-content">💻 Registered Gadgets</div>
+          </div>
+        </li>
+        <li>
+          <div class="osa-nav-link" onclick="navigateOsa('missing')" id="nav-osa-missing">
+            <div class="osa-nav-link-content">🚨 Missing Gadgets</div>
+            <span class="osa-badge-counter" id="badge-missing-count" style="background:#dc2626; display:none;">0</span>
+          </div>
+        </li>
+        <li>
+          <div class="osa-nav-link" onclick="navigateOsa('found')" id="nav-osa-found">
+            <div class="osa-nav-link-content">📦 Found Gadgets</div>
+          </div>
+        </li>
+        <li>
+          <div class="osa-nav-link" onclick="navigateOsa('claims')" id="nav-osa-claims">
+            <div class="osa-nav-link-content">📋 Claims</div>
+            <span class="osa-badge-counter" id="badge-claims-count" style="background:#2563eb; display:none;">0</span>
+          </div>
+        </li>
+        <li>
+          <div class="osa-nav-link" onclick="navigateOsa('scanner')" id="nav-osa-scanner">
+            <div class="osa-nav-link-content">📷 QR Scanner</div>
+          </div>
+        </li>
+        <li>
+          <div class="osa-nav-link" onclick="navigateOsa('users')" id="nav-osa-users">
+            <div class="osa-nav-link-content">👥 Users</div>
+          </div>
+        </li>
+        <li>
+          <div class="osa-nav-link" onclick="navigateOsa('notifications')" id="nav-osa-notifications">
+            <div class="osa-nav-link-content">🔔 Notifications</div>
+          </div>
+        </li>
+        <li>
+          <div class="osa-nav-link" onclick="navigateOsa('scans')" id="nav-osa-scans">
+            <div class="osa-nav-link-content">📍 QR Scan Logs</div>
+          </div>
+        </li>
+        <li>
+          <div class="osa-nav-link" onclick="navigateOsa('reports')" id="nav-osa-reports">
+            <div class="osa-nav-link-content">📈 Reports</div>
+          </div>
+        </li>
+        <li>
+          <div class="osa-nav-link" onclick="navigateOsa('audit')" id="nav-osa-audit">
+            <div class="osa-nav-link-content">🛡️ Audit Logs</div>
+          </div>
+        </li>
+        <li>
+          <div class="osa-nav-link" onclick="navigateOsa('settings')" id="nav-osa-settings">
+            <div class="osa-nav-link-content">⚙️ Settings</div>
+          </div>
+        </li>
+      </ul>
+
+      <div class="osa-sidebar-footer">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+          <div style="width: 32px; height: 32px; border-radius: 50%; background: #d97706; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #ffffff; font-size: 0.75rem;">
+            DIR
+          </div>
+          <div>
+            <div id="osa-admin-name" style="font-weight: 700; font-size: 0.8rem; color: #ffffff;">Dean Carlos Mendoza</div>
+            <div style="font-size: 0.7rem; color: #94a3b8;">OSA Director</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="logoutCurrentSession()" style="width: 100%; justify-content: center;">
+          🚪 Sign Out
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Viewport -->
+    <main class="osa-main">
+      <header class="osa-top-bar">
+        <div>
+          <h1 id="osa-page-title" style="font-size: 1.2rem; font-weight: 800; color: var(--text-main);">Dashboard</h1>
+          <div style="font-size: 0.775rem; color: var(--text-muted);">Centralized Campus Asset Tracking & Recovery System</div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button class="btn btn-secondary btn-sm" onclick="reloadCurrentOsaScreen()">🔄 Refresh</button>
+          <button class="btn btn-danger btn-sm" onclick="logoutCurrentSession()">Sign Out</button>
+        </div>
+      </header>
+
+      <div class="osa-viewport">
+        
+        <!-- ================= SCREEN 1: DASHBOARD ================= -->
+        <section id="osa-screen-dashboard" class="osa-screen active">
+          <!-- Real Database Statistics KPI Cards (Matching Reference Row 3 Screen 2) -->
+          <div class="osa-kpi-grid">
+            <div class="osa-kpi-card" onclick="navigateOsa('users')" style="cursor: pointer;">
+              <div>
+                <div class="osa-kpi-label">Total Users</div>
+                <div class="osa-kpi-num" id="kpi-total-users">0</div>
+              </div>
+              <div class="osa-kpi-icon-pill" style="background:#eff6ff; color:#142a6d;">👥</div>
+            </div>
+
+            <div class="osa-kpi-card" onclick="navigateOsa('registered')" style="cursor: pointer;">
+              <div>
+                <div class="osa-kpi-label">Registered Gadgets</div>
+                <div class="osa-kpi-num" id="kpi-registered" style="color: #047857;">0</div>
+              </div>
+              <div class="osa-kpi-icon-pill" style="background:#ecfdf5; color:#047857;">💻</div>
+            </div>
+
+            <div class="osa-kpi-card" onclick="navigateOsa('approvals')" style="cursor: pointer;">
+              <div>
+                <div class="osa-kpi-label">Pending Registrations</div>
+                <div class="osa-kpi-num" id="kpi-pending-reg" style="color: #b45309;">0</div>
+              </div>
+              <div class="osa-kpi-icon-pill" style="background:#fffbeb; color:#b45309;">⏳</div>
+            </div>
+
+            <div class="osa-kpi-card" onclick="navigateOsa('missing')" style="cursor: pointer;">
+              <div>
+                <div class="osa-kpi-label">Missing Gadgets</div>
+                <div class="osa-kpi-num" id="kpi-missing" style="color: #b91c1c;">0</div>
+              </div>
+              <div class="osa-kpi-icon-pill" style="background:#fef2f2; color:#b91c1c;">🚨</div>
+            </div>
+
+            <div class="osa-kpi-card" onclick="navigateOsa('found')" style="cursor: pointer;">
+              <div>
+                <div class="osa-kpi-label">Found In Custody</div>
+                <div class="osa-kpi-num" id="kpi-found" style="color: #d97706;">0</div>
+              </div>
+              <div class="osa-kpi-icon-pill" style="background:#fffbeb; color:#d97706;">📦</div>
+            </div>
+
+            <div class="osa-kpi-card" onclick="navigateOsa('claims')" style="cursor: pointer;">
+              <div>
+                <div class="osa-kpi-label">Pending Claims</div>
+                <div class="osa-kpi-num" id="kpi-pending-claims" style="color: #7c3aed;">0</div>
+              </div>
+              <div class="osa-kpi-icon-pill" style="background:#f5f3ff; color:#7c3aed;">📋</div>
+            </div>
+
+            <div class="osa-kpi-card" onclick="navigateOsa('reports')" style="cursor: pointer;">
+              <div>
+                <div class="osa-kpi-label">Returned Gadgets</div>
+                <div class="osa-kpi-num" id="kpi-returned" style="color: #16a34a;">0</div>
+              </div>
+              <div class="osa-kpi-icon-pill" style="background:#ecfdf5; color:#16a34a;">🎉</div>
+            </div>
+
+            <div class="osa-kpi-card" onclick="navigateOsa('scans')" style="cursor: pointer;">
+              <div>
+                <div class="osa-kpi-label">Recent QR Scans</div>
+                <div class="osa-kpi-num" id="kpi-scans" style="color: #0284c7;">0</div>
+              </div>
+              <div class="osa-kpi-icon-pill" style="background:#f0f9ff; color:#0284c7;">📍</div>
+            </div>
+          </div>
+
+          <!-- Quick Triage: Pending Gadget Approvals -->
+          <div class="table-container-card">
+            <div class="table-title-bar">
+              <div>
+                <h3 style="font-weight: 800; font-size: 1.05rem;">⏳ Pending Gadget Approvals Queue</h3>
+                <div style="font-size: 0.775rem; color: var(--text-muted);">Verify serial numbers, review photos, and issue secure QR tokens</div>
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="navigateOsa('approvals')">View Full Queue →</button>
+            </div>
+            <div class="table-responsive-wrapper" id="dash-triage-container">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+
+          <!-- Recent Audit Events -->
+          <div class="table-container-card">
+            <div class="table-title-bar">
+              <div>
+                <h3 style="font-weight: 800; font-size: 1.05rem;">🛡️ Recent Audit Log Events</h3>
+                <div style="font-size: 0.775rem; color: var(--text-muted);">Real-time immutable security stream</div>
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="navigateOsa('audit')">View All Logs →</button>
+            </div>
+            <div class="table-responsive-wrapper" id="dash-audit-container">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SCREEN 2: GADGET APPROVALS ================= -->
+        <section id="osa-screen-approvals" class="osa-screen">
+          <div class="table-container-card">
+            <div class="table-title-bar">
+              <div>
+                <h3 style="font-weight: 800; font-size: 1.1rem;">Pending Gadget Registration Submissions</h3>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Review student hardware specs, photo evidence, and approve to generate official QR sticker</div>
+              </div>
+            </div>
+            <div class="table-responsive-wrapper" id="approvals-full-table">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SCREEN 3: REGISTERED GADGETS VAULT ================= -->
+        <section id="osa-screen-registered" class="osa-screen">
+          <div class="table-container-card">
+            <div class="table-title-bar">
+              <div>
+                <h3 style="font-weight: 800; font-size: 1.1rem;">Registered Gadgets Vault Directory</h3>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Searchable inventory of all campus-registered equipment</div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <input type="text" id="vault-search-input" class="form-control" style="width: 240px; padding: 6px 12px; font-size: 0.8rem;" placeholder="Search S/N, model, student, or token..." oninput="filterVaultTable()">
+                <select id="vault-status-select" class="form-control" style="width: 140px; padding: 6px 12px; font-size: 0.8rem;" onchange="filterVaultTable()">
+                  <option value="ALL">All Statuses</option>
+                  <option value="REGISTERED">Registered</option>
+                  <option value="PENDING_APPROVAL">Pending</option>
+                  <option value="MISSING">Missing</option>
+                  <option value="FOUND_IN_CUSTODY">In Custody</option>
+                  <option value="RETURNED">Returned</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-responsive-wrapper" id="registered-vault-table">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SCREEN 4: MISSING GADGETS ================= -->
+        <section id="osa-screen-missing" class="osa-screen">
+          <div class="table-container-card">
+            <div class="table-title-bar">
+              <div>
+                <h3 style="font-weight: 800; font-size: 1.1rem; color: #b91c1c;">🚨 Active Missing Incidents Monitor</h3>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Devices actively reported as lost across campus grounds</div>
+              </div>
+            </div>
+            <div class="table-responsive-wrapper" id="missing-incidents-table">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SCREEN 5: FOUND GADGETS (CUSTODY VAULT) ================= -->
+        <section id="osa-screen-found" class="osa-screen">
+          <div class="table-container-card">
+            <div class="table-title-bar">
+              <div>
+                <h3 style="font-weight: 800; font-size: 1.1rem; color: #1d4ed8;">📦 Custody Vault & Finder Intake</h3>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Surrendered devices ready for custody intake, locker assignment, and owner verification</div>
+              </div>
+            </div>
+            <div class="table-responsive-wrapper" id="found-custody-table">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SCREEN 6: CLAIMS REVIEW ================= -->
+        <section id="osa-screen-claims" class="osa-screen">
+          <div class="table-container-card">
+            <div class="table-title-bar">
+              <div>
+                <h3 style="font-weight: 800; font-size: 1.1rem;">📋 Ownership Claims Review Desk</h3>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Verify claimant ownership proof and authorize device release</div>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="openDispatchReturnModal()">+ Dispatch Return Handover</button>
+            </div>
+            <div class="table-responsive-wrapper" id="claims-review-table">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SCREEN 7: QR SCANNER (ADMIN VERIFICATION) ================= -->
+        <section id="osa-screen-scanner" class="osa-screen">
+          <div style="max-width: 800px; margin: 0 auto;">
+            <div id="osa-admin-scanner-widget"></div>
+          </div>
+        </section>
+
+        <!-- ================= SCREEN 8: USERS ================= -->
+        <section id="osa-screen-users" class="osa-screen">
+          <div class="table-container-card">
+            <div class="table-title-bar">
+              <div>
+                <h3 style="font-weight: 800; font-size: 1.1rem;">👥 Registered Campus User Accounts</h3>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Manage student, faculty, and staff access permissions</div>
+              </div>
+            </div>
+            <div class="table-responsive-wrapper" id="users-accounts-table">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SCREEN 9: NOTIFICATIONS ================= -->
+        <section id="osa-screen-notifications" class="osa-screen">
+          <div class="app-card" style="max-width: 800px; margin: 0 auto;">
+            <h3 style="font-weight: 800; font-size: 1.15rem; margin-bottom: 16px;">🔔 OSA Incident Notifications Feed</h3>
+            <div id="osa-notifications-feed">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SCREEN 10: QR SCAN LOGS ================= -->
+        <section id="osa-screen-scans" class="osa-screen">
+          <div class="table-container-card">
+            <div class="table-title-bar">
+              <div>
+                <h3 style="font-weight: 800; font-size: 1.1rem;">📍 Administrative QR Scan Telemetry Logs</h3>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">
+                  Telemetry audit with scan status, approximate location, device type, browser/OS, and audit IP.
+                </div>
+              </div>
+            </div>
+            <div class="table-responsive-wrapper" id="scans-telemetry-table">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SCREEN 11: REPORTS & ANALYTICS ================= -->
+        <section id="osa-screen-reports" class="osa-screen">
+          
+          <!-- Executive Header Card -->
+          <div class="reports-header-card">
+            <div class="reports-header-info">
+              <h3>📈 Campus Asset Security Analytics & Recovery Report</h3>
+              <p>Performance telemetry, recovery resolution rates, and hardware distribution across NCST campus grounds.</p>
+            </div>
+            <div class="reports-header-actions">
+              <button class="btn btn-secondary btn-sm" onclick="exportAnalyticsSummary()">
+                📥 Export Summary
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="window.print()">
+                🖨️ Print Executive Report
+              </button>
+            </div>
+          </div>
+
+          <!-- Top Metric Cards Grid -->
+          <div class="metrics-grid-4">
+            <div class="metric-card">
+              <div class="metric-icon-box" style="background:#ecfdf5; color:#047857;">🛡️</div>
+              <div>
+                <div class="metric-value" id="report-recovery-rate" style="color:#047857;">100%</div>
+                <div class="metric-label">Recovery Success Rate</div>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon-box" style="background:#eff6ff; color:#142a6d;">⚡</div>
+              <div>
+                <div class="metric-value" id="report-avg-time" style="color:#142a6d;">&lt; 24h</div>
+                <div class="metric-label">Avg. Resolution Speed</div>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon-box" style="background:#f5f3ff; color:#6d28d9;">📋</div>
+              <div>
+                <div class="metric-value" id="report-total-cases" style="color:#6d28d9;">0</div>
+                <div class="metric-label">Total Lifecycle Assets</div>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon-box" style="background:#fffbeb; color:#b45309;">🏷️</div>
+              <div>
+                <div class="metric-value" id="report-active-stickers" style="color:#b45309;">0</div>
+                <div class="metric-label">Active QR Security Tags</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Two-Column Visual Analytics -->
+          <div class="analytics-two-col">
+            
+            <!-- Column 1: Inventory by Category -->
+            <div class="analytics-card">
+              <div class="analytics-card-header">
+                <div class="analytics-card-title">💻 Device Inventory by Category</div>
+                <span class="analytics-card-sub" id="cat-total-label">Hardware Census</span>
+              </div>
+              <div id="category-distribution-list">
+                <!-- Dynamically Populated by JS -->
+                <div class="progress-metric-item">
+                  <div class="progress-metric-label">
+                    <span>Laptops & MacBooks</span>
+                    <span id="cat-count-laptop">0 devices (0%)</span>
+                  </div>
+                  <div class="progress-metric-bar-bg">
+                    <div class="progress-metric-bar-fill" id="cat-bar-laptop" style="width: 0%; background: #142a6d;"></div>
+                  </div>
+                </div>
+
+                <div class="progress-metric-item">
+                  <div class="progress-metric-label">
+                    <span>Smartphones & Mobile</span>
+                    <span id="cat-count-phone">0 devices (0%)</span>
+                  </div>
+                  <div class="progress-metric-bar-bg">
+                    <div class="progress-metric-bar-fill" id="cat-bar-phone" style="width: 0%; background: #0284c7;"></div>
+                  </div>
+                </div>
+
+                <div class="progress-metric-item">
+                  <div class="progress-metric-label">
+                    <span>Tablets & iPads</span>
+                    <span id="cat-count-tablet">0 devices (0%)</span>
+                  </div>
+                  <div class="progress-metric-bar-bg">
+                    <div class="progress-metric-bar-fill" id="cat-bar-tablet" style="width: 0%; background: #7c3aed;"></div>
+                  </div>
+                </div>
+
+                <div class="progress-metric-item">
+                  <div class="progress-metric-label">
+                    <span>Audio & Earbuds</span>
+                    <span id="cat-count-audio">0 devices (0%)</span>
+                  </div>
+                  <div class="progress-metric-bar-bg">
+                    <div class="progress-metric-bar-fill" id="cat-bar-audio" style="width: 0%; background: #d97706;"></div>
+                  </div>
+                </div>
+
+                <div class="progress-metric-item">
+                  <div class="progress-metric-label">
+                    <span>Cameras & Media Gear</span>
+                    <span id="cat-count-camera">0 devices (0%)</span>
+                  </div>
+                  <div class="progress-metric-bar-bg">
+                    <div class="progress-metric-bar-fill" id="cat-bar-camera" style="width: 0%; background: #059669;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Column 2: Security Lifecycle Status Breakdown -->
+            <div class="analytics-card">
+              <div class="analytics-card-header">
+                <div class="analytics-card-title">🛡️ Asset Recovery Status Breakdown</div>
+                <span class="analytics-card-sub">Active Telemetry</span>
+              </div>
+              <div>
+                <div class="progress-metric-item">
+                  <div class="progress-metric-label">
+                    <span>🟢 Registered & Protected</span>
+                    <span id="status-count-registered">0 assets (0%)</span>
+                  </div>
+                  <div class="progress-metric-bar-bg">
+                    <div class="progress-metric-bar-fill" id="status-bar-registered" style="width: 0%; background: #10b981;"></div>
+                  </div>
+                </div>
+
+                <div class="progress-metric-item">
+                  <div class="progress-metric-label">
+                    <span>🔵 In OSA Custody Vault</span>
+                    <span id="status-count-custody">0 assets (0%)</span>
+                  </div>
+                  <div class="progress-metric-bar-bg">
+                    <div class="progress-metric-bar-fill" id="status-bar-custody" style="width: 0%; background: #2563eb;"></div>
+                  </div>
+                </div>
+
+                <div class="progress-metric-item">
+                  <div class="progress-metric-label">
+                    <span>🟣 Handed Over & Returned</span>
+                    <span id="status-count-returned">0 assets (0%)</span>
+                  </div>
+                  <div class="progress-metric-bar-bg">
+                    <div class="progress-metric-bar-fill" id="status-bar-returned" style="width: 0%; background: #8b5cf6;"></div>
+                  </div>
+                </div>
+
+                <div class="progress-metric-item">
+                  <div class="progress-metric-label">
+                    <span>🟡 Pending OSA Inspection</span>
+                    <span id="status-count-pending">0 assets (0%)</span>
+                  </div>
+                  <div class="progress-metric-bar-bg">
+                    <div class="progress-metric-bar-fill" id="status-bar-pending" style="width: 0%; background: #f59e0b;"></div>
+                  </div>
+                </div>
+
+                <div class="progress-metric-item">
+                  <div class="progress-metric-label">
+                    <span>🔴 Active Missing Broadcasts</span>
+                    <span id="status-count-missing">0 assets (0%)</span>
+                  </div>
+                  <div class="progress-metric-bar-bg">
+                    <div class="progress-metric-bar-fill" id="status-bar-missing" style="width: 0%; background: #ef4444;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Hotspots & Recent Returns Table Card -->
+          <div class="table-container-card">
+            <div class="table-title-bar">
+              <div>
+                <h3 style="font-weight: 800; font-size: 1.1rem;">📍 Verified Campus Recovery Hotspots & Telemetry</h3>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">High-traffic recovery zones monitored by NCST campus security officers</div>
+              </div>
+              <span class="badge" style="background:#ecfdf5; color:#047857; font-weight:700; padding:4px 10px; border-radius:999px; font-size:0.75rem;">
+                ✓ 100% Recovery Rate
+              </span>
+            </div>
+            <div class="table-responsive-wrapper">
+              <table class="clean-table">
+                <thead>
+                  <tr>
+                    <th>Campus Zone</th>
+                    <th>Facility & Building</th>
+                    <th>Safety Rating</th>
+                    <th>Surrender Desk</th>
+                    <th class="text-right">Incident History</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <div class="table-primary-title">University Library</div>
+                      <div class="table-secondary-sub">3rd Floor Quiet Study Hall</div>
+                    </td>
+                    <td>Library Building</td>
+                    <td><span class="status-badge REGISTERED">High Coverage</span></td>
+                    <td>Main Circulation Desk</td>
+                    <td class="text-right" style="font-weight:700; color:#047857;">Resolved & Safely Tracked</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="table-primary-title">Student Pavilion</div>
+                      <div class="table-secondary-sub">Ground Floor Cafe & Study Walkway</div>
+                    </td>
+                    <td>Student Center</td>
+                    <td><span class="status-badge REGISTERED">High Coverage</span></td>
+                    <td>OSA Desk (Room 201)</td>
+                    <td class="text-right" style="font-weight:700; color:#047857;">Resolved & Safely Tracked</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="table-primary-title">Gymnasium Bleachers</div>
+                      <div class="table-secondary-sub">Section C Athletics Complex</div>
+                    </td>
+                    <td>Sports Pavilion</td>
+                    <td><span class="status-badge REGISTERED">Patrolled</span></td>
+                    <td>Campus Security Gate 1</td>
+                    <td class="text-right" style="font-weight:700; color:#047857;">Resolved & Safely Tracked</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="table-primary-title">Computer Science Labs</div>
+                      <div class="table-secondary-sub">2nd Floor Tech Pavilion Lab #4</div>
+                    </td>
+                    <td>Engineering Hall</td>
+                    <td><span class="status-badge REGISTERED">CCTV Secured</span></td>
+                    <td>Lab Custodian Room</td>
+                    <td class="text-right" style="font-weight:700; color:#047857;">Zero Losses Recorded</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Official Institutional Certification Footer -->
+          <div class="report-certified-footer">
+            <div class="certified-seal-wrap">
+              <img src="/assets/ncst_logo.png" alt="NCST Logo" class="certified-seal-img">
+              <div>
+                <div style="font-weight:800; font-size:1rem; letter-spacing:0.02em;">National College of Science and Technology</div>
+                <div style="font-size:0.75rem; color:#fde68a; font-weight:600;">OFFICE OF STUDENT AFFAIRS • CAMPUS ASSET RECOVERY SYSTEM</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:0.775rem; color:#cbd5e1;">Official Certification Stamp:</div>
+              <div style="font-weight:700; font-size:0.9rem; color:#fbbf24;">Dean Carlos Mendoza, OSA Director</div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ================= SCREEN 12: AUDIT LOGS ================= -->
+        <section id="osa-screen-audit" class="osa-screen">
+          <div class="table-container-card">
+            <div class="table-title-bar">
+              <div>
+                <h3 style="font-weight: 800; font-size: 1.1rem;">🛡️ Complete System Security Audit Logs</h3>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Immutable audit records for compliance and campus security review</div>
+              </div>
+            </div>
+            <div class="table-responsive-wrapper" id="audit-full-table">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SCREEN 13: SETTINGS & DEMO RESET ================= -->
+        <section id="osa-screen-settings" class="osa-screen">
+          <div class="app-card" style="max-width: 680px; margin-bottom: 24px;">
+            <h3 style="font-weight: 800; font-size: 1.15rem; margin-bottom: 16px;">⚙️ Campus System Configuration</h3>
+            <form onsubmit="handleOsaSettingsSave(event)">
+              <div class="form-group">
+                <label class="form-label">University / Institution Name</label>
+                <input type="text" id="osa-set-school" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">OSA Office Location</label>
+                <input type="text" id="osa-set-loc" class="form-control" required>
+              </div>
+              <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group">
+                  <label class="form-label">Contact Phone / Hotline</label>
+                  <input type="text" id="osa-set-phone" class="form-control" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Official OSA Email</label>
+                  <input type="email" id="osa-set-email" class="form-control" required>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Operating Hours</label>
+                <input type="text" id="osa-set-hours" class="form-control" required>
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm">💾 Save Configuration</button>
+            </form>
+          </div>
+
+          <!-- Live Demonstration Data Reset -->
+          <div class="app-card" style="max-width: 680px; border-color: #fecaca; background: #fff5f5;">
+            <h3 style="font-weight: 800; font-size: 1.1rem; color: #b91c1c; margin-bottom: 6px;">🔄 Live Demonstration Data Reset</h3>
+            <p class="text-muted" style="font-size: 0.825rem; margin-bottom: 16px;">
+              Restore the centralized database to its clean demo seed (Students Juan, Maria, Missing iPad, Sony headphones in custody) to test all flows again.
+            </p>
+            <button class="btn btn-danger btn-sm" onclick="handleResetDemoData()">
+              ⚡ Reset Database to Demo State
+            </button>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal: OSA Report Gadget as Missing -->
+  <div id="osa-mark-missing-modal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color: #b91c1c; display:flex; align-items:center; gap:8px;">
+          <span>🚨</span> Report Device as Missing
+        </h3>
+        <button class="btn btn-secondary btn-icon" onclick="closeModal('osa-mark-missing-modal')">&times;</button>
+      </div>
+      <form onsubmit="handleOsaMarkMissingSubmit(event)">
+        <div class="modal-body">
+          <input type="hidden" id="osa-missing-gadget-id">
+          
+          <div style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;">
+            <div style="font-size: 0.775rem; font-weight: 700; color: #991b1b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
+              Target Equipment & Owner
+            </div>
+            <div style="font-weight: 800; font-size: 1rem; color: #0f172a;" id="osa-missing-device-name">-</div>
+            <div style="font-size: 0.825rem; color: #475569; margin-top: 2px;" id="osa-missing-owner-name">Owner: -</div>
+            <div style="font-size: 0.775rem; color: #64748b; font-family: var(--font-mono); margin-top: 3px;" id="osa-missing-serial-info">S/N: -</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Last Known Location on Campus *</label>
+            <input type="text" id="osa-missing-location" class="form-control" placeholder="e.g. University Library 3rd Floor, Main Cafeteria, Gymnasium..." required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Approximate Date & Time Last Seen</label>
+            <input type="datetime-local" id="osa-missing-date" class="form-control">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Incident Circumstances / Intake Notes</label>
+            <textarea id="osa-missing-details" class="form-control" rows="3" placeholder="e.g. Student reported in person at OSA Room 204. Forgot on study desk around 11:30 AM before attending next class."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Contact / Reward Note (Optional)</label>
+            <input type="text" id="osa-missing-reward" class="form-control" placeholder="e.g. Please surrender immediately to OSA Room 204 or Campus Guard">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('osa-mark-missing-modal')">Cancel</button>
+          <button type="submit" class="btn btn-danger btn-sm" style="display:inline-flex; align-items:center; gap:6px;">
+            🚨 Broadcast Missing Status
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Reject Gadget -->
+  <div id="reject-gadget-modal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color: #b91c1c;">⚠️ Reject Gadget Registration</h3>
+        <button class="btn btn-secondary btn-icon" onclick="closeModal('reject-gadget-modal')">&times;</button>
+      </div>
+      <form onsubmit="handleRejectGadgetSubmit(event)">
+        <div class="modal-body">
+          <input type="hidden" id="reject-gadget-id">
+          <div class="form-group">
+            <label class="form-label">Reason for Rejection *</label>
+            <textarea id="reject-reason-text" class="form-control" placeholder="e.g. Serial number does not match receipt, blurry photo..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('reject-gadget-modal')">Cancel</button>
+          <button type="submit" class="btn btn-danger btn-sm">Confirm Rejection</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Receive Into Custody -->
+  <div id="receive-custody-modal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color: #1d4ed8;">📦 Receive Item into OSA Custody</h3>
+        <button class="btn btn-secondary btn-icon" onclick="closeModal('receive-custody-modal')">&times;</button>
+      </div>
+      <form onsubmit="handleReceiveCustodySubmit(event)">
+        <div class="modal-body">
+          <input type="hidden" id="custody-report-id">
+          <div class="form-group">
+            <label class="form-label">Vault Locker / Shelf Reference *</label>
+            <input type="text" id="custody-location-input" class="form-control" placeholder="e.g. OSA Locker B-12" value="OSA Locker B-12" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Intake Notes</label>
+            <textarea id="custody-notes-input" class="form-control" placeholder="Surrendered in good condition with charger..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('receive-custody-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">Receive & Notify Owner</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Dispatch Return & Issue Receipt -->
+  <div id="dispatch-return-modal" class="modal-overlay">
+    <div class="modal-box print-qr-target" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color: #6d28d9;">📜 Official Handover & Return Dispatch</h3>
+        <button class="btn btn-secondary btn-icon" onclick="closeModal('dispatch-return-modal')">&times;</button>
+      </div>
+      <form onsubmit="handleDispatchReturnSubmit(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Select Gadget to Return *</label>
+            <select id="return-select-gadget" class="form-control" required onchange="handleReturnSelectChange(this.value)">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Recipient Full Name (Letters Only) *</label>
+            <input type="text" id="return-recipient-name" class="form-control" required pattern="[a-zA-ZñÑ\s\.\,\-]+" title="Please enter letters and spaces only" oninput="this.value = this.value.replace(/[^a-zA-ZñÑ\s\.\,\-]/g, '')">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Verified School ID / ID Number *</label>
+            <input type="text" id="return-recipient-id" class="form-control font-mono" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Handover Verification Notes</label>
+            <textarea id="return-notes-input" class="form-control" placeholder="Recipient verified lockscreen passcode, physical inspection complete."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('dispatch-return-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">Complete Return & Issue Receipt</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Print Official QR Sticker -->
+  <div id="print-sticker-modal" class="modal-overlay">
+    <div class="modal-box print-qr-target" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 class="modal-title">🏷️ Print Official QR Sticker</h3>
+        <button class="btn btn-secondary btn-icon" onclick="closeModal('print-sticker-modal')">&times;</button>
+      </div>
+      <div class="modal-body text-center">
+        <div class="official-qr-sticker" id="admin-print-sticker-box">
+          <div class="sticker-header">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            <span>GadgetGuard Verified</span>
+          </div>
+          <img id="admin-sticker-qr-img" class="sticker-qr-img" src="" alt="QR Code">
+          <div>
+            <span class="sticker-token" id="admin-sticker-token">gg_dev_xxxx</span>
+          </div>
+          <div style="font-weight: 700; font-size: 0.85rem;" id="admin-sticker-device">-</div>
+          <div style="font-size: 0.725rem; color: #64748b;" id="admin-sticker-owner">-</div>
+          <div class="sticker-footer" style="margin-top: 8px;">
+            If found, scan QR or return to<br>
+            <strong>Office of Student Affairs (Room 204)</strong>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" onclick="closeModal('print-sticker-modal')">Close</button>
+        <button class="btn btn-primary btn-sm" onclick="window.print()">🖨️ Print Sticker</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/scanner.js"></script>
+  <script src="/osa/osa.js"></script>
+</body>
+</html>

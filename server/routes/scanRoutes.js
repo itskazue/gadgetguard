@@ -1,0 +1,313 @@
+const express = require('express');
+const router = express.Router();
+const jwt = require('jsonwebtoken');
+const { authMiddleware, requireRole, JWT_SECRET } = require('../auth');
+const db = require('../db');
+
+// Helper to format scanner user-agent into clean device info
+function parseScannerDeviceInfo(ua) {
+  if (!ua || ua === 'Unknown Device') return 'Device information unavailable';
+  let deviceType = 'Desktop';
+  if (/mobile/i.test(ua)) deviceType = 'Mobile Device';
+  else if (/tablet|ipad/i.test(ua)) deviceType = 'Tablet Device';
+
+  let browser = 'Web Browser';
+  if (/chrome|crios/i.test(ua) && !/edge|edg|opr|opera/i.test(ua)) browser = 'Chrome';
+  else if (/safari/i.test(ua) && !/chrome|crios/i.test(ua)) browser = 'Safari';
+  else if (/firefox|fxios/i.test(ua)) browser = 'Firefox';
+  else if (/edge|edg/i.test(ua)) browser = 'Edge';
+
+  let os = 'Unknown OS';
+  if (/windows/i.test(ua)) os = 'Windows';
+  else if (/macintosh|mac os/i.test(ua)) os = 'macOS';
+  else if (/iphone|ipad|ipod/i.test(ua)) os = 'iOS';
+  else if (/android/i.test(ua)) os = 'Android';
+  else if (/linux/i.test(ua)) os = 'Linux';
+
+  return `${deviceType} – ${browser} (${os})`;
+}
+
+// GET /api/scan/device/:token (Public QR device lookup + automatic scan log with strict privacy & OSA differentiation)
+router.get('/device/:token', (req, res) => {
+  try {
+    const { token } = req.params;
+    const { locationNote, latitude, longitude, approxLocation } = req.query;
+
+    const gadget = db.findOne('gadgets', g => g.secureToken === token);
+    if (!gadget) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invalid or unregistered QR code token.',
+        isRegistered: false
+      });
+    }
+
+    const owner = db.findById('users', gadget.userId);
+    const settings = db.getSettings();
+    const userAgent = req.headers['user-agent'] || 'Unknown Device';
+    const scannerDeviceFormatted = parseScannerDeviceInfo(userAgent);
+    const scannerIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+
+    const scanStatus = (gadget.status === 'MISSING') ? 'MISSING_DEVICE_SCANNED' : 'REGISTERED_DEVICE_SCANNED';
+    const finalLocationNote = approxLocation ? decodeURIComponent(approxLocation) : 
+      (locationNote ? decodeURIComponent(locationNote) : (latitude && longitude ? `Coordinates: ${latitude}, ${longitude}` : 'Location unavailable'));
+
+    // Check if scanner is an authenticated OSA Administrator
+    let isAuthorizedOsa = false;
+    let scannerAccountId = null;
+    try {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const decoded = jwt.verify(authHeader.substring(7), JWT_SECRET);
+        scannerAccountId = decoded.id;
+        const loggedUser = db.findById('users', decoded.id);
+        if (loggedUser && loggedUser.role === 'osa_admin') {
+          isAuthorizedOsa = true;
+        }
+      }
+    } catch (e) {}
+
+    // Record QR scan log
+    const scanLog = db.insert('qr_scans', {
+      id: 'scn_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
+      gadgetId: gadget.id,
+      scannedToken: token,
+      scannerIp,
+      scannerUserAgent: userAgent,
+      deviceInfo: scannerDeviceFormatted,
+      scanLocationNote: finalLocationNote,
+      latitude: latitude ? parseFloat(latitude) : null,
+      longitude: longitude ? parseFloat(longitude) : null,
+      scannerAccountId,
+      scanStatus,
+      scannedAt: new Date().toISOString()
+    });
+
+    // If gadget is MISSING, notify owner in real-time through their Student Account
+    if (gadget.status === 'MISSING') {
+      const scanDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      const scanTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+      db.addNotification({
+        userId: gadget.userId,
+        title: 'Your Missing Gadget Was Scanned 📍',
+        message: `Your missing ${gadget.brand} ${gadget.model}'s QR code was scanned.\nDate: ${scanDate}\nTime: ${scanTime}\nLocation: ${finalLocationNote}\nScanner Device: ${scannerDeviceFormatted}`,
+        type: 'QR_SCANNED',
+        linkUrl: '/student/#scans'
+      });
+    }
+
+    const missingReport = (gadget.status === 'MISSING') ? 
+      db.findOne('missing_reports', m => m.gadgetId === gadget.id && m.status === 'ACTIVE') : null;
+
+    // =========================================================================
+    // 1. OSA STAFF SCANNER VIEW (Full Authorized Information & Actions)
+    // =========================================================================
+    if (isAuthorizedOsa) {
+      const allScansForGadget = db.find('qr_scans', s => s.gadgetId === gadget.id)
+        .sort((a, b) => new Date(b.scannedAt) - new Date(a.scannedAt));
+
+      return res.json({
+        success: true,
+        isAuthorizedOsa: true,
+        isRegistered: true,
+        status: gadget.status,
+        gadget: {
+          id: gadget.id,
+          secureToken: gadget.secureToken,
+          category: gadget.category,
+          brand: gadget.brand,
+          model: gadget.model,
+          color: gadget.color,
+          serialNumber: gadget.serialNumber,
+          description: gadget.description,
+          photoUrl: gadget.photoUrl,
+          status: gadget.status,
+          registrationDate: gadget.registrationDate,
+          approvedAt: gadget.approvedAt,
+          approvedBy: gadget.approvedBy
+        },
+        owner: owner ? {
+          id: owner.id,
+          name: owner.name,
+          idNumber: owner.idNumber,
+          email: owner.email,
+          contactNumber: owner.contactNumber,
+          department: owner.department,
+          role: owner.role,
+          avatarUrl: owner.avatarUrl
+        } : null,
+        missingReport: missingReport ? {
+          id: missingReport.id,
+          lastSeenLocation: missingReport.lastSeenLocation,
+          lastSeenDate: missingReport.lastSeenDate,
+          details: missingReport.details,
+          contactRewardOffer: missingReport.contactRewardOffer,
+          reportedAt: missingReport.reportedAt
+        } : null,
+        scanHistory: allScansForGadget,
+        osaContact: {
+          schoolName: settings.schoolName,
+          officeLocation: settings.osaOfficeLocation,
+          phone: settings.osaContactPhone,
+          email: settings.osaEmail,
+          hours: settings.operatingHours
+        },
+        scanId: scanLog.id
+      });
+    }
+
+    // =========================================================================
+    // 2. PUBLIC USER SCANNER VIEW (Strict Privacy Enforcement)
+    // =========================================================================
+    // ZERO owner private information is exposed to public users.
+    const isMissing = (gadget.status === 'MISSING');
+
+    return res.json({
+      success: true,
+      isAuthorizedOsa: false,
+      isRegistered: true,
+      status: gadget.status,
+      publicMessage: isMissing
+        ? 'This gadget has been reported as missing. If you found this gadget, please keep it safe and surrender it to the Office of Student Affairs (OSA).'
+        : 'This gadget is registered with GadgetGuard. This gadget is not currently reported as missing. If you found this gadget unattended, please keep it safe and surrender it to the Office of Student Affairs (OSA).',
+      gadget: {
+        category: gadget.category,
+        brand: gadget.brand,
+        model: gadget.model,
+        color: gadget.color,
+        photoUrl: gadget.photoUrl,
+        status: gadget.status
+      },
+      owner: null, // Strictly protected
+      missingReport: isMissing && missingReport ? {
+        lastSeenLocation: missingReport.lastSeenLocation,
+        lastSeenDate: missingReport.lastSeenDate,
+        details: missingReport.details
+      } : null,
+      osaContact: {
+        schoolName: settings.schoolName,
+        officeLocation: settings.osaOfficeLocation,
+        phone: settings.osaContactPhone,
+        email: settings.osaEmail,
+        hours: settings.operatingHours
+      },
+      scanId: scanLog.id
+    });
+  } catch (err) {
+    console.error('Scan lookup error:', err);
+    return res.status(500).json({ success: false, error: 'Server error looking up QR code.' });
+  }
+});
+
+// POST /api/scan/log (Explicit client log with geolocation/note)
+router.post('/log', (req, res) => {
+  try {
+    const { token, locationNote, deviceInfo } = req.body;
+    if (!token) {
+      return res.status(400).json({ success: false, error: 'Token is required.' });
+    }
+
+    const gadget = db.findOne('gadgets', g => g.secureToken === token);
+    if (!gadget) {
+      return res.status(404).json({ success: false, error: 'Invalid token.' });
+    }
+
+    const scanLog = db.insert('qr_scans', {
+      id: 'scn_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
+      gadgetId: gadget.id,
+      scannedToken: token,
+      scannerIp: req.ip,
+      scannerUserAgent: req.headers['user-agent'] || 'Unknown',
+      scanLocationNote: locationNote || 'Location unavailable',
+      deviceInfo: deviceInfo || 'Web Scanner',
+      scanStatus: (gadget.status === 'MISSING') ? 'MISSING_DEVICE_SCANNED' : 'REGISTERED_DEVICE_SCANNED',
+      scannedAt: new Date().toISOString()
+    });
+
+    if (gadget.status === 'MISSING') {
+      db.addNotification({
+        userId: gadget.userId,
+        title: 'QR Scan Location Tagged 📍',
+        message: `Someone scanned your ${gadget.brand} ${gadget.model} at: "${locationNote || 'Location unavailable'}".`,
+        type: 'QR_SCANNED',
+        linkUrl: '/student/#scans'
+      });
+    }
+
+    return res.json({ success: true, scan: scanLog });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: 'Error logging scan.' });
+  }
+});
+
+// GET /api/scan/history/my (Student views their scan history — MISSING GADGETS ONLY, with scanner privacy protected)
+router.get('/history/my', authMiddleware, (req, res) => {
+  try {
+    const userGadgets = db.find('gadgets', g => g.userId === req.user.id);
+    const userGadgetIds = new Set(userGadgets.map(g => g.id));
+
+    // Per specification: scan history is specifically for tracking MISSING gadgets only
+    const scans = db.find('qr_scans', s => 
+      userGadgetIds.has(s.gadgetId) && s.scanStatus === 'MISSING_DEVICE_SCANNED'
+    );
+    
+    // Sort recent first
+    scans.sort((a, b) => new Date(b.scannedAt) - new Date(a.scannedAt));
+
+    // Mask sensitive scanner identity (do not expose scanner IP or account id)
+    const enriched = scans.map(s => {
+      const g = userGadgets.find(item => item.id === s.gadgetId);
+      return {
+        id: s.id,
+        gadgetId: s.gadgetId,
+        scannedAt: s.scannedAt,
+        scanLocationNote: s.scanLocationNote || 'Location unavailable',
+        deviceInfo: s.deviceInfo || 'Scanner device unavailable',
+        gadget: g ? {
+          brand: g.brand,
+          model: g.model,
+          category: g.category,
+          status: g.status
+        } : null
+      };
+    });
+
+    return res.json({ success: true, scans: enriched });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: 'Error fetching scan history.' });
+  }
+});
+
+// GET /api/scan/history/all (OSA Admin views all scan telemetry)
+router.get('/history/all', authMiddleware, requireRole('osa_admin'), (req, res) => {
+  try {
+    const scans = db.get('qr_scans');
+    scans.sort((a, b) => new Date(b.scannedAt) - new Date(a.scannedAt));
+
+    const enriched = scans.map(s => {
+      const gadget = db.findById('gadgets', s.gadgetId);
+      const owner = gadget ? db.findById('users', gadget.userId) : null;
+      return {
+        ...s,
+        gadget: gadget ? {
+          brand: gadget.brand,
+          model: gadget.model,
+          category: gadget.category,
+          status: gadget.status
+        } : null,
+        owner: owner ? {
+          name: owner.name,
+          idNumber: owner.idNumber,
+          department: owner.department
+        } : null
+      };
+    });
+
+    return res.json({ success: true, scans: enriched });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: 'Error fetching all scans.' });
+  }
+});
+
+module.exports = router;

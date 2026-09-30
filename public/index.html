@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NCST GadgetGuard — National College of Science and Technology Campus Asset Tracking</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#142a6d">
+  
+  <link rel="icon" type="image/png" href="/assets/ncst_logo.png">
+  <link rel="stylesheet" href="/css/sweetalert2.min.css?v=3.0">
+  <script src="/js/sweetalert2.all.min.js?v=3.0"></script>
+  <link rel="stylesheet" href="/css/style.css?v=3.0">
+  <link rel="stylesheet" href="/css/public.css?v=3.0">
+</head>
+<body>
+
+  <script src="/js/api.js?v=3.0"></script>
+
+  <!-- Site 1 Navigation Header (Crisp White Header matching Mockup) -->
+  <header class="public-nav">
+    <div class="nav-brand">
+      <img src="/assets/ncst_logo.png" alt="NCST Logo" class="brand-logo-img">
+      <div style="display:flex; flex-direction:column; line-height:1.15;">
+        <span style="font-weight:800; font-size:1.2rem; color:#142a6d; letter-spacing:-0.02em;">NCST <span style="color:#ffc72c;">GadgetGuard</span></span>
+        <span style="font-size:0.65rem; font-weight:700; color:#64748b; letter-spacing:0.04em; text-transform:uppercase;">National College of Science & Technology</span>
+      </div>
+    </div>
+
+    <ul class="nav-menu">
+      <li><a href="#home" class="nav-link active">Home</a></li>
+      <li><a href="#about" class="nav-link">About</a></li>
+      <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
+      <li><a href="#missing-board" class="nav-link">Missing Board</a></li>
+    </ul>
+
+    <div class="nav-actions" id="nav-auth-actions">
+      <button class="btn btn-secondary btn-sm" onclick="openLoginModal()">Login</button>
+      <button class="btn btn-primary btn-sm" onclick="openRegisterModal()">Create Account</button>
+    </div>
+  </header>
+
+  <!-- Section 1: Hero Banner (Matching Reference Screen 1) -->
+  <section id="home" class="hero-banner-wrap">
+    <div class="hero-banner-container">
+      <div class="hero-text-col">
+        <h1 class="hero-banner-title">
+          Secure Your Gadgets,<br>Stay Connected
+        </h1>
+        <p class="hero-banner-subtitle">
+          GadgetGuard is the school's official lost-and-found and gadget registration system.
+        </p>
+
+        <div class="hero-btn-row">
+          <button class="btn-hero-primary" onclick="openRegisterModal()">
+            Get Started
+          </button>
+          <a href="#about" class="btn-hero-secondary">
+            Learn More
+          </a>
+        </div>
+      </div>
+
+      <!-- Right Floating Smartphone with QR Sticker Showcase -->
+      <div class="hero-device-col">
+        <div class="phone-mockup-wrapper">
+          <div class="phone-body">
+            <div class="phone-screen">
+              <div class="phone-notch"></div>
+              <div class="phone-screen-content">
+                <div class="phone-clock">10:32</div>
+                <div class="phone-widget-card">
+                  <div class="phone-widget-brand">🛡️ GadgetGuard Protection</div>
+                  <div class="phone-qr-sticker">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="#0f172a">
+                      <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm10-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm14 0h4v2h-4v-2zm-4 0h2v2h-2v-2zm2 2h2v2h-2v-2zm-2 2h2v2h-2v-2zm4 0h2v2h-2v-2zm-2 2h2v2h-2v-2zm4-4h2v2h-2v-2zm0 4h2v2h-2v-2zM6 6h2v2H6V6zm10 0h2v2h-2V6zm-10 12h2v2H6v-2z"/>
+                    </svg>
+                    <span class="phone-token-code">TOKEN: GG-89241</span>
+                  </div>
+                  <div class="phone-secure-status">
+                    <span class="phone-green-dot"></span> Active QR Linked to OSA
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 Bottom Feature Cards (Directly Matching Reference Screen 1) -->
+    <div class="feature-strip-container">
+      <div class="feature-strip-grid">
+        <div class="feature-strip-card" onclick="openRegisterModal()">
+          <div class="feature-strip-icon-circle blue-light">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="feature-strip-title">Register Your Gadget</h3>
+            <p class="feature-strip-desc">Keep your device safe and registered.</p>
+          </div>
+        </div>
+
+        <div class="feature-strip-card" onclick="window.location.href='/student/'">
+          <div class="feature-strip-icon-circle red-light">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <div>
+            <h3 class="feature-strip-title">Report Missing</h3>
+            <p class="feature-strip-desc">Let us help you find it.</p>
+          </div>
+        </div>
+
+        <div class="feature-strip-card" onclick="window.location.href='#how-it-works'">
+          <div class="feature-strip-icon-circle green-light">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.2">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+          </div>
+          <div>
+            <h3 class="feature-strip-title">Scan & Recover</h3>
+            <p class="feature-strip-desc">Simple QR system for faster recovery.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: About GadgetGuard (Matching Reference Screen 2) -->
+  <section id="about" class="section-about-wrap">
+    <div class="about-grid-layout">
+      <!-- Left Column: Text & 3 Steps -->
+      <div class="about-content-col">
+        <h2 class="about-main-title">About GadgetGuard</h2>
+        <p class="about-main-desc">
+          GadgetGuard is a school-wide system designed to help students, faculty, and staff register their electronic gadgets, report them as missing, and recover them through a centralized lost-and-found process managed by the Office of Student Affairs (OSA).
+        </p>
+
+        <div class="about-steps-row">
+          <div class="about-step-item">
+            <div class="about-step-icon blue">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+            <h4 class="about-step-name">Register</h4>
+            <p class="about-step-sub">Create your account and register your gadget.</p>
+          </div>
+
+          <div class="about-step-item">
+            <div class="about-step-icon cyan">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <path d="m9 15 2 2 4-4"></path>
+              </svg>
+            </div>
+            <h4 class="about-step-name">Verify</h4>
+            <p class="about-step-sub">OSA approves and generates your QR.</p>
+          </div>
+
+          <div class="about-step-item">
+            <div class="about-step-icon indigo">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+              </svg>
+            </div>
+            <h4 class="about-step-name">Recover</h4>
+            <p class="about-step-sub">Report missing or claim your device.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: University Campus Building Image -->
+      <div class="about-img-col">
+        <div class="about-image-card">
+          <img src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800" alt="University Campus Building" class="about-photo">
+          <div class="about-image-badge">
+            🏢 Office of Student Affairs — Room 204
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: How It Works -->
+  <section id="how-it-works" class="section-container" style="background: #ffffff; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
+    <div class="section-heading-center">
+      <span class="section-tag">Campus Lifecycle</span>
+      <h2 class="section-headline">How GadgetGuard Protects You</h2>
+      <p class="section-subtext">Seamless verification and custody retrieval from registration to recovery.</p>
+    </div>
+
+    <div class="how-grid-4">
+      <div class="how-card">
+        <div class="how-step-num">1</div>
+        <h3 class="how-title">1. Register Device</h3>
+        <p class="how-desc">Submit your laptop or phone serial number, brand, model, and photos via the portal.</p>
+      </div>
+
+      <div class="how-card">
+        <div class="how-step-num">2</div>
+        <h3 class="how-title">2. OSA Verification</h3>
+        <p class="how-desc">OSA verifies ownership and generates an official tamper-evident QR code sticker.</p>
+      </div>
+
+      <div class="how-card">
+        <div class="how-step-num">3</div>
+        <h3 class="how-title">3. Native QR Scan</h3>
+        <p class="how-desc">If misplaced, finders scan the sticker with their camera to immediately view drop-off guidance.</p>
+      </div>
+
+      <div class="how-card">
+        <div class="how-step-num">4</div>
+        <h3 class="how-title">4. OSA Safe Return</h3>
+        <p class="how-desc">Found items are secured in the OSA custody locker for claimant verification and release.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 4: Public Missing Gadgets Board -->
+  <section id="missing-board" class="section-container">
+    <div class="section-heading-center">
+      <span class="section-tag" style="background:#fee2e2; color:#dc2626;">Live Alerts</span>
+      <h2 class="section-headline">Campus Missing Gadgets Board</h2>
+      <p class="section-subtext">Keep an eye out for fellow students' missing tech. If found, surrender to OSA Room 204.</p>
+    </div>
+
+    <div id="public-missing-list" class="missing-grid">
+      <div class="text-center" style="grid-column: 1/-1; padding: 30px; color: var(--text-muted);">
+        Loading missing gadgets list...
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 5: OSA Information & Drop-off -->
+  <section id="contact" class="section-container" style="background: #ffffff; border-top: 1px solid #e2e8f0;">
+    <div class="contact-card-box">
+      <div>
+        <span class="section-tag">Direct Drop-Off</span>
+        <h2 style="font-size: 1.6rem; font-weight: 800; margin: 8px 0 12px; color: #0f172a;">Office of Student Affairs</h2>
+        <p style="color: #64748b; font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px;">
+          The university administration department handling student services, device security verification, and lost & found custody.
+        </p>
+
+        <div class="contact-info-list">
+          <div class="contact-info-row">
+            <div class="contact-info-icon">📍</div>
+            <div>
+              <div style="font-weight: 700; font-size: 0.875rem;">Office Location</div>
+              <div style="color: #64748b; font-size: 0.825rem;" id="contact-location">Student Center Bldg, Room 204, 2nd Floor</div>
+            </div>
+          </div>
+
+          <div class="contact-info-row">
+            <div class="contact-info-icon">⏰</div>
+            <div>
+              <div style="font-weight: 700; font-size: 0.875rem;">Operating Hours</div>
+              <div style="color: #64748b; font-size: 0.825rem;" id="contact-hours">Monday – Friday: 8:00 AM – 5:00 PM</div>
+            </div>
+          </div>
+
+          <div class="contact-info-row">
+            <div class="contact-info-icon">📞</div>
+            <div>
+              <div style="font-weight: 700; font-size: 0.875rem;">Hotline / Phone</div>
+              <div style="color: #64748b; font-size: 0.825rem;" id="contact-phone">(02) 8888-4357 / +63 917 555 4234</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dropoff-guide-box">
+        <h3 style="font-weight: 800; font-size: 1rem; color: #0f172a; margin-bottom: 10px;">Found Item Turn-in Protocol</h3>
+        <ul style="font-size: 0.825rem; color: #475569; line-height: 1.65; padding-left: 18px; margin-bottom: 18px;">
+          <li>Bring the item directly to OSA Room 204 during school hours.</li>
+          <li>After hours: Hand over to the Main Gate Security Guard Post.</li>
+          <li>Our staff will log the intake into the central vault and auto-alert the registered owner.</li>
+        </ul>
+        <a href="/osa/" class="btn btn-warning btn-sm" style="width: 100%; justify-content: center;">
+          🏢 OSA Staff Administrator Portal
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="public-clean-footer">
+    <div class="footer-inner">
+      <div>
+        <div class="nav-brand" style="margin-bottom: 10px;">
+          <div class="brand-icon-shield" style="width:28px; height:28px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <span style="font-size: 1.1rem; color: #0f172a;">Gadget<span style="color:#2563eb;">Guard</span></span>
+        </div>
+        <p style="color: #64748b; font-size: 0.825rem; line-height: 1.5; max-width: 320px;">
+          National College of Science and Technology Campus Device Security & Unified Lost and Found Infrastructure.
+        </p>
+      </div>
+
+      <div class="footer-links-col">
+        <h4 style="font-size: 0.85rem; font-weight: 700; color: #0f172a; margin-bottom: 10px;">Portals</h4>
+        <a href="/">🌐 Public Website</a>
+        <a href="/student/">📱 Student Portal</a>
+        <a href="/osa/login.html">🏢 OSA Staff Portal</a>
+      </div>
+
+      <div class="footer-links-col">
+        <h4 style="font-size: 0.85rem; font-weight: 700; color: #0f172a; margin-bottom: 10px;">Quick Links</h4>
+        <a href="javascript:void(0)" onclick="openRegisterModal()">Register Gadget</a>
+        <a href="#missing-board">Missing Board</a>
+        <a href="#about">About System</a>
+      </div>
+    </div>
+
+    <div class="footer-bottom-line">
+      &copy; 2026 GadgetGuard • Office of Student Affairs • Helping our community keep their gadgets safe.
+    </div>
+  </footer>
+
+  <!-- Modal: Login (Modern Clean Aesthetic) -->
+  <div id="login-modal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 440px; padding: 0; overflow: hidden; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25); border: 1px solid #e2e8f0;">
+      <!-- Elegant Header with Gradient & App Identity -->
+      <div style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); padding: 28px 24px; text-align: center; color: #ffffff; position: relative;">
+        <button class="btn btn-icon" onclick="closeModal('login-modal')" style="position: absolute; top: 14px; right: 14px; background: rgba(255, 255, 255, 0.15); color: #ffffff; border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; cursor: pointer; transition: background 0.2s;">
+          &times;
+        </button>
+        <div style="width: 52px; height: 52px; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(8px); border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px; border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.3">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <h3 style="font-weight: 800; font-size: 1.35rem; margin: 0; letter-spacing: -0.01em;">Gadget<span style="color: #93c5fd;">Guard</span></h3>
+        <p style="font-size: 0.8rem; color: #bfdbfe; margin: 4px 0 0; font-weight: 500;">Campus Asset Tracking & Lost Recovery</p>
+      </div>
+
+      <!-- Form Body -->
+      <div style="padding: 26px 28px; background: #ffffff;">
+        <div style="margin-bottom: 18px;">
+          <h4 style="font-weight: 800; font-size: 1.15rem; color: #0f172a; margin: 0;">Welcome Back</h4>
+          <p style="font-size: 0.8rem; color: #64748b; margin: 3px 0 0;">Enter your credentials to access your portal</p>
+        </div>
+
+        <form onsubmit="handleLoginSubmit(event)">
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" style="font-size: 0.775rem; font-weight: 600; color: #334155;">Active Email Address</label>
+            <input type="email" id="login-email" class="form-control" placeholder="e.g. yourname@gmail.com" required style="height: 42px; border-radius: 10px; font-size: 0.875rem;">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <label class="form-label" style="font-size: 0.775rem; font-weight: 600; color: #334155; margin: 0;">Password</label>
+              <a href="javascript:void(0)" onclick="SwalHelper.info('Password Assistance', 'Please visit the Office of Student Affairs or check your registered email for password recovery.')" style="font-size: 0.75rem; color: #2563eb; font-weight: 600; text-decoration: none;">Forgot password?</a>
+            </div>
+            <input type="password" id="login-password" class="form-control" placeholder="••••••••" required style="height: 42px; border-radius: 10px; font-size: 0.875rem;">
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; height: 42px; border-radius: 10px; font-size: 0.9rem; font-weight: 700; margin-top: 14px; margin-bottom: 14px; justify-content: center; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);">
+            Log In
+          </button>
+
+          <div style="text-align: center; font-size: 0.8rem; color: #64748b; margin-bottom: 8px;">
+            Don't have an account? <a href="javascript:void(0)" onclick="closeModal('login-modal'); openRegisterModal();" style="color: #2563eb; font-weight: 700; text-decoration: none;">Register New Student</a>
+          </div>
+
+          <div style="text-align: center; font-size: 0.775rem; color: #64748b; padding-top: 10px; border-top: 1px dashed #e2e8f0;">
+            NCST Employee or Security Officer? <a href="/osa/login.html" style="color: #142a6d; font-weight: 700; text-decoration: none;">OSA Staff Portal &rarr;</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Create Account (With 1 Initial Device Required + Physical OSA Verification Guidance) -->
+  <div id="register-modal" class="modal-overlay">
+    <div class="modal-box modal-split-layout" style="max-width: 820px; max-height: 90vh; overflow-y: auto;">
+      <!-- Left Form Panel -->
+      <div class="modal-split-form-panel" style="flex: 1.35; padding: 24px 28px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+          <div>
+            <h3 style="font-weight: 800; font-size: 1.25rem; color: #0f172a;">Create Account</h3>
+            <p style="font-size: 0.8rem; color: #64748b;">Join GadgetGuard. Register at least 1 device to activate your account.</p>
+          </div>
+          <button class="btn btn-secondary btn-icon" onclick="closeModal('register-modal')">&times;</button>
+        </div>
+
+        <form onsubmit="handleRegisterSubmit(event)">
+          <!-- Section 1: Student Information -->
+          <div style="font-weight: 700; font-size: 0.8rem; color: #1e40af; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <span>👤</span> Student Details
+          </div>
+
+          <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" style="font-size: 0.775rem;">First Name *</label>
+              <input type="text" id="reg-firstname" class="form-control" placeholder="e.g. Juan" required pattern="[a-zA-ZñÑ\s\.\,\-]+" title="Please enter letters only" oninput="this.value = this.value.replace(/[^a-zA-ZñÑ\s\.\,\-]/g, '')">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" style="font-size: 0.775rem;">Surname / Last Name *</label>
+              <input type="text" id="reg-lastname" class="form-control" placeholder="e.g. Dela Cruz" required pattern="[a-zA-ZñÑ\s\.\,\-]+" title="Please enter letters only" oninput="this.value = this.value.replace(/[^a-zA-ZñÑ\s\.\,\-]/g, '')">
+            </div>
+          </div>
+
+          <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" style="font-size: 0.775rem;">School ID *</label>
+              <input type="text" id="reg-id" class="form-control font-mono" placeholder="e.g. 2024-12345" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" style="font-size: 0.775rem;">Education Level *</label>
+              <select id="reg-level" class="form-control" onchange="handleAcademicLevelChange(this.value)">
+                <option value="College" selected>🎓 College</option>
+                <option value="SHS">🎒 Senior High School (SHS)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Dynamic Academic Classification Field (Grade Level / Strand / Course) -->
+          <div class="form-group" id="group-academic-subfield" style="margin-bottom: 10px;">
+            <label class="form-label" id="label-academic-subfield" style="font-size: 0.775rem;">Course / Program *</label>
+            <div id="container-academic-subfield">
+              <!-- College Courses -->
+              <select id="reg-academic-select" class="form-control">
+                <option value="AB Communication">AB Communication</option>
+                <option value="ACT">ACT</option>
+                <option value="Associate in Office Management">Associate in Office Management</option>
+                <option value="BS Architecture">BS Architecture</option>
+                <option value="BS Business Administration-Operations Management">BS Business Administration-Operations Management</option>
+                <option value="BS Electronics Engineering" selected>BS Electronics Engineering</option>
+                <option value="BS Entrepreneurship">BS Entrepreneurship</option>
+                <option value="BS Hospitality Management">BS Hospitality Management</option>
+                <option value="BS Industrial Engineering">BS Industrial Engineering</option>
+                <option value="BS Industrial Security Management">BS Industrial Security Management</option>
+                <option value="BS Management Accounting">BS Management Accounting</option>
+                <option value="BS Public Administration">BS Public Administration</option>
+                <option value="BS Real Estate Management">BS Real Estate Management</option>
+                <option value="BS-ACCOUNTANCY">BS-ACCOUNTANCY</option>
+                <option value="BS-Computer Engineering">BS-Computer Engineering</option>
+                <option value="BS-Computer Science">BS-Computer Science</option>
+                <option value="BS-Criminology">BS-Criminology</option>
+                <option value="BS-Customs Administration">BS-Customs Administration</option>
+                <option value="BS-Information Technology">BS-Information Technology</option>
+                <option value="BS-Office Administration">BS-Office Administration</option>
+                <option value="BS-Psychology">BS-Psychology</option>
+                <option value="BS-Tourism Management">BS-Tourism Management</option>
+                <option value="BSBA - Financial Management">BSBA - Financial Management</option>
+                <option value="BSBA Marketing-Management">BSBA Marketing-Management</option>
+                <option value="BSEd - English">BSEd - English</option>
+                <option value="BSEd - Filipino">BSEd - Filipino</option>
+                <option value="BSEd - Mathematics">BSEd - Mathematics</option>
+                <option value="BSEd - Social Studies">BSEd - Social Studies</option>
+                <option value="Professional Educational Units">Professional Educational Units</option>
+                <option value="Teacher Certificate Program">Teacher Certificate Program</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" style="font-size: 0.775rem;">Active Email Address *</label>
+              <input type="email" id="reg-email" class="form-control" placeholder="e.g. yourname@gmail.com" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" style="font-size: 0.775rem;">Contact Number (11 Digits) *</label>
+              <input type="tel" id="reg-contact" class="form-control font-mono" placeholder="e.g. 09123456789" maxlength="11" pattern="09[0-9]{9}" title="Must be exactly 11 digits starting with 09 (e.g. 09123456789)" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+            </div>
+          </div>
+
+          <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" style="font-size: 0.775rem;">Password *</label>
+              <input type="password" id="reg-password" class="form-control" placeholder="••••••••" minlength="6" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" style="font-size: 0.775rem;">Confirm Password *</label>
+              <input type="password" id="reg-confirm-password" class="form-control" placeholder="••••••••" minlength="6" required>
+            </div>
+          </div>
+
+          <!-- Section 2: Initial Required Device -->
+          <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="font-weight: 700; font-size: 0.8rem; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                <span>📱</span> Required Initial Device Registration (1 Device)
+              </div>
+              <span class="status-badge" style="background: #eff6ff; color: #2563eb; font-size: 0.65rem;">Step 1 of 2</span>
+            </div>
+            <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin-bottom: 10px;">
+              Register at least one device before account activation. You will need to visit OSA for physical verification and sticker release.
+            </p>
+
+            <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" style="font-size: 0.75rem;">Device Type *</label>
+                <select id="reg-dev-category" class="form-control" style="font-size: 0.8rem;" onchange="handleRegDevCategoryChange(this.value)">
+                  <option value="Smartphone">📱 Smartphone / Phone</option>
+                  <option value="Laptop">💻 Laptop</option>
+                  <option value="Tablet">📟 Tablet / iPad</option>
+                  <option value="Earbuds">🎧 Earbuds / Headphones</option>
+                  <option value="Other">🔌 Other Device</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" style="font-size: 0.75rem;">Brand *</label>
+                <input type="text" id="reg-dev-brand" class="form-control" placeholder="e.g. Apple, Samsung, Xiaomi" required style="font-size: 0.8rem;">
+              </div>
+            </div>
+
+            <div class="grid" style="grid-template-columns: 1.2fr 1fr; gap: 8px; margin-bottom: 8px;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" style="font-size: 0.75rem;">Model Name *</label>
+                <input type="text" id="reg-dev-model" class="form-control" placeholder="e.g. iPhone 13, Galaxy S23" required style="font-size: 0.8rem;">
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" style="font-size: 0.75rem;">Color / Finish</label>
+                <input type="text" id="reg-dev-color" class="form-control" placeholder="e.g. Midnight Black" style="font-size: 0.8rem;">
+              </div>
+            </div>
+
+            <div class="form-group" id="reg-dev-sn-group" style="margin-bottom: 4px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label class="form-label" id="reg-dev-sn-label" style="font-size: 0.75rem; margin-bottom: 0;">Device Serial Number / IMEI *</label>
+                <span id="reg-dev-sn-badge" style="font-size: 0.65rem; color: #dc2626; font-weight: 700;">REQUIRED</span>
+              </div>
+              <input type="text" id="reg-dev-sn" class="form-control font-mono" placeholder="Check Settings > About or back chassis" required style="font-size: 0.8rem;">
+              <div id="reg-dev-sn-hint" style="font-size: 0.7rem; color: #64748b; margin-top: 3px;">
+                OSA will inspect this device and match the serial number during in-person verification.
+              </div>
+            </div>
+          </div>
+
+          <input type="hidden" id="reg-dept" value="College of Computer Studies">
+
+          <button type="submit" id="btn-create-account" class="btn btn-primary" style="width: 100%;">
+            Review & Submit Application
+          </button>
+
+          <div style="text-align: center; font-size: 0.8rem; color: #64748b; margin-top: 10px;">
+            Already have an account? <a href="javascript:void(0)" onclick="closeModal('register-modal'); openLoginModal();" style="color: #2563eb; font-weight: 700;">Log In</a>
+          </div>
+        </form>
+      </div>
+
+      <!-- Right Blue Graphic Banner -->
+      <div class="modal-blue-promo-banner" style="flex: 0.85; padding: 24px;">
+        <div class="promo-shield-icon">
+          <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <h3 class="promo-title">Protect.<br>Register.<br>Recover.</h3>
+        <p class="promo-sub">Your gadgets, our priority.</p>
+        
+        <div style="margin-top: 24px; background: rgba(255, 255, 255, 0.75); border: 1px solid #bfdbfe; border-radius: 10px; padding: 12px; text-align: left; font-size: 0.75rem; color: #1e3a8a;">
+          <div style="font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
+            🏢 In-Person Verification
+          </div>
+          <div>After submitting, visit <strong>OSA Room 204</strong> with your Student ID and device to activate your account and claim your official printed QR code sticker.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Step 2 - Face-to-Face OSA Verification Required -->
+  <div id="osa-verify-instruction-modal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 540px; padding: 28px;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="width: 60px; height: 60px; background: #eff6ff; color: #2563eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-size: 1.8rem;">
+          🏢
+        </div>
+        <h3 style="font-weight: 800; font-size: 1.35rem; color: #0f172a; margin-bottom: 4px;">Account Pending OSA Verification</h3>
+        <p style="font-size: 0.85rem; color: #64748b;">
+          Your application and initial device details have been submitted. Your official account will be activated once verified in person by OSA.
+        </p>
+      </div>
+
+      <!-- Submitted Device Preview -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <div style="font-size: 0.725rem; color: #64748b; text-transform: uppercase; font-weight: 700;">Registered Device</div>
+          <div style="font-weight: 800; font-size: 0.95rem; color: #0f172a;" id="osa-modal-dev-name">Device Name</div>
+          <div class="font-mono" style="font-size: 0.75rem; color: #2563eb;" id="osa-modal-dev-sn">S/N: -</div>
+        </div>
+        <span class="status-badge PENDING_APPROVAL" style="font-size: 0.7rem;">PENDING OSA APPROVAL</span>
+      </div>
+
+      <!-- 3-Step Clear Instructions -->
+      <div style="border: 1.5px solid #bfdbfe; background: #eff6ff; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="font-weight: 800; font-size: 0.85rem; color: #1e40af; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+          <span>📋</span> NEXT STEPS TO ACTIVATE YOUR ACCOUNT:
+        </div>
+
+        <ol style="margin: 0; padding-left: 20px; font-size: 0.825rem; color: #1e40af; line-height: 1.55; display: flex; flex-direction: column; gap: 8px;">
+          <li>
+            <strong>Visit the Office of Student Affairs (OSA):</strong><br>
+            Proceed to <em>Room 204, Student Services Building (Monday – Friday, 8:00 AM – 5:00 PM)</em>.
+          </li>
+          <li>
+            <strong>Present your Physical Student ID:</strong><br>
+            The OSA officer will confirm that you are currently enrolled and a legitimate student.
+          </li>
+          <li>
+            <strong>Present your Phone or Gadget:</strong><br>
+            The officer will inspect the device and match its Serial Number / IMEI with your record.
+          </li>
+          <li>
+            <strong>Account Activation & QR Sticker:</strong><br>
+            Once verified on-the-spot, your account will be activated and you will receive your official printed QR code sticker.
+          </li>
+        </ol>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end;">
+        <button type="button" class="btn btn-primary" onclick="closeModal('osa-verify-instruction-modal')" style="width: 100%; justify-content: center;">
+          Understood, Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Pre-Submission Review & Verification Dialog -->
+  <div id="confirm-register-modal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 520px; padding: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 40px; height: 40px; background: #eff6ff; color: #2563eb; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+            🔍
+          </div>
+          <div>
+            <h3 style="font-weight: 800; font-size: 1.15rem; color: #0f172a; margin: 0;">Review Your Details</h3>
+            <p style="font-size: 0.775rem; color: #64748b; margin: 2px 0 0;">Please verify your information before submitting to OSA.</p>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-icon" onclick="closeModal('confirm-register-modal')">&times;</button>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; font-size: 0.8rem; display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-weight: 700; color: #1e40af; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 2px;">
+          👤 Student Information
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #64748b;">Full Name:</span>
+          <strong id="conf-summary-name" style="color: #0f172a;">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #64748b;">School ID:</span>
+          <span class="font-mono" id="conf-summary-id" style="font-weight: 700; color: #2563eb;">-</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #64748b;">Active Email:</span>
+          <span id="conf-summary-email" style="font-weight: 600;">-</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #64748b;">Contact Number:</span>
+          <span class="font-mono" id="conf-summary-contact" style="font-weight: 700; color: #059669;">-</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #64748b;">Education Level:</span>
+          <strong id="conf-summary-level" style="color: #1e40af;">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #64748b;" id="conf-summary-subfield-label">Course / Program:</span>
+          <span id="conf-summary-subfield-val" style="font-weight: 600; color: #0f172a; text-align: right; max-width: 60%;"> -</span>
+        </div>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; font-size: 0.8rem; display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-weight: 700; color: #1e40af; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 2px;">
+          📱 Device Details
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #64748b;">Device Type & Model:</span>
+          <strong id="conf-summary-device" style="color: #0f172a;">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #64748b;">Serial Number / IMEI:</span>
+          <span class="font-mono" id="conf-summary-sn" style="font-weight: 700; color: #0f172a;">-</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #64748b;">Color / Finish:</span>
+          <span id="conf-summary-color">-</span>
+        </div>
+      </div>
+
+      <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 10px 12px; font-size: 0.75rem; color: #b45309; line-height: 1.4; margin-bottom: 18px;">
+        ⚠️ <strong>Important:</strong> Your official account will only be activated after OSA verifies your physical student ID and gadget in person at Room 204.
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('confirm-register-modal')" style="flex: 1;">
+          ✏️ Edit Details
+        </button>
+        <button type="button" id="btn-final-confirm-submit" class="btn btn-primary btn-sm" onclick="executeFinalRegisterSubmission()" style="flex: 1.4;">
+          ✓ Confirm & Submit Application
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/public.js?v=3.0"></script>
+</body>
+</html>

@@ -1,0 +1,1003 @@
+/* ==========================================================================
+   GadgetGuard OSA Admin Command Center Stylesheet
+   National College of Science and Technology (NCST) Standard
+   Enhanced Spacing, Hierarchy & Visual Comfort
+   ========================================================================== */
+
+.osa-admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--content-bg);
+}
+
+/* Sidebar */
+.osa-sidebar {
+  width: 270px;
+  background-color: #102766;
+  border-right: 1px solid #1d3c8f;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+  z-index: 950;
+}
+
+.osa-sidebar-header {
+  padding: 24px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 2px solid #1d3c8f;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.osa-brand-icon {
+  width: 44px;
+  height: 44px;
+  background: var(--gold);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold-text);
+  font-size: 1.35rem;
+  box-shadow: 0 4px 12px var(--gold-glow);
+}
+
+.osa-menu-list {
+  list-style: none;
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.osa-nav-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 16px;
+  border-radius: var(--radius-md);
+  color: #dbe4f7;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.osa-nav-link-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.osa-nav-link:hover {
+  background-color: #183582;
+  color: #ffffff;
+}
+
+.osa-nav-link.active {
+  background-color: #ffc72c;
+  color: #0c1c4f;
+  font-weight: 800;
+  box-shadow: 0 4px 14px rgba(255, 199, 44, 0.4);
+}
+
+.osa-nav-link.active .osa-badge-counter {
+  background: #0c1c4f;
+  color: #ffc72c;
+}
+
+.osa-nav-link.active .osa-nav-link-content svg {
+  color: var(--gold);
+  stroke: var(--gold);
+}
+
+.osa-badge-counter {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 0.725rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+}
+
+.osa-sidebar-footer {
+  padding: 18px 20px;
+  border-top: 1px solid var(--sidebar-border);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* Main Area */
+.osa-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background-color: #f8fafc;
+}
+
+.osa-top-bar {
+  background: #ffffff;
+  border-bottom: 2px solid #dbe4f0;
+  padding: 18px 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.osa-viewport {
+  flex: 1;
+  padding: 36px 40px;
+  overflow-y: auto;
+  max-width: 1680px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.osa-screen {
+  display: none;
+}
+
+.osa-screen.active {
+  display: block;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* KPI Cards Grid with Generous Spacing */
+.osa-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 36px;
+}
+
+.osa-kpi-card {
+  background: #ffffff;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.osa-kpi-card:hover {
+  border-color: var(--card-hover-border);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+
+.osa-kpi-label {
+  font-size: 0.775rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.osa-kpi-num {
+  font-size: 2.1rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.1;
+}
+
+.osa-kpi-icon-pill {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+/* Table Container Card */
+.table-container-card {
+  background: #ffffff;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  margin-bottom: 36px;
+}
+
+.table-title-bar {
+  padding: 22px 28px;
+  border-bottom: 1px solid var(--card-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: #ffffff;
+}
+
+.table-title-bar h3 {
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.table-responsive-wrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+
+/* Clean Table Styling: Spacious, Elegant, Legible */
+.clean-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.clean-table th {
+  background: #f8fafc;
+  padding: 16px 24px;
+  font-weight: 800;
+  font-size: 0.75rem;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.clean-table td {
+  padding: 18px 24px;
+  border-bottom: 1px solid #f1f5f9;
+  color: var(--text-main);
+  vertical-align: middle;
+  line-height: 1.55;
+}
+
+.clean-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.clean-table tbody tr:hover td {
+  background-color: #f8fafc;
+}
+
+.clean-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Spacing Helpers Inside Cells */
+.table-primary-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #0f172a;
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.table-secondary-sub {
+  font-size: 0.8rem;
+  color: #64748b;
+  line-height: 1.3;
+}
+
+.table-action-btns {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* App Card & Form Spacing */
+.app-card {
+  background: #ffffff;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  margin-bottom: 32px;
+}
+
+.form-group {
+  margin-bottom: 22px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+.form-control {
+  width: 100%;
+  padding: 11px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  color: var(--text-main);
+  background: #ffffff;
+  transition: all 0.15s ease;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(20, 42, 109, 0.12);
+}
+
+/* Modals */
+.modal-box {
+  padding: 32px;
+  border-radius: 18px;
+}
+
+.modal-header {
+  margin-bottom: 20px;
+}
+
+.modal-footer {
+  margin-top: 24px;
+  padding-top: 18px;
+  gap: 12px;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .osa-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .osa-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%);
+  }
+
+  .osa-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .osa-top-bar {
+    padding: 14px 20px;
+  }
+
+  .osa-viewport {
+    padding: 20px 16px;
+  }
+
+  .osa-kpi-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .clean-table th, .clean-table td {
+    padding: 14px 16px;
+  }
+}
+
+/* ==========================================================================
+   NCST Official QR Code Scanner Component Styles
+   ========================================================================== */
+.qr-scanner-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 32px 36px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.scanner-card-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.scanner-header-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: #eff6ff;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(20, 42, 109, 0.08);
+}
+
+.scanner-header-title {
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  margin: 0 0 4px 0;
+}
+
+.scanner-header-subtitle {
+  font-size: 0.825rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Segmented Tabs Bar */
+.scanner-tabs-bar {
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  background: #f1f5f9;
+  border-radius: 14px;
+  margin-bottom: 28px;
+  border: 1px solid #e2e8f0;
+}
+
+.scanner-tab-pill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scanner-tab-pill:hover {
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.scanner-tab-pill.active {
+  background: #142a6d !important; /* NCST Royal Navy */
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(20, 42, 109, 0.28);
+}
+
+/* Tab Panels (Strict Visibility) */
+.scanner-tab-panel {
+  display: none !important;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.scanner-tab-panel.active {
+  display: block !important;
+}
+
+/* Tab 1: Camera Viewport */
+.scanner-camera-frame {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  height: 320px;
+  margin: 0 auto 20px;
+  background: #090e1a;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 2px solid #1e293b;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scanner-camera-frame video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scanner-reticle {
+  position: absolute;
+  inset: 36px;
+  pointer-events: none;
+}
+
+.reticle-corner {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border-color: #fbbf24; /* NCST Gold */
+  border-style: solid;
+}
+
+.reticle-corner.top-left { top: 0; left: 0; border-width: 3px 0 0 3px; border-top-left-radius: 8px; }
+.reticle-corner.top-right { top: 0; right: 0; border-width: 3px 3px 0 0; border-top-right-radius: 8px; }
+.reticle-corner.bottom-left { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-bottom-left-radius: 8px; }
+.reticle-corner.bottom-right { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-bottom-right-radius: 8px; }
+
+@keyframes laserScan {
+  0% { top: 10%; opacity: 0.3; }
+  50% { top: 88%; opacity: 1; }
+  100% { top: 10%; opacity: 0.3; }
+}
+
+.reticle-laser {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #fbbf24 50%, transparent);
+  box-shadow: 0 0 10px #fbbf24;
+  animation: laserScan 2.4s infinite ease-in-out;
+}
+
+.camera-status-pill {
+  position: absolute;
+  bottom: 14px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  color: #f8fafc;
+  font-size: 0.775rem;
+  padding: 6px 14px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  max-width: 90%;
+  text-align: center;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f59e0b;
+}
+
+.status-dot.green {
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+
+.camera-controls-bar {
+  text-align: center;
+  margin-top: 14px;
+}
+
+/* Tab 2: Dropzone */
+.scanner-dropzone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 18px;
+  padding: 44px 28px;
+  text-align: center;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.scanner-dropzone:hover, .scanner-dropzone.drag-over {
+  border-color: #142a6d;
+  background: #eef2ff;
+  transform: translateY(-2px);
+}
+
+.dropzone-icon-circle {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+}
+
+.dropzone-primary-text {
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #0f172a;
+}
+
+.dropzone-secondary-text {
+  font-size: 0.825rem;
+  color: #64748b;
+  margin-top: 6px;
+}
+
+.file-analysis-status {
+  display: none;
+  margin-top: 14px;
+  padding: 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  color: #166534;
+  text-align: center;
+}
+
+/* Tab 3: Manual Input */
+.scanner-manual-form {
+  padding: 10px 4px;
+}
+
+.token-input-wrapper {
+  display: flex;
+  align-items: center;
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.token-input-wrapper:focus-within {
+  border-color: #142a6d;
+  box-shadow: 0 0 0 3px rgba(20, 42, 109, 0.12);
+}
+
+.token-prefix-badge {
+  background: #f1f5f9;
+  padding: 14px 16px;
+  font-weight: 800;
+  font-size: 0.75rem;
+  color: #475569;
+  border-right: 1px solid #cbd5e1;
+  letter-spacing: 0.05em;
+}
+
+.token-text-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 14px 16px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  background: transparent;
+}
+
+/* Demo Shortcut Chips */
+.demo-token-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 20px;
+}
+
+.demo-token-header {
+  font-size: 0.775rem;
+  font-weight: 800;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+
+.demo-token-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.demo-chip-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.demo-chip-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateX(3px);
+}
+
+.chip-badge {
+  font-size: 0.675rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.chip-badge.red {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.chip-badge.gold {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.chip-badge.blue {
+  background: #eff6ff;
+  color: #142a6d;
+  border: 1px solid #bfdbfe;
+}
+
+/* ==========================================================================
+   NCST Reports & Analytics Suite Styles
+   ========================================================================== */
+.reports-header-card {
+  background: #ffffff;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 24px 30px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.reports-header-info h3 {
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px 0;
+}
+
+.reports-header-info p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.reports-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 4 Metric Cards Grid */
+.metrics-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.metric-card {
+  background: #ffffff;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.2s ease;
+}
+
+.metric-card:hover {
+  border-color: var(--card-hover-border);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+
+.metric-icon-box {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.metric-value {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+
+.metric-label {
+  font-size: 0.775rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Two-Column Analytics Layout */
+.analytics-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.analytics-card {
+  background: #ffffff;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 26px 28px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+}
+
+.analytics-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.analytics-card-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.analytics-card-sub {
+  font-size: 0.775rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Progress Metric Item */
+.progress-metric-item {
+  margin-bottom: 16px;
+}
+
+.progress-metric-item:last-child {
+  margin-bottom: 0;
+}
+
+.progress-metric-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.progress-metric-bar-bg {
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-metric-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Certified Audit Stamp */
+.report-certified-footer {
+  background: linear-gradient(135deg, #091129 0%, #142a6d 100%);
+  border-radius: var(--radius-lg);
+  padding: 24px 30px;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: 0 4px 15px rgba(20, 42, 109, 0.25);
+  margin-top: 10px;
+}
+
+.certified-seal-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.certified-seal-img {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+}
+
+@media (max-width: 1200px) {
+  .metrics-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .analytics-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .metrics-grid-4 {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+.osa-kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--primary);
+}
+
+.osa-kpi-card:nth-child(2)::before {
+  background: var(--gold);
+}
+
+.osa-kpi-card:nth-child(3)::before {
+  background: var(--accent-red);
+}
+
+.osa-kpi-card:nth-child(4)::before {
+  background: #059669;
+}
+
+
+/* NCST Collegiate Table Standard */
+table thead th, .osa-table thead th {
+  background-color: #142a6d !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 0.775rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 14px 18px !important;
+  border: none !important;
+}
+
+table tbody tr:hover, .osa-table tbody tr:hover {
+  background-color: #eef3ff !important;
+}

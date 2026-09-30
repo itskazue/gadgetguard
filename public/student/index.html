@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Portal — GadgetGuard</title>
+  <meta name="description" content="Student & Faculty device registration, anti-loss protection, and custody recovery system.">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#142a6d">
+  
+  <link rel="icon" type="image/png" href="/assets/ncst_logo.png">
+  <link rel="stylesheet" href="/css/sweetalert2.min.css?v=3.1">
+  <script src="/js/sweetalert2.all.min.js?v=3.1"></script>
+  <link rel="stylesheet" href="/css/style.css?v=3.1">
+  <link rel="stylesheet" href="/student/student.css?v=3.1">
+</head>
+<body>
+
+  <script src="/js/api.js?v=3.6"></script>
+
+  <div class="student-app-container">
+    
+    <!-- Dark Navy Sidebar -->
+    <aside class="student-sidebar" id="student-sidebar">
+      <div class="student-sidebar-brand" style="display:flex; align-items:center; gap:12px; padding:16px; border-bottom:1px solid rgba(255,255,255,0.08);">
+        <img src="/assets/ncst_logo.png" alt="NCST Logo" style="height:44px; width:auto; object-fit:contain;">
+        <div class="brand-text-wrap" style="display:flex; flex-direction:column; line-height:1.2;">
+          <span class="brand-title" style="font-weight:800; font-size:1.05rem; color:#ffffff;">NCST <span style="color:#ffc72c;">Guard</span></span>
+          <span class="brand-sub" style="font-size:0.68rem; color:#ffc72c; font-weight:600; text-transform:uppercase;">Student Tech Portal</span>
+        </div>
+      </div>
+
+      <!-- User Profile Summary Pill -->
+      <div class="student-user-pill">
+        <img id="user-sidebar-avatar" src="https://api.dicebear.com/7.x/initials/svg?seed=Student" alt="Avatar" class="user-pill-avatar">
+        <div style="min-width: 0;">
+          <div id="user-sidebar-name" class="user-pill-name">Loading...</div>
+          <div id="user-sidebar-id" class="user-pill-id">-</div>
+        </div>
+      </div>
+
+      <!-- Navigation Menu -->
+      <ul class="student-menu-list">
+        <li>
+          <div class="student-nav-item active" onclick="navigateStudent('dashboard')" id="nav-item-dashboard">
+            <div class="student-nav-item-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              <span>Dashboard</span>
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="student-nav-item" onclick="navigateStudent('gadgets')" id="nav-item-gadgets">
+            <div class="student-nav-item-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+              <span>My Gadgets</span>
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="student-nav-item" onclick="navigateStudent('missing-form')" id="nav-item-missing-form">
+            <div class="student-nav-item-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" style="color: #ef4444;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <span>Report Missing</span>
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="student-nav-item" onclick="navigateStudent('lost-status')" id="nav-item-lost-status">
+            <div class="student-nav-item-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <span>Lost Gadget Status</span>
+            </div>
+            <span class="sidebar-badge" id="badge-missing-count" style="display:none;">0</span>
+          </div>
+        </li>
+        <li>
+          <div class="student-nav-item" onclick="navigateStudent('claims')" id="nav-item-claims">
+            <div class="student-nav-item-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              <span>Claim Requests</span>
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="student-nav-item" onclick="navigateStudent('notifications')" id="nav-item-notifications">
+            <div class="student-nav-item-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span>Notifications</span>
+            </div>
+            <span class="sidebar-badge" id="badge-notif-count" style="display:none;">0</span>
+          </div>
+        </li>
+        <li>
+          <div class="student-nav-item" onclick="navigateStudent('profile')" id="nav-item-profile">
+            <div class="student-nav-item-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span>Profile</span>
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <div class="student-sidebar-footer">
+        <button class="btn btn-secondary btn-sm" onclick="logoutCurrentSession()" style="width: 100%; justify-content: center;">
+          🚪 Sign Out
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Viewport -->
+    <main class="student-main">
+      
+      <!-- Top Navigation Bar -->
+      <header class="student-top-bar">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <button class="mobile-menu-toggle-btn" onclick="toggleMobileSidebar()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <div>
+            <h1 id="screen-page-heading" style="font-size: 1.15rem; font-weight: 800; color: var(--text-main);">Dashboard</h1>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <button class="btn btn-primary btn-sm" onclick="openRegisterGadgetModal()">
+            ➕ Register Gadget
+          </button>
+          <button class="btn btn-secondary btn-icon" onclick="navigateStudent('notifications')" title="Notifications">
+            🔔
+          </button>
+        </div>
+      </header>
+
+      <!-- Content Body -->
+      <div class="student-content-body">
+        
+        <!-- ================= SCREEN 1: DASHBOARD ================= -->
+        <section id="student-screen-dashboard" class="student-screen active">
+          <!-- Welcome Header -->
+          <div class="dash-welcome-header">
+            <h2 class="dash-welcome-title" id="dash-greeting-text">Welcome to GadgetGuard</h2>
+            <p class="dash-welcome-sub">Here's an overview of your registered gadgets and reports.</p>
+          </div>
+
+          <!-- Pending OSA Physical Verification Banner -->
+          <div id="student-osa-verify-banner" style="display: none; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 20px;">
+            <div style="display: flex; gap: 14px; align-items: flex-start;">
+              <div style="font-size: 1.8rem; line-height: 1;">🏢</div>
+              <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                  <h4 style="font-weight: 800; font-size: 0.95rem; color: #1e40af; margin: 0;">
+                    Action Required: Face-to-Face Verification at OSA
+                  </h4>
+                  <span class="status-badge PENDING_APPROVAL" style="font-size: 0.7rem;">Action Required</span>
+                </div>
+                <p style="font-size: 0.825rem; color: #1e3a8a; line-height: 1.5; margin: 6px 0 10px;">
+                  You have a device awaiting verification (<strong id="pending-verify-device-name">Device</strong>). Please proceed to the <strong>Office of Student Affairs (Room 204)</strong> with your <strong>physical Student ID</strong> and the actual device. The OSA officer will confirm ownership and issue your official printed QR code sticker.
+                </p>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 0.75rem; color: #2563eb;">
+                  <span>📍 Room 204, Student Services Bldg.</span>
+                  <span>•</span>
+                  <span>⏰ Mon–Fri, 8:00 AM – 5:00 PM</span>
+                  <span>•</span>
+                  <span>🏷️ Official Anti-Theft QR Sticker Issued On-Site</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4 Clean Metric Cards -->
+          <div class="metrics-grid-4">
+            <div class="metric-card" onclick="navigateStudent('gadgets')" style="cursor: pointer;">
+              <div class="metric-icon-box" style="background: #ecfdf5; color: #047857;">💻</div>
+              <div>
+                <div class="metric-value" id="stat-registered-val">0</div>
+                <div class="metric-label">Registered Gadgets</div>
+              </div>
+            </div>
+
+            <div class="metric-card" onclick="navigateStudent('lost-status')" style="cursor: pointer;">
+              <div class="metric-icon-box" style="background: #fef2f2; color: #b91c1c;">🚨</div>
+              <div>
+                <div class="metric-value" id="stat-missing-val" style="color: #b91c1c;">0</div>
+                <div class="metric-label">Missing Gadgets</div>
+              </div>
+            </div>
+
+            <div class="metric-card" onclick="navigateStudent('claims')" style="cursor: pointer;">
+              <div class="metric-icon-box" style="background: #eff6ff; color: #1d4ed8;">📋</div>
+              <div>
+                <div class="metric-value" id="stat-claims-val" style="color: #1d4ed8;">0</div>
+                <div class="metric-label">Claim Requests</div>
+              </div>
+            </div>
+
+            <div class="metric-card" onclick="navigateStudent('claims')" style="cursor: pointer;">
+              <div class="metric-icon-box" style="background: #f5f3ff; color: #6d28d9;">✨</div>
+              <div>
+                <div class="metric-value" id="stat-returned-val" style="color: #6d28d9;">0</div>
+                <div class="metric-label">Found / Returned</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Highlighted Recent Activity Section -->
+          <div class="highlight-activity-card" id="dash-highlight-activity">
+            <div class="highlight-activity-info">
+              <div class="highlight-icon-circle">📡</div>
+              <div>
+                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);" id="highlight-act-title">
+                  QR Scan Activity Monitor
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px;" id="highlight-act-desc">
+                  No scan events detected recently. Your registered gadgets are protected by tamper-evident QR stickers.
+                </div>
+                <div style="font-size: 0.775rem; color: var(--text-muted); margin-top: 6px;" id="highlight-act-meta">
+                  Status: All devices secure
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="navigateStudent('gadgets')" id="highlight-act-btn">
+              View Gadgets →
+            </button>
+          </div>
+
+          <!-- My Registered Gadgets Section -->
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-main);">My Registered Gadgets</h3>
+              <p class="text-muted" style="font-size: 0.825rem;">Real-time status of your university-registered equipment</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="navigateStudent('gadgets')">View All Gadgets →</button>
+          </div>
+
+          <div class="gadgets-card-grid" id="dash-gadgets-grid">
+            <!-- Populated with real database records by JS -->
+          </div>
+        </section>
+
+        <!-- ================= SCREEN 2: MY GADGETS ================= -->
+        <section id="student-screen-gadgets" class="student-screen">
+          <div class="app-card" style="margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 18px;">
+              <div>
+                <h3 style="font-weight: 800; font-size: 1.15rem;">Gadget Inventory</h3>
+                <p class="text-muted" style="font-size: 0.825rem;">Review, manage stickers, and check status of all your devices.</p>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="openRegisterGadgetModal()">➕ Register New Device</button>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="filter-tab-bar" id="gadget-filter-bar">
+              <button class="filter-tab-btn active" onclick="filterStudentGadgets('ALL')">All Devices</button>
+              <button class="filter-tab-btn" onclick="filterStudentGadgets('REGISTERED')">Registered & Safe</button>
+              <button class="filter-tab-btn" onclick="filterStudentGadgets('PENDING_APPROVAL')">Pending Approval</button>
+              <button class="filter-tab-btn" onclick="filterStudentGadgets('MISSING')">Missing Alerts</button>
+              <button class="filter-tab-btn" onclick="filterStudentGadgets('FOUND_IN_CUSTODY')">In OSA Custody</button>
+              <button class="filter-tab-btn" onclick="filterStudentGadgets('RETURNED')">Returned</button>
+            </div>
+
+            <div class="gadgets-card-grid" id="student-all-gadgets-grid">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SCREEN 3: REPORT MISSING (DEDICATED STEP FORM) ================= -->
+        <section id="student-screen-missing-form" class="student-screen">
+          <div class="app-card" style="max-width: 680px; margin: 0 auto;">
+            <div style="margin-bottom: 20px;">
+              <span class="status-badge MISSING" style="margin-bottom: 6px;">Incident Report</span>
+              <h3 style="font-weight: 800; font-size: 1.25rem; color: #b91c1c;">Report Gadget as Missing</h3>
+              <p class="text-muted" style="font-size: 0.85rem;">
+                Flagging your gadget as MISSING immediately alters its public QR sticker page to recovery mode and broadcasts it to campus staff.
+              </p>
+            </div>
+
+            <form id="report-missing-main-form" onsubmit="handleMissingFormSubmit(event)">
+              <div class="form-group">
+                <label class="form-label">Select Registered Gadget *</label>
+                <select id="missing-form-gadget-select" class="form-control" required>
+                  <!-- Populated by JS -->
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Last Known Campus Location *</label>
+                <input type="text" id="missing-form-location" class="form-control" placeholder="e.g. University Library 3rd Floor Table #14" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Date & Approximate Time Lost *</label>
+                <input type="datetime-local" id="missing-form-datetime" class="form-control" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Additional Identifying Information & Circumstances</label>
+                <textarea id="missing-form-details" class="form-control" placeholder="e.g. Left in black neoprene sleeve while stepping out. Stickers on lid: blue anime sticker..."></textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Optional Token of Appreciation / Reward</label>
+                <input type="text" id="missing-form-reward" class="form-control" placeholder="e.g. Free Coffee Treat / Immense Gratitude">
+              </div>
+
+              <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-md); padding: 14px; margin: 18px 0; font-size: 0.825rem; color: #991b1b; line-height: 1.45;">
+                <strong>Privacy Notice:</strong> When marked missing, anyone scanning the QR code will only see your First Name and Contact Number to coordinate recovery.
+              </div>
+
+              <button type="submit" class="btn btn-danger" style="width: 100%;">
+                🚨 Continue to Submit Missing Report
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <!-- ================= SCREEN 4: LOST GADGET STATUS ================= -->
+        <section id="student-screen-lost-status" class="student-screen">
+          <div class="app-card" style="margin-bottom: 24px;">
+            <h3 style="font-weight: 800; font-size: 1.15rem; margin-bottom: 6px;">My Active Missing Gadgets</h3>
+            <p class="text-muted" style="font-size: 0.825rem; margin-bottom: 16px;">Live recovery status and scan alerts for your missing items.</p>
+            
+            <div id="my-active-missing-list">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <div class="app-card">
+            <h3 style="font-weight: 800; font-size: 1.15rem; margin-bottom: 6px;">Campus-Wide Missing Board</h3>
+            <p class="text-muted" style="font-size: 0.825rem; margin-bottom: 16px;">Items reported lost across university grounds. Help your peers recover their tech.</p>
+
+            <div class="gadgets-card-grid" id="campus-missing-board-grid">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SCREEN 5: CLAIM REQUESTS ================= -->
+        <section id="student-screen-claims" class="student-screen">
+          <div class="app-card" style="margin-bottom: 24px;">
+            <h3 style="font-weight: 800; font-size: 1.15rem; margin-bottom: 6px;">My Custody Claim Requests</h3>
+            <p class="text-muted" style="font-size: 0.825rem; margin-bottom: 18px;">
+              Track ownership claims submitted for devices turned into the OSA Lost & Found vault.
+            </p>
+
+            <div id="student-claims-table-container">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <div class="app-card">
+            <h3 style="font-weight: 800; font-size: 1.15rem; margin-bottom: 6px;">📜 Handover & Return Receipts</h3>
+            <p class="text-muted" style="font-size: 0.825rem; margin-bottom: 18px;">Verified handover logs for devices safely retrieved from OSA.</p>
+
+            <div id="student-returns-table-container">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SCREEN 6: NOTIFICATIONS ================= -->
+        <section id="student-screen-notifications" class="student-screen">
+          <div class="app-card" style="max-width: 800px; margin: 0 auto;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;">
+              <div>
+                <h3 style="font-weight: 800; font-size: 1.15rem;">Notifications Center</h3>
+                <p class="text-muted" style="font-size: 0.825rem;">Real-time scan alerts, approval confirmations, and recovery updates.</p>
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="markAllNotificationsRead()">Mark all as read</button>
+            </div>
+
+            <div id="student-notifications-feed">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SCREEN 7: PROFILE ================= -->
+        <section id="student-screen-profile" class="student-screen">
+          <div class="app-card" style="max-width: 600px; margin: 0 auto;">
+            <h3 style="font-weight: 800; font-size: 1.15rem; margin-bottom: 18px;">Student Profile Information</h3>
+
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--card-border);">
+              <img id="prof-avatar-img" src="https://api.dicebear.com/7.x/initials/svg?seed=Student" alt="Avatar" style="width: 64px; height: 64px; border-radius: 50%; border: 3px solid #3b82f6;">
+              <div>
+                <div id="prof-full-name" style="font-weight: 800; font-size: 1.15rem; color: var(--text-main);">Loading profile...</div>
+                <div id="prof-id-num" style="font-size: 0.85rem; color: var(--primary); font-family: var(--font-mono); font-weight: 700;">-</div>
+                <div id="prof-dept-name" style="font-size: 0.8rem; color: var(--text-muted);">-</div>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 14px; font-size: 0.875rem; margin-bottom: 24px;">
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f1f5f9; padding-bottom:8px;">
+                <span class="text-muted">Account Role</span>
+                <span id="prof-role-badge" style="font-weight:700; text-transform:uppercase;">Student</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f1f5f9; padding-bottom:8px;">
+                <span class="text-muted">Academic Classification</span>
+                <span id="prof-dept-val" style="font-weight:600; color: #1e40af;">-</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f1f5f9; padding-bottom:8px;">
+                <span class="text-muted">Active Email Address</span>
+                <span id="prof-email-val" style="font-weight:600;">-</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f1f5f9; padding-bottom:8px;">
+                <span class="text-muted">Contact Mobile Number</span>
+                <span id="prof-contact-val" style="font-weight:600;">-</span>
+              </div>
+              <div style="display:flex; justify-content:space-between;">
+                <span class="text-muted">Account Status</span>
+                <span class="status-badge REGISTERED">Active Verified</span>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end;">
+              <button class="btn btn-danger btn-sm" onclick="logoutCurrentSession()">Sign Out</button>
+            </div>
+          </div>
+
+          <!-- Change Password Card -->
+          <div class="app-card" style="max-width: 600px; margin: 20px auto 0;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+              <div style="width: 36px; height: 36px; background: #eff6ff; color: #2563eb; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
+                🔑
+              </div>
+              <div>
+                <h4 style="font-weight: 800; font-size: 1.05rem; color: var(--text-main); margin: 0;">Change Account Password</h4>
+                <p style="font-size: 0.775rem; color: var(--text-muted); margin: 2px 0 0;">Update your student portal password</p>
+              </div>
+            </div>
+
+            <form onsubmit="handleStudentChangePasswordSubmit(event)">
+              <div class="form-group">
+                <label class="form-label" style="font-size: 0.8rem;">Current Password *</label>
+                <input type="password" id="student-current-password" class="form-control" placeholder="Enter current password" required>
+              </div>
+
+              <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label" style="font-size: 0.8rem;">New Password *</label>
+                  <input type="password" id="student-new-password" class="form-control" placeholder="Min. 6 characters" minlength="6" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label" style="font-size: 0.8rem;">Confirm New Password *</label>
+                  <input type="password" id="student-confirm-new-password" class="form-control" placeholder="Repeat new password" minlength="6" required>
+                </div>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end;">
+                <button type="submit" id="btn-update-password" class="btn btn-primary btn-sm">
+                  Update Password
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal: Register Gadget -->
+  <div id="register-gadget-modal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title">➕ Register New Campus Gadget</h3>
+        <button class="btn btn-secondary btn-icon" onclick="closeModal('register-gadget-modal')">&times;</button>
+      </div>
+      <form onsubmit="handleRegisterGadgetSubmit(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Device Type / Category *</label>
+            <select id="modal-reg-category" class="form-control" required onchange="handleCategoryChange(this.value)">
+              <option value="Laptop">Laptop Computer</option>
+              <option value="Smartphone">Smartphone / Mobile Phone</option>
+              <option value="Tablet">Tablet / iPad</option>
+              <option value="Earbuds">Earbuds / Headphones</option>
+              <option value="Calculator">Scientific Calculator</option>
+              <option value="Smartwatch">Smartwatch / Wearable</option>
+              <option value="Camera">Digital Camera</option>
+              <option value="Other">Other Electronic Device</option>
+            </select>
+          </div>
+
+          <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">Brand *</label>
+              <input type="text" id="modal-reg-brand" class="form-control" placeholder="e.g. Apple, Asus, Samsung" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Model *</label>
+              <input type="text" id="modal-reg-model" class="form-control" placeholder="e.g. iPhone 15, MacBook Pro 14" required>
+            </div>
+          </div>
+
+          <div class="form-group" id="modal-reg-sn-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <label class="form-label" id="modal-reg-sn-label" style="margin-bottom: 0;">Serial Number / IMEI *</label>
+              <span id="modal-reg-sn-badge" style="font-size: 0.65rem; color: #dc2626; font-weight: 700;">REQUIRED</span>
+            </div>
+            <input type="text" id="modal-reg-sn" class="form-control font-mono" placeholder="Found on device chassis or in Settings" required>
+            <div id="modal-reg-sn-hint" style="font-size: 0.725rem; color: var(--text-muted); margin-top: 2px;">
+              Unique hardware serial number is permanently linked to your student ID.
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Color / Finish</label>
+            <input type="text" id="modal-reg-color" class="form-control" placeholder="e.g. Midnight Black, Silver, Yellow">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Identifying Marks, Stickers & Accessories</label>
+            <textarea id="modal-reg-desc" class="form-control" placeholder="Describe distinct stickers, case color, scratches, or engraved marks for ownership proof..."></textarea>
+          </div>
+
+          <!-- Photo Upload / URL Section -->
+          <div class="form-group">
+            <label class="form-label">Device Photo / Proof of Ownership (Optional)</label>
+            <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+              <input type="file" id="modal-reg-photo-file" accept="image/*" class="form-control" style="padding: 6px 10px; font-size: 0.8rem;" onchange="handlePhotoFileSelect(event, 'modal-reg-photo-preview', 'modal-reg-photo')">
+            </div>
+            <input type="url" id="modal-reg-photo" class="form-control" placeholder="Or enter Image URL (https://...)" oninput="updatePhotoUrlPreview(this.value, 'modal-reg-photo-preview')">
+            
+            <!-- Image Preview Box -->
+            <div id="modal-reg-photo-preview-wrap" style="display: none; margin-top: 8px; text-align: center;">
+              <img id="modal-reg-photo-preview" src="" alt="Device Preview" style="max-height: 120px; max-width: 100%; border-radius: 8px; border: 1px solid #cbd5e1; object-fit: contain;">
+              <div style="font-size: 0.7rem; color: #059669; margin-top: 3px;">✓ Photo selected for OSA proof inspection</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('register-gadget-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">Review and Submit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Confirm Gadget Registration Details -->
+  <div id="confirm-gadget-reg-modal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 480px; padding: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 38px; height: 38px; background: #eff6ff; color: #2563eb; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+            🔍
+          </div>
+          <div>
+            <h3 style="font-weight: 800; font-size: 1.15rem; color: #0f172a; margin: 0;">Review Device Details</h3>
+            <p style="font-size: 0.775rem; color: #64748b; margin: 2px 0 0;">Please verify device specifications before final submission for OSA review.</p>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-icon" onclick="closeModal('confirm-gadget-reg-modal')">&times;</button>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; font-size: 0.825rem; display: flex; flex-direction: column; gap: 8px;">
+        <div style="text-align: center; margin-bottom: 6px;">
+          <img id="student-conf-photo" src="" alt="Device Preview" style="max-height: 110px; max-width: 100%; border-radius: 8px; border: 1px solid #e2e8f0; object-fit: contain;">
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #64748b;">Device:</span>
+          <strong id="student-conf-device" style="color: #0f172a;">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #64748b;">Category:</span>
+          <span id="student-conf-cat">-</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #64748b;">Serial Number / IMEI:</span>
+          <span class="font-mono" id="student-conf-sn" style="font-weight: 700; color: #2563eb;">-</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #64748b;">Color / Finish:</span>
+          <span id="student-conf-color">-</span>
+        </div>
+      </div>
+
+      <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 10px 12px; font-size: 0.75rem; color: #b45309; line-height: 1.4; margin-bottom: 16px;">
+        🏢 <strong>In-Person OSA Verification Required:</strong> After submitting, please present your device and Student ID to the <strong>Office of Student Affairs (OSA Room 204)</strong> for physical inspection and official anti-theft QR sticker issuance.
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('confirm-gadget-reg-modal')" style="flex: 1;">
+          ✏️ Edit Details
+        </button>
+        <button type="button" id="btn-final-gadget-submit" class="btn btn-primary btn-sm" onclick="executeFinalGadgetSubmit()" style="flex: 1.4;">
+          ✓ Confirm & Submit Device
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Confirmation Dialog for Reporting Missing -->
+  <div id="confirm-missing-modal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 460px;">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color: #b91c1c;">⚠️ Confirm Missing Report</h3>
+        <button class="btn btn-secondary btn-icon" onclick="closeModal('confirm-missing-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 12px; line-height: 1.5;">
+          Are you sure you want to report <strong id="confirm-missing-device-name">this gadget</strong> as <strong>MISSING</strong>?
+        </p>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 12px; font-size: 0.8rem; color: var(--text-secondary);">
+          <div>📍 <strong>Location:</strong> <span id="confirm-missing-loc-val">-</span></div>
+          <div style="margin-top: 4px;">📅 <strong>Date:</strong> <span id="confirm-missing-date-val">-</span></div>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 12px;">
+          This will alert campus security and update the public QR code to display your recovery contact.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('confirm-missing-modal')">Cancel</button>
+        <button type="button" class="btn btn-danger btn-sm" onclick="executeMissingSubmission()">Yes, Broadcast Missing Alert</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Gadget Details & Official QR Sticker -->
+  <div id="gadget-details-modal" class="modal-overlay">
+    <div class="modal-box print-qr-target" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="gmodal-title">Gadget Details</h3>
+        <button class="btn btn-secondary btn-icon" onclick="closeModal('gadget-details-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="text-center" style="margin-bottom: 16px;">
+          <div id="gmodal-badge" style="margin-bottom: 8px;"></div>
+          <img id="gmodal-img" src="" alt="Gadget" style="width: 100%; height: 160px; object-fit: cover; border-radius: var(--radius-md); margin-bottom: 12px;">
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px;">
+          <div style="font-size: 0.825rem; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display:flex; justify-content:space-between;"><span class="text-muted">Serial Number:</span> <span class="font-mono" id="gmodal-sn" style="font-weight:700;">-</span></div>
+            <div style="display:flex; justify-content:space-between;"><span class="text-muted">Category:</span> <span id="gmodal-cat">-</span></div>
+            <div style="display:flex; justify-content:space-between;"><span class="text-muted">Color:</span> <span id="gmodal-color">-</span></div>
+            <div style="display:flex; justify-content:space-between;"><span class="text-muted">Registration Date:</span> <span id="gmodal-date">-</span></div>
+          </div>
+        </div>
+
+        <!-- Official Security Verification Status -->
+        <div id="gmodal-security-section" style="display:none; margin-bottom: 16px;">
+          <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: var(--radius-md); padding: 14px 16px; text-align: left;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px;">
+              <span style="font-weight: 800; font-size: 0.85rem; color: #142a6d; display:flex; align-items:center; gap:6px;">
+                <span>🛡️</span> NCST Asset Protection Status
+              </span>
+              <span class="status-badge REGISTERED" style="font-size:0.7rem;">OSA VERIFIED</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:6px;">
+              <span class="text-muted">Assigned Security Token:</span>
+              <strong class="font-mono" id="gmodal-token" style="color: #142a6d; background: #eff6ff; padding: 2px 8px; border-radius: 4px; border: 1px solid #bfdbfe;">gg_dev_xxxx</strong>
+            </div>
+            <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 8px 10px; font-size: 0.75rem; color: #92400e; line-height: 1.45; margin-top: 8px;">
+              🔒 <strong>Physical Security Notice:</strong> Official tamper-evident security QR stickers are exclusively printed and affixed on-site by the <strong>Office of Student Affairs (OSA Room 204)</strong>. Students are not permitted to print or duplicate security stickers.
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Action Buttons -->
+        <div id="gmodal-actions" style="display:flex; flex-direction:column; gap:8px;">
+          <!-- Injected by JS -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" onclick="closeModal('gadget-details-modal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Submit Claim -->
+  <div id="submit-claim-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">📋 Submit Ownership Claim</h3>
+        <button class="btn btn-secondary btn-icon" onclick="closeModal('submit-claim-modal')">&times;</button>
+      </div>
+      <form onsubmit="handleClaimSubmit(event)">
+        <div class="modal-body">
+          <input type="hidden" id="claim-gadget-id">
+          <div class="form-group">
+            <label class="form-label">Claiming Gadget</label>
+            <input type="text" id="claim-gadget-name" class="form-control" readonly disabled>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Proof of Ownership *</label>
+            <textarea id="claim-proof" class="form-control" placeholder="Describe unique features, passcode/lockscreen, matching serial number on purchase invoice..." required></textarea>
+          </div>
+          <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="form-group">
+              <label class="form-label">Verification ID Type</label>
+              <select id="claim-id-type" class="form-control">
+                <option value="Student ID">Student ID</option>
+                <option value="Faculty ID">Faculty ID</option>
+                <option value="Government ID">Government ID</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">ID Number *</label>
+              <input type="text" id="claim-id-number" class="form-control font-mono" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('submit-claim-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">Submit Claim for Review</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Update Device Photo / Add Proof of Ownership -->
+  <div id="update-photo-modal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">📷 Update Device Photo / Proof</h3>
+        <button class="btn btn-secondary btn-icon" onclick="closeModal('update-photo-modal')">&times;</button>
+      </div>
+      <form onsubmit="handleUpdatePhotoSubmit(event)">
+        <div class="modal-body">
+          <input type="hidden" id="update-photo-gadget-id">
+          <div style="font-size: 0.825rem; color: #475569; margin-bottom: 12px;">
+            Upload a clear photo of your device showing its color, stickers, or unique marks to provide additional proof of ownership for OSA verification.
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Upload Photo File</label>
+            <input type="file" id="update-photo-file" accept="image/*" class="form-control" onchange="handlePhotoFileSelect(event, 'update-photo-preview', 'update-photo-url')">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Or Image URL</label>
+            <input type="url" id="update-photo-url" class="form-control" placeholder="https://..." oninput="updatePhotoUrlPreview(this.value, 'update-photo-preview')">
+          </div>
+
+          <div style="text-align: center; margin-top: 10px;">
+            <img id="update-photo-preview" src="" alt="Preview" style="max-height: 140px; max-width: 100%; border-radius: 8px; border: 1px solid #cbd5e1; object-fit: contain;">
+          </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" class="btn btn-outline-danger btn-sm" onclick="handleRemovePhotoSubmit()" id="btn-remove-photo" style="color: #dc2626; border: 1px solid #fca5a5; background: #fff;">
+            🗑️ Remove Photo
+          </button>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('update-photo-modal')">Cancel</button>
+            <button type="submit" id="btn-save-photo" class="btn btn-primary btn-sm">Save Photo Proof</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/student/student.js?v=3.7"></script>
+</body>
+</html>

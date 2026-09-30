@@ -1,0 +1,41 @@
+{
+  "name": "GadgetGuard — Campus Tech Security",
+  "short_name": "GadgetGuard",
+  "description": "Centralized university gadget tracking, anti-loss protection, QR labeling, and lost & found management system.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Student App",
+      "url": "/student/",
+      "description": "Open Student Device Portal"
+    },
+    {
+      "name": "Report Missing",
+      "url": "/student/#missing",
+      "description": "Report a lost device"
+    },
+    {
+      "name": "OSA Admin",
+      "url": "/osa/",
+      "description": "Open OSA Admin Dashboard"
+    }
+  ]
+}
