@@ -239,4 +239,25 @@ router.post('/reset-demo', authMiddleware, requireRole('osa_admin'), async (req,
   }
 });
 
+// POST /api/osa/test-email (Debug: test SMTP from server)
+router.post('/test-email', authMiddleware, requireRole('osa_admin'), async (req, res) => {
+  const mailer = require('../services/mailer');
+  const { to } = req.body;
+  const recipient = to || 'kazinteg1@gmail.com';
+  try {
+    const verifyResult = await mailer.verifySMTP();
+    console.log('SMTP verify:', JSON.stringify(verifyResult));
+    const result = await mailer.sendMail({
+      to: recipient,
+      subject: 'GadgetGuard SMTP Test - ' + new Date().toISOString(),
+      html: '<h2>SMTP Test from Render</h2><p>This confirms email delivery is working. Sent at ' + new Date().toISOString() + '</p>'
+    });
+    console.log('SMTP send result:', JSON.stringify(result));
+    return res.json({ success: true, verify: verifyResult, send: result });
+  } catch (e) {
+    console.error('SMTP test error:', e);
+    return res.json({ success: false, error: e.message });
+  }
+});
+
 module.exports = router;
