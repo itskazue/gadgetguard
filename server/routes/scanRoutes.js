@@ -85,13 +85,22 @@ router.get('/device/:token', (req, res) => {
 
     // If gadget is MISSING, notify owner in real-time through their Student Account
     if (gadget.status === 'MISSING') {
-      const scanDate = new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Manila', month: 'long', day: 'numeric', year: 'numeric' });
-      const scanTime = new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit' });
+      const now = new Date();
+      const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const phDate = new Date(utcMs + (8 * 3600000));
+      
+      const monthsLong = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const scanDate = `${monthsLong[phDate.getMonth()]} ${phDate.getDate()}, ${phDate.getFullYear()}`;
+      const hours24 = phDate.getHours();
+      const hours12 = String(hours24 % 12 || 12).padStart(2, '0');
+      const minutes = String(phDate.getMinutes()).padStart(2, '0');
+      const ampm = hours24 >= 12 ? 'PM' : 'AM';
+      const scanTime = `${hours12}:${minutes} ${ampm}`;
 
       db.addNotification({
         userId: gadget.userId,
-        title: 'Your Missing Gadget Was Scanned 📍',
-        message: `Your missing ${gadget.brand} ${gadget.model}'s QR code was scanned.\nDate: ${scanDate}\nTime: ${scanTime}\nLocation: ${finalLocationNote}\nScanner Device: ${scannerDeviceFormatted}`,
+        title: 'Someone Scanned Your Missing Gadget 📍',
+        message: `Your missing ${gadget.brand} ${gadget.model} QR code was scanned.\nDate: ${scanDate}\nTime: ${scanTime}\nScan Location: ${finalLocationNote}\nScanner Device: ${scannerDeviceFormatted}`,
         type: 'QR_SCANNED',
         linkUrl: '/student/#lost-status'
       });

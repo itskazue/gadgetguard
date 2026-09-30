@@ -530,16 +530,29 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
-function formatDate(isoStr) {
+function formatPhDate(isoStr) {
   if (!isoStr) return '-';
   const d = new Date(isoStr);
-  return d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  if (isNaN(d.getTime())) return '-';
+  
+  // Explicit UTC+8 calculation for Philippine Standard Time (PST)
+  const utcMs = d.getTime() + (d.getTimezoneOffset() * 60000);
+  const phDate = new Date(utcMs + (8 * 3600000));
+  
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = months[phDate.getMonth()];
+  const day = phDate.getDate();
+  const year = phDate.getFullYear();
+  const hours24 = phDate.getHours();
+  const hours12 = String(hours24 % 12 || 12).padStart(2, '0');
+  const minutes = String(phDate.getMinutes()).padStart(2, '0');
+  const ampm = hours24 >= 12 ? 'PM' : 'AM';
+  
+  return `${month} ${day}, ${year}, ${hours12}:${minutes} ${ampm}`;
+}
+
+function formatDate(isoStr) {
+  return formatPhDate(isoStr);
 }
 
 function renderStatusBadge(status) {

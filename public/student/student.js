@@ -316,12 +316,11 @@ async function loadDashboardScanHighlight() {
 
     if (scans.length > 0) {
       const latest = scans[0];
-      const scanDate = new Date(latest.scannedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-      const scanTime = new Date(latest.scannedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      const scanFormatted = formatDate(latest.scannedAt);
 
       titleEl.innerHTML = `🚨 QR Scan Event Detected: ${escapeHtml(latest.gadget?.brand || '')} ${escapeHtml(latest.gadget?.model || '')}`;
       descEl.textContent = `Your registered ${latest.gadget?.brand || 'device'} ${latest.gadget?.model || ''} QR code was scanned at "${latest.scanLocationNote || 'Campus Area'}".`;
-      metaEl.innerHTML = `<strong>Date:</strong> ${scanDate} at ${scanTime} • <strong>Scanner Device:</strong> ${escapeHtml(latest.deviceInfo || 'Mobile Browser')} • <strong>Status:</strong> Detected`;
+      metaEl.innerHTML = `<strong>Scan Time:</strong> ${scanFormatted} • <strong>Scanner Device:</strong> ${escapeHtml(latest.deviceInfo || 'Mobile Browser')} • <strong>Status:</strong> Detected`;
       
       btnEl.textContent = 'View Scan History →';
       btnEl.onclick = () => openGadgetDetailsModal(latest.gadgetId);
