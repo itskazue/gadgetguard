@@ -3,9 +3,6 @@ require('dotenv').config();
 
 // Create reusable transporter object using SMTP transport
 function createTransporter() {
-  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-  const port = parseInt(process.env.SMTP_PORT || '465', 10);
-  const secure = process.env.SMTP_SECURE !== 'false';
   const user = process.env.SMTP_USER || 'kazinteg1@gmail.com';
   const pass = (process.env.SMTP_PASS || 'grwqbfuqotmtzsgp').replace(/\s+/g, '');
 
@@ -14,19 +11,17 @@ function createTransporter() {
     return null;
   }
 
-  // Use Gmail service with TLS fallback
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
     auth: {
       user,
       pass
     },
     tls: {
       rejectUnauthorized: false
-    },
-    pool: true,
-    maxConnections: 3,
-    maxMessages: 100
+    }
   });
 }
 
