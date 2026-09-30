@@ -29,6 +29,7 @@ router.post('/report', authMiddleware, (req, res) => {
     existingReports.forEach(r => db.update('missing_reports', r.id, { status: 'CANCELLED' }));
 
     // Create new missing report
+    const nowIso = new Date().toISOString();
     const newReport = db.insert('missing_reports', {
       id: 'msr_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
       gadgetId,
@@ -36,7 +37,9 @@ router.post('/report', authMiddleware, (req, res) => {
       reportedByUserId: req.user.id,
       reportedByRole: req.user.role,
       lastSeenLocation: lastSeenLocation.trim(),
-      lastSeenDate: lastSeenDate || new Date().toISOString(),
+      lastSeenDate: lastSeenDate || nowIso,
+      reportedAt: nowIso,
+      createdAt: nowIso,
       details: details ? details.trim() : '',
       contactRewardOffer: contactRewardOffer ? contactRewardOffer.trim() : '',
       status: 'ACTIVE'

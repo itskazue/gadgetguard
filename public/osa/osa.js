@@ -1258,15 +1258,53 @@ async function loadOsaNotifications() {
     }
 
     container.innerHTML = notifs.map(n => `
-      <div style="padding: 16px; border-bottom: 1px solid var(--card-border); display: flex; gap: 14px;">
+      <div style="padding: 16px; border-bottom: 1px solid var(--card-border); display: flex; gap: 14px; cursor: pointer; transition: background 0.2s ease; background: ${n.read ? '#ffffff' : '#eff6ff'};" onclick="handleOsaNotificationClick('${n.id}', '${n.linkUrl || ''}')">
         <div style="font-size: 1.4rem;">🔔</div>
-        <div>
-          <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-main);">${escapeHtml(n.title)}</div>
-          <div style="font-size: 0.825rem; color: var(--text-secondary); margin-top: 2px;">${escapeHtml(n.message)}</div>
-          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">${formatDate(n.createdAt)}</div>
+        <div style="flex: 1;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main);">${escapeHtml(n.title)}</span>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">${formatDate(n.createdAt)}</span>
+          </div>
+          <div style="font-size: 0.825rem; color: var(--text-secondary); margin-top: 2px; white-space: pre-line;">${escapeHtml(n.message)}</div>
         </div>
       </div>
     `).join('');
+  } catch (e) {}
+}
+
+async function handleOsaNotificationClick(id, linkUrl) {
+  try {
+    const res = await api.getNotifications();
+    const notif = (res.notifications || []).find(n => n.id === id);
+    await api.markNotificationRead(id);
+    await loadOsaNotifications();
+
+    if (notif) {
+      await Swal.fire({
+        title: `🔔 ${escapeHtml(notif.title)}`,
+        html: `
+          <div style="text-align: left; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 12px 0; font-size: 0.88rem; line-height: 1.6; color: #1e293b; white-space: pre-line;">
+            ${escapeHtml(notif.message)}
+          </div>
+          <div style="font-size: 0.75rem; color: #64748b; text-align: right;">
+            Received: ${formatDate(notif.createdAt)}
+          </div>
+        `,
+        confirmButtonText: linkUrl ? 'View Related Screen' : 'Close',
+        confirmButtonColor: '#142a6d',
+        showCancelButton: !!linkUrl,
+        cancelButtonText: 'Close',
+        cancelButtonColor: '#64748b'
+      }).then((result) => {
+        if (result.isConfirmed && linkUrl) {
+          const target = linkUrl.split('#')[1] || '';
+          if (target) navigateOsa(target);
+        }
+      });
+    } else if (linkUrl) {
+      const target = linkUrl.split('#')[1] || '';
+      if (target) navigateOsa(target);
+    }
   } catch (e) {}
 }
 

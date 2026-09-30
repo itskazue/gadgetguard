@@ -142,7 +142,15 @@ router.get('/my', authMiddleware, (req, res) => {
     // Enrich with missing report info if any
     const enriched = gadgets.map(g => {
       const missingReport = db.findOne('missing_reports', m => m.gadgetId === g.id && m.status === 'ACTIVE');
-      const scanCount = db.find('qr_scans', s => s.gadgetId === g.id).length;
+      let scanCount = 0;
+      if (g.status === 'MISSING' && missingReport) {
+        const reportTime = new Date(missingReport.reportedAt || missingReport.createdAt || 0).getTime();
+        scanCount = db.find('qr_scans', s => 
+          s.gadgetId === g.id && 
+          s.scanStatus === 'MISSING_DEVICE_SCANNED' && 
+          new Date(s.scannedAt).getTime() >= reportTime
+        ).length;
+      }
       const latestClaim = db.findOne('claims', c => c.gadgetId === g.id);
       return {
         ...g,

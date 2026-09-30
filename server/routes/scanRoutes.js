@@ -85,15 +85,15 @@ router.get('/device/:token', (req, res) => {
 
     // If gadget is MISSING, notify owner in real-time through their Student Account
     if (gadget.status === 'MISSING') {
-      const scanDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-      const scanTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      const scanDate = new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Manila', month: 'long', day: 'numeric', year: 'numeric' });
+      const scanTime = new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit' });
 
       db.addNotification({
         userId: gadget.userId,
         title: 'Your Missing Gadget Was Scanned 📍',
         message: `Your missing ${gadget.brand} ${gadget.model}'s QR code was scanned.\nDate: ${scanDate}\nTime: ${scanTime}\nLocation: ${finalLocationNote}\nScanner Device: ${scannerDeviceFormatted}`,
         type: 'QR_SCANNED',
-        linkUrl: '/student/#scans'
+        linkUrl: '/student/#lost-status'
       });
     }
 
@@ -247,10 +247,20 @@ router.get('/history/my', authMiddleware, (req, res) => {
     const userGadgets = db.find('gadgets', g => g.userId === req.user.id);
     const userGadgetIds = new Set(userGadgets.map(g => g.id));
 
-    // Per specification: scan history is specifically for tracking MISSING gadgets only
-    const scans = db.find('qr_scans', s => 
-      userGadgetIds.has(s.gadgetId) && s.scanStatus === 'MISSING_DEVICE_SCANNED'
-    );
+    const activeReports = db.find('missing_reports', m => m.userId === req.user.id && m.status === 'ACTIVE');
+    const activeReportMap = {};
+    activeReports.forEach(r => {
+      activeReportMap[r.gadgetId] = new Date(r.reportedAt || r.createdAt || 0).getTime();
+    });
+
+    // Only include scans for currently active missing gadgets that occurred after the incident report was created
+    const scans = db.find('qr_scans', s => {
+      if (!userGadgetIds.has(s.gadgetId)) return false;
+      if (s.scanStatus !== 'MISSING_DEVICE_SCANNED') return false;
+      const reportTime = activeReportMap[s.gadgetId];
+      if (reportTime === undefined) return false;
+      return new Date(s.scannedAt).getTime() >= reportTime;
+    });
     
     // Sort recent first
     scans.sort((a, b) => new Date(b.scannedAt) - new Date(a.scannedAt));

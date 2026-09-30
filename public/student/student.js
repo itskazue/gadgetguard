@@ -104,6 +104,8 @@ function initStudentNavigation() {
 }
 
 function navigateStudent(screenName) {
+  if (screenName === 'scans') screenName = 'lost-status';
+
   // Hide all screens
   document.querySelectorAll('.student-screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.student-nav-item').forEach(i => i.classList.remove('active'));
@@ -934,6 +936,12 @@ async function loadLostStatusScreen() {
   const activeContainer = document.getElementById('my-active-missing-list');
   const boardContainer = document.getElementById('campus-missing-board-grid');
 
+  let scansData = [];
+  try {
+    const scanRes = await api.getMyScanHistory();
+    scansData = scanRes.scans || [];
+  } catch (e) {}
+
   const myMissing = myGadgetsData.filter(g => g.status === 'MISSING');
   if (activeContainer) {
     if (myMissing.length === 0) {
@@ -945,23 +953,51 @@ async function loadLostStatusScreen() {
         </div>
       `;
     } else {
-      activeContainer.innerHTML = myMissing.map(g => `
-        <div style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: var(--radius-md); padding: 18px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
-          <div>
-            <div style="font-weight: 800; font-size: 1rem; color: #b91c1c;">${escapeHtml(g.brand)} ${escapeHtml(g.model)}</div>
-            <div style="font-size: 0.8rem; color: #7f1d1d; margin-top: 2px;">
-              📍 Last Seen: ${escapeHtml(g.missingReport?.lastSeenLocation || 'Campus')}
+      activeContainer.innerHTML = myMissing.map(g => {
+        const scansForGadget = scansData.filter(s => s.gadgetId === g.id);
+        const scansCount = scansForGadget.length;
+
+        let scansListHtml = '';
+        if (scansCount > 0) {
+          scansListHtml = `
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed #fecaca; width: 100%;">
+              <div style="font-weight: 700; font-size: 0.8rem; color: #991b1b; margin-bottom: 6px;">📍 Recent QR Scan Alerts (${scansCount}):</div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                ${scansForGadget.map(s => `
+                  <div style="background: #ffffff; border: 1px solid #fed7aa; border-radius: 8px; padding: 8px 12px; font-size: 0.78rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+                    <div>
+                      <strong style="color: #b91c1c;">📍 ${escapeHtml(s.scanLocationNote || 'Location unavailable')}</strong>
+                      <span style="color: #64748b; margin-left: 6px;">(${escapeHtml(s.deviceInfo || 'Mobile Browser')})</span>
+                    </div>
+                    <div style="color: #64748b; font-size: 0.74rem;">${formatDate(s.scannedAt)}</div>
+                  </div>
+                `).join('')}
+              </div>
             </div>
-            <div style="font-size: 0.75rem; color: #991b1b; font-weight: 600; margin-top: 4px;">
-              🔴 Public Missing Alert: Active • Scans: ${g.scanCount || 0}
+          `;
+        }
+
+        return `
+          <div style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: var(--radius-md); padding: 18px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+              <div>
+                <div style="font-weight: 800; font-size: 1.05rem; color: #b91c1c;">${escapeHtml(g.brand)} ${escapeHtml(g.model)}</div>
+                <div style="font-size: 0.82rem; color: #7f1d1d; margin-top: 2px;">
+                  📍 Last Seen: ${escapeHtml(g.missingReport?.lastSeenLocation || 'Campus')}
+                </div>
+                <div style="font-size: 0.78rem; color: #991b1b; font-weight: 700; margin-top: 4px;">
+                  🔴 Public Missing Alert: Active • Scans: ${scansCount}
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="btn btn-secondary btn-sm" onclick="openGadgetDetailsModal('${g.id}')">View Details</button>
+                <button class="btn btn-success btn-sm" onclick="cancelMissingReportFor('${g.missingReport?.id || g.id}')">✅ I Found My Device (Cancel Alert)</button>
+              </div>
             </div>
+            ${scansListHtml}
           </div>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button class="btn btn-secondary btn-sm" onclick="openGadgetDetailsModal('${g.id}')">View Details</button>
-            <button class="btn btn-success btn-sm" onclick="cancelMissingReportFor('${g.missingReport?.id}')">✅ I Found My Device (Cancel Alert)</button>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
   }
 
@@ -1200,13 +1236,43 @@ function getNotifIcon(type) {
 
 async function handleNotificationClick(id, linkUrl) {
   try {
+    const res = await api.getNotifications();
+    const notif = (res.notifications || []).find(n => n.id === id);
+
     await api.markNotificationRead(id);
     await loadNotificationsFeed();
-    if (linkUrl) {
-      const targetHash = linkUrl.split('#')[1];
+
+    if (notif) {
+      await Swal.fire({
+        title: `${getNotifIcon(notif.type)} ${escapeHtml(notif.title)}`,
+        html: `
+          <div style="text-align: left; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 12px 0; font-size: 0.88rem; line-height: 1.6; color: #1e293b; white-space: pre-line;">
+            ${escapeHtml(notif.message)}
+          </div>
+          <div style="font-size: 0.75rem; color: #64748b; text-align: right;">
+            Received: ${formatDate(notif.createdAt)}
+          </div>
+        `,
+        confirmButtonText: linkUrl ? 'View Related Screen' : 'Close',
+        confirmButtonColor: '#142a6d',
+        showCancelButton: !!linkUrl,
+        cancelButtonText: 'Close',
+        cancelButtonColor: '#64748b'
+      }).then((result) => {
+        if (result.isConfirmed && linkUrl) {
+          let targetHash = linkUrl.split('#')[1] || '';
+          if (targetHash === 'scans') targetHash = 'lost-status';
+          if (targetHash) navigateStudent(targetHash);
+        }
+      });
+    } else if (linkUrl) {
+      let targetHash = linkUrl.split('#')[1] || '';
+      if (targetHash === 'scans') targetHash = 'lost-status';
       if (targetHash) navigateStudent(targetHash);
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error('Notification click error:', e);
+  }
 }
 
 async function markAllNotificationsRead() {
