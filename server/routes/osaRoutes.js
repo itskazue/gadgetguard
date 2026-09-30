@@ -239,4 +239,46 @@ router.post('/reset-demo', authMiddleware, requireRole('osa_admin'), async (req,
   }
 });
 
+// POST /api/osa/resend-approval-email (Resend official approval email to verified student)
+router.post('/resend-approval-email', authMiddleware, requireRole('osa_admin'), async (req, res) => {
+  const mailer = require('../services/mailer');
+  const { userId, gadgetId } = req.body;
+  try {
+    const user = userId ? db.findById('users', userId) : null;
+    if (!user || !user.email) {
+      return res.status(404).json({ success: false, error: 'Student user or email not found.' });
+    }
+    const userGadgets = db.find('gadgets', g => g.userId === user.id);
+    const gadget = gadgetId ? db.findById('gadgets', gadgetId) : (userGadgets[0] || null);
+
+    console.log(`📧 Manually resending approval email to ${user.email}...`);
+    const mailRes = await mailer.sendApprovalEmail({
+      studentEmail: user.email,
+      studentName: user.name,
+      studentId: user.idNumber,
+      gadgetInfo: gadget ? {
+        brand: gadget.brand,
+        model: gadget.model,
+        category: gadget.category,
+        serialNumber: gadget.serialNumber
+      } : null
+    });
+
+    db.addAuditLog({
+      userId: req.user.id,
+      userRole: req.user.role,
+      action: 'RESEND_APPROVAL_EMAIL',
+      targetType: 'user',
+      targetId: user.id,
+      details: `OSA Administrator resent approval email notification to ${user.email} (${user.name})`,
+      ipAddress: req.ip
+    });
+
+    return res.json({ success: true, message: `Approval email sent to ${user.email}`, mailRes });
+  } catch (err) {
+    console.error('Resend email error:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;

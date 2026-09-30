@@ -357,9 +357,20 @@ async function handleApproveGadget(gadgetId) {
 
   if (!confirmApprove) return;
 
+  if (typeof Swal !== 'undefined') {
+    Swal.fire({
+      title: 'Approving & Dispatching Email...',
+      text: 'Verifying registration & dispatching official email notification to student...',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+  }
+
   try {
     const res = await api.approveGadget(gadgetId);
-    await SwalHelper.success('Gadget Approved! 🎉', `Device verified. Issued QR Token: ${res.gadget.secureToken}. Preparing sticker print preview.`, 1800);
+    await SwalHelper.success('Gadget Approved! 🎉', `Device verified and approval email sent to student! Issued QR Token: ${res.gadget.secureToken}. Preparing sticker print preview.`, 1800);
     await loadCurrentOsaScreenData();
     
     setTimeout(() => {
@@ -1044,6 +1055,9 @@ async function loadUserAccounts() {
               <td class="text-right">
                 <div class="table-action-btns">
                   ${u.role !== 'osa_admin' ? `
+                    <button class="btn btn-secondary btn-sm" onclick="resendApprovalEmail('${u.id}', '${escapeHtml(u.email)}')">
+                      📧 Resend Email
+                    </button>
                     <button class="btn btn-secondary btn-sm" onclick="toggleUserStatus('${u.id}', '${u.status}')">
                       ${u.status === 'ACTIVE' ? '🚫 Suspend' : '✓ Activate'}
                     </button>
@@ -1056,6 +1070,32 @@ async function loadUserAccounts() {
       </table>
     `;
   } catch (e) {}
+}
+
+async function resendApprovalEmail(userId, email) {
+  if (typeof Swal !== 'undefined') {
+    Swal.fire({
+      title: 'Sending Approval Email...',
+      text: `Dispatching official email notification to ${email}...`,
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+  }
+  try {
+    const res = await api.request('/osa/resend-approval-email', {
+      method: 'POST',
+      body: JSON.stringify({ userId })
+    });
+    if (res.success) {
+      await SwalHelper.success('Email Sent! 📧', `Approval notification has been dispatched to ${email}.`, 2200);
+    } else {
+      await SwalHelper.error('Dispatch Failed', res.error || 'Could not send email.');
+    }
+  } catch (e) {
+    await SwalHelper.error('Dispatch Failed', e.message || 'Error communicating with server.');
+  }
 }
 
 async function toggleUserStatus(userId, currentStatus) {
