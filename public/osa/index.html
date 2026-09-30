@@ -778,13 +778,17 @@
       <form onsubmit="handleReceiveCustodySubmit(event)">
         <div class="modal-body">
           <input type="hidden" id="custody-report-id">
+          <div id="custody-device-info-banner" style="display:none; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:12px; margin-bottom:14px; font-size:0.85rem;">
+            <div style="font-weight:800; color:#1e40af;" id="custody-device-name">Device Name</div>
+            <div style="color:#2563eb; font-size:0.8rem; margin-top:2px;" id="custody-owner-name">Owner Info</div>
+          </div>
           <div class="form-group">
             <label class="form-label">Vault Locker / Shelf Reference *</label>
             <input type="text" id="custody-location-input" class="form-control" placeholder="e.g. OSA Locker B-12" value="OSA Locker B-12" required>
           </div>
           <div class="form-group">
-            <label class="form-label">Intake Notes</label>
-            <textarea id="custody-notes-input" class="form-control" placeholder="Surrendered in good condition with charger..."></textarea>
+            <label class="form-label">Intake Notes / Turn-in Details</label>
+            <textarea id="custody-notes-input" class="form-control" placeholder="Surrendered face-to-face at OSA Room 1109..."></textarea>
           </div>
         </div>
         <div class="modal-footer">

@@ -663,7 +663,7 @@ async function loadMissingIncidents() {
             <th>Last Known Location</th>
             <th>Date & Time</th>
             <th>Circumstances</th>
-            <th class="text-right">Public Recovery Link</th>
+            <th class="text-right">Intake / Recovery Action</th>
           </tr>
         </thead>
         <tbody>
@@ -685,10 +685,15 @@ async function loadMissingIncidents() {
               <td style="font-size: 0.825rem; color: #64748b;">${formatDate(r.lastSeenDate)}</td>
               <td style="font-size: 0.825rem; color: #475569; max-width: 240px; line-height: 1.45;">"${escapeHtml(r.details || 'None')}"</td>
               <td class="text-right">
-                <div class="table-action-btns">
-                  <a href="/device/${r.gadget?.secureToken}" target="_blank" class="btn btn-warning btn-sm" style="display:inline-flex; align-items:center; gap:6px;">
-                    Open Recovery Page ↗
-                  </a>
+                <div class="table-action-btns" style="display:inline-flex; align-items:center; gap:6px; justify-content:flex-end;">
+                  <button class="btn btn-primary btn-sm" onclick="openReceiveCustodyModal('${r.gadgetId || r.gadget?.id}', '${escapeHtml(r.gadget?.brand || '')} ${escapeHtml(r.gadget?.model || '')}', '${escapeHtml(r.owner?.name || 'Student')}')" style="display:inline-flex; align-items:center; gap:5px;" title="Receive gadget into custody vault (surrendered f2f)">
+                    📦 Receive into Vault
+                  </button>
+                  ${r.gadget?.secureToken ? `
+                    <a href="/device/${r.gadget?.secureToken}" target="_blank" class="btn btn-secondary btn-sm" style="display:inline-flex; align-items:center; gap:4px;" title="Open public QR recovery page">
+                      🔗
+                    </a>
+                  ` : ''}
                 </div>
               </td>
             </tr>
@@ -764,7 +769,7 @@ async function loadFoundCustodyVault() {
               <td class="text-right">
                 <div class="table-action-btns">
                   ${r.status !== 'PROCESSED_BY_OSA' ? `
-                    <button class="btn btn-primary btn-sm" onclick="openReceiveCustodyModal('${r.id}')" style="display:inline-flex; align-items:center; gap:6px;">
+                    <button class="btn btn-primary btn-sm" onclick="openReceiveCustodyModal('${r.id}', '${escapeHtml(r.gadget?.brand || '')} ${escapeHtml(r.gadget?.model || '')}', '${escapeHtml(r.owner?.name || 'Student')}')" style="display:inline-flex; align-items:center; gap:6px;">
                       📦 Receive into Vault
                     </button>
                   ` : '<span style="font-size:0.8rem; color:#047857; font-weight:700;">✓ In Vault Locker</span>'}
@@ -778,8 +783,26 @@ async function loadFoundCustodyVault() {
   } catch (e) {}
 }
 
-function openReceiveCustodyModal(reportId) {
-  document.getElementById('custody-report-id').value = reportId;
+function openReceiveCustodyModal(reportIdOrGadgetId, deviceName = '', ownerName = '') {
+  document.getElementById('custody-report-id').value = reportIdOrGadgetId;
+
+  const banner = document.getElementById('custody-device-info-banner');
+  const dNameEl = document.getElementById('custody-device-name');
+  const oNameEl = document.getElementById('custody-owner-name');
+
+  if (deviceName && banner && dNameEl && oNameEl) {
+    dNameEl.textContent = `📱 ${deviceName}`;
+    oNameEl.textContent = `👤 Owner: ${ownerName || 'Student Owner'}`;
+    banner.style.display = 'block';
+  } else if (banner) {
+    banner.style.display = 'none';
+  }
+
+  const notesInput = document.getElementById('custody-notes-input');
+  if (notesInput) {
+    notesInput.value = 'Surrendered face-to-face at OSA front desk (Room 1109). Device verified in physical custody.';
+  }
+
   document.getElementById('receive-custody-modal').classList.add('active');
 }
 
