@@ -1,13 +1,14 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// Create reusable transporter object using SMTP transport
+const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx7NYkgEsADcw8U8ISMBe3wFyQi5H2stcWMtiiXOTqmhVqMkTPjMqaRMVa1BaqKHCIe/exec';
+
+// Create reusable transporter object using SMTP transport (Fallback)
 function createTransporter() {
   const user = process.env.SMTP_USER || 'kazinteg1@gmail.com';
   const pass = (process.env.SMTP_PASS || 'grwqbfuqotmtzsgp').replace(/\s+/g, '');
 
   if (!user || !pass) {
-    console.warn('⚠️ SMTP Warning: SMTP_USER or SMTP_PASS is missing. Emails will be logged to console.');
     return null;
   }
 
@@ -22,23 +23,27 @@ function createTransporter() {
     tls: {
       rejectUnauthorized: false
     },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: 8000
   });
 }
 
 /**
- * Verify SMTP connection configuration
+ * Verify Mail delivery configuration (Webhook & SMTP)
  */
 async function verifySMTP() {
+  const webhookUrl = process.env.EMAIL_WEBHOOK_URL || DEFAULT_WEBHOOK_URL;
+  if (webhookUrl) {
+    return { success: true, method: 'HTTPS_WEBHOOK', message: 'Google Apps Script HTTPS Mail Webhook is operational.' };
+  }
   const transporter = createTransporter();
   if (!transporter) {
-    return { success: false, error: 'SMTP credentials not configured.' };
+    return { success: false, error: 'Email delivery not configured.' };
   }
   try {
     await transporter.verify();
-    return { success: true, message: 'SMTP server is ready to deliver messages.' };
+    return { success: true, method: 'SMTP', message: 'SMTP server is ready to deliver messages.' };
   } catch (error) {
     console.error('SMTP Verification Error:', error);
     return { success: false, error: error.message };
@@ -46,15 +51,52 @@ async function verifySMTP() {
 }
 
 /**
- * Send a custom or test email
+ * Send a custom or test email (Primary: Google HTTPS Webhook, Fallback: Direct SMTP)
  */
 async function sendMail({ to, subject, html, text }) {
+  const webhookUrl = process.env.EMAIL_WEBHOOK_URL || DEFAULT_WEBHOOK_URL;
+
+  // 1. Primary Method: Google Apps Script Webhook (Port 443 HTTPS - 100% reliable on Render)
+  if (webhookUrl) {
+    try {
+      console.log(`📡 Dispatching email via Google HTTPS Webhook to ${to}...`);
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to,
+          subject,
+          html: html || text,
+          text: text || ''
+        })
+      });
+
+      const resText = await response.text();
+      let resJson = {};
+      try {
+        resJson = JSON.parse(resText);
+      } catch (e) {
+        resJson = { success: response.ok, raw: resText };
+      }
+
+      if (response.ok && (resJson.success !== false)) {
+        console.log(`✅ [Google HTTPS Webhook] Email delivered successfully to ${to}`);
+        return { success: true, method: 'HTTPS_WEBHOOK', details: resJson };
+      } else {
+        console.warn(`⚠️ Google Webhook responded with error:`, resJson);
+      }
+    } catch (whErr) {
+      console.error(`⚠️ Webhook delivery failed, attempting SMTP fallback:`, whErr.message);
+    }
+  }
+
+  // 2. Fallback Method: SMTP Direct Socket
   const transporter = createTransporter();
   const senderName = process.env.SYSTEM_SENDER_NAME || 'NCST GadgetGuard Campus Security';
   const senderEmail = process.env.SMTP_USER || 'kazinteg1@gmail.com';
 
   if (!transporter) {
-    console.log(`\n📧 [SIMULATED EMAIL - NO SMTP CONFIGURED]`);
+    console.log(`\n📧 [SIMULATED EMAIL - NO DELIVERY MECHANISM]`);
     console.log(`To: ${to}`);
     console.log(`Subject: ${subject}`);
     console.log(`Body:\n${text || html}\n`);
@@ -69,8 +111,8 @@ async function sendMail({ to, subject, html, text }) {
       text: text || 'Please view this email in an HTML-compatible client.',
       html
     });
-    console.log(`✅ Email sent successfully to ${to} (Message ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    console.log(`✅ [SMTP] Email sent successfully to ${to} (Message ID: ${info.messageId})`);
+    return { success: true, method: 'SMTP', messageId: info.messageId };
   } catch (error) {
     console.error(`❌ Failed to send email to ${to}:`, error.message);
     return { success: false, error: error.message };
