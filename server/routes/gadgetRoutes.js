@@ -154,19 +154,21 @@ router.get('/my', authMiddleware, (req, res) => {
       const latestClaim = db.findOne('claims', c => c.gadgetId === g.id);
 
       // If a finder reported finding the gadget and chose to keep it safe for direct contact
-      const foundReport = db.findOne('found_reports', f => f.gadgetId === g.id && f.status !== 'PROCESSED_BY_OSA' && f.status !== 'RETURNED');
       let finderInfo = null;
-      if (foundReport && (foundReport.turnInMethod === 'KEPT_SAFE_CONTACT_ME' || foundReport.turnInMethod === 'FINDER_HOLDING')) {
-        finderInfo = {
-          id: foundReport.id,
-          finderName: foundReport.finderName,
-          finderContact: foundReport.finderContact,
-          finderEmail: foundReport.finderEmail,
-          foundLocation: foundReport.foundLocation,
-          foundDate: foundReport.foundDate,
-          message: foundReport.message || foundReport.notes,
-          turnInMethod: foundReport.turnInMethod
-        };
+      if (g.status === 'MISSING') {
+        const foundReport = db.findOne('found_reports', f => f.gadgetId === g.id && f.status !== 'PROCESSED_BY_OSA' && f.status !== 'RETURNED' && f.status !== 'RESOLVED' && f.status !== 'CANCELLED');
+        if (foundReport && (foundReport.turnInMethod === 'KEPT_SAFE_CONTACT_ME' || foundReport.turnInMethod === 'FINDER_HOLDING')) {
+          finderInfo = {
+            id: foundReport.id,
+            finderName: foundReport.finderName,
+            finderContact: foundReport.finderContact,
+            finderEmail: foundReport.finderEmail,
+            foundLocation: foundReport.foundLocation,
+            foundDate: foundReport.foundDate,
+            message: foundReport.message || foundReport.notes,
+            turnInMethod: foundReport.turnInMethod
+          };
+        }
       }
 
       return {

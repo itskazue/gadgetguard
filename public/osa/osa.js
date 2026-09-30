@@ -706,10 +706,22 @@ async function loadFoundCustodyVault() {
 
   try {
     const res = await api.getAllFoundReports();
-    const reports = res.reports || [];
+    let reports = res.reports || [];
+
+    // Filter out reports where the item is already safe, resolved, or returned back to the student
+    reports = reports.filter(r => {
+      if (r.status === 'RESOLVED' || r.status === 'CANCELLED' || r.status === 'RETURNED' || r.status === 'RECOVERED_BY_OWNER') {
+        return false;
+      }
+      // If the gadget itself is already registered/safe and not currently missing or in custody
+      if (r.gadget && r.gadget.status === 'REGISTERED') {
+        return false;
+      }
+      return true;
+    });
 
     if (reports.length === 0) {
-      container.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted);">No finder reports logged.</div>`;
+      container.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted);">No active finder reports awaiting intake. All found devices are currently reconciled.</div>`;
       return;
     }
 

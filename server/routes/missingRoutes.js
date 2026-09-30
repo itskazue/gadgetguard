@@ -135,35 +135,56 @@ router.post('/:id/cancel', authMiddleware, (req, res) => {
     if (!report) {
       report = db.findOne('missing_reports', m => m.gadgetId === req.params.id && m.status === 'ACTIVE');
     }
-    if (!report) {
-      // Check if gadget exists and is MISSING
-      const gadget = db.findById('gadgets', req.params.id);
-      if (gadget && gadget.status === 'MISSING') {
-        db.update('gadgets', gadget.id, { status: 'REGISTERED' });
-        return res.json({ success: true, message: 'Gadget status restored to REGISTERED.' });
+
+    let gadgetId = null;
+    if (report) {
+      gadgetId = report.gadgetId;
+      if (report.userId !== req.user.id && req.user.role !== 'osa_admin') {
+        return res.status(403).json({ success: false, error: 'Unauthorized.' });
       }
-      return res.status(404).json({ success: false, error: 'Active missing report not found.' });
+      db.update('missing_reports', report.id, { status: 'CANCELLED' });
+    } else {
+      const gadget = db.findById('gadgets', req.params.id);
+      if (gadget && (gadget.status === 'MISSING' || gadget.status === 'FOUND_IN_CUSTODY')) {
+        gadgetId = gadget.id;
+        if (gadget.userId !== req.user.id && req.user.role !== 'osa_admin') {
+          return res.status(403).json({ success: false, error: 'Unauthorized.' });
+        }
+      }
     }
 
-    if (report.userId !== req.user.id && req.user.role !== 'osa_admin') {
-      return res.status(403).json({ success: false, error: 'Unauthorized.' });
+    if (!gadgetId) {
+      return res.status(404).json({ success: false, error: 'Active missing report or gadget not found.' });
     }
 
-    db.update('missing_reports', report.id, { status: 'CANCELLED' });
-    db.update('gadgets', report.gadgetId, { status: 'REGISTERED' });
+    // Cancel any other active missing reports for this gadget
+    const activeMissing = db.find('missing_reports', m => m.gadgetId === gadgetId && m.status === 'ACTIVE');
+    activeMissing.forEach(m => db.update('missing_reports', m.id, { status: 'CANCELLED' }));
+
+    // Restore gadget status to REGISTERED
+    db.update('gadgets', gadgetId, { status: 'REGISTERED', custodyLocation: null });
+
+    // Mark associated found reports as RESOLVED so they are cleared from Custody Vault intake
+    const foundReports = db.find('found_reports', f => f.gadgetId === gadgetId);
+    foundReports.forEach(f => {
+      if (f.status !== 'RESOLVED' && f.status !== 'RETURNED') {
+        db.update('found_reports', f.id, { status: 'RESOLVED' });
+      }
+    });
 
     db.addAuditLog({
       userId: req.user.id,
       userRole: req.user.role,
       action: 'CANCEL_MISSING_REPORT',
       targetType: 'gadget',
-      targetId: report.gadgetId,
-      details: `${req.user.role === 'osa_admin' ? 'OSA Admin' : 'Owner'} cancelled missing report for gadget ID ${report.gadgetId}. Marked safe.`,
+      targetId: gadgetId,
+      details: `${req.user.role === 'osa_admin' ? 'OSA Admin' : 'Owner'} cancelled missing report / marked recovered for gadget ID ${gadgetId}. Status set to REGISTERED.`,
       ipAddress: req.ip
     });
 
-    return res.json({ success: true, message: 'Missing report cancelled. Gadget marked safe.' });
+    return res.json({ success: true, message: 'Missing report cancelled. Gadget marked safe and registered.' });
   } catch (err) {
+    console.error('Cancel missing error:', err);
     return res.status(500).json({ success: false, error: 'Error cancelling missing report.' });
   }
 });

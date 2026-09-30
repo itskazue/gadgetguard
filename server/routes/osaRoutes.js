@@ -100,6 +100,14 @@ router.post('/return', authMiddleware, requireRole('osa_admin'), (req, res) => {
     const activeMissing = db.find('missing_reports', m => m.gadgetId === gadgetId && m.status === 'ACTIVE');
     activeMissing.forEach(m => db.update('missing_reports', m.id, { status: 'RESOLVED' }));
 
+    // Also close and resolve any found reports for this gadget
+    const foundReports = db.find('found_reports', f => f.gadgetId === gadgetId);
+    foundReports.forEach(f => {
+      if (f.status !== 'RESOLVED' && f.status !== 'RETURNED') {
+        db.update('found_reports', f.id, { status: 'RETURNED' });
+      }
+    });
+
     // Update claim if linked
     if (claimId) {
       db.update('claims', claimId, { status: 'APPROVED' });
