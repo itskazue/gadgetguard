@@ -124,74 +124,6 @@
       align-items: flex-start;
     }
 
-    .sample-account-box {
-      background: #f1f5f9;
-      border: 1px dashed #cbd5e1;
-      border-radius: 12px;
-      padding: 14px 16px;
-      margin-bottom: 22px;
-    }
-
-    .sample-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .sample-tag {
-      font-size: 0.7rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      background: #142a6d;
-      color: #ffffff;
-      padding: 3px 8px;
-      border-radius: 6px;
-      letter-spacing: 0.04em;
-    }
-
-    .sample-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      font-size: 0.8rem;
-      margin-bottom: 10px;
-    }
-
-    .sample-field-label {
-      color: #64748b;
-      font-size: 0.725rem;
-      margin-bottom: 2px;
-    }
-
-    .sample-field-val {
-      font-weight: 700;
-      color: #0f172a;
-      font-family: monospace;
-    }
-
-    .btn-quick-fill {
-      width: 100%;
-      background: #ffffff;
-      border: 1px solid #cbd5e1;
-      padding: 8px;
-      border-radius: 8px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: #142a6d;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: all 0.2s;
-    }
-
-    .btn-quick-fill:hover {
-      background: #e2e8f0;
-      border-color: #94a3b8;
-    }
-
     .form-group {
       margin-bottom: 18px;
     }
@@ -295,27 +227,6 @@
         </div>
       </div>
 
-      <!-- Sample Account Preset Box -->
-      <div class="sample-account-box">
-        <div class="sample-header">
-          <span style="font-size: 0.8rem; font-weight: 700; color: #334155;">📋 Official Sample Credentials:</span>
-          <span class="sample-tag">Admin Account</span>
-        </div>
-        <div class="sample-grid">
-          <div>
-            <div class="sample-field-label">Official Email / ID:</div>
-            <div class="sample-field-val">osa.admin@univ.edu</div>
-          </div>
-          <div>
-            <div class="sample-field-label">Password:</div>
-            <div class="sample-field-val">admin123</div>
-          </div>
-        </div>
-        <button type="button" class="btn-quick-fill" onclick="autoFillAdminCredentials()">
-          ⚡ Auto-Fill OSA Admin Credentials
-        </button>
-      </div>
-
       <!-- Login Form -->
       <form onsubmit="handleOsaAdminLogin(event)">
         <div class="form-group">
@@ -326,7 +237,6 @@
         <div class="form-group">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <label class="form-label" for="osa-password" style="margin: 0;">Password</label>
-            <span style="font-size: 0.75rem; color: #64748b;">(Default: admin123)</span>
           </div>
           <div style="position: relative;">
             <input type="password" id="osa-password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
@@ -365,12 +275,6 @@
         SwalHelper.warning('Access Denied', 'Your account does not have OSA administrative privileges. Please log in with an authorized OSA staff account.');
       }
     });
-
-    function autoFillAdminCredentials() {
-      document.getElementById('osa-email').value = 'osa.admin@univ.edu';
-      document.getElementById('osa-password').value = 'admin123';
-      SwalHelper.toast ? SwalHelper.toast('info', 'Credentials Populated', 'Click "Sign In to OSA Console" to proceed.') : null;
-    }
 
     function togglePasswordVisibility() {
       const pass = document.getElementById('osa-password');

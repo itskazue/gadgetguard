@@ -88,27 +88,11 @@ function initPublicScanner(containerId, onScanSuccess) {
             </label>
             <div class="token-input-wrapper">
               <span class="token-prefix-badge">TOKEN</span>
-              <input type="text" id="manual-qr-input" class="token-text-input font-mono" placeholder="gg_dev_7c3b881e" required autofocus>
+              <input type="text" id="manual-qr-input" class="token-text-input font-mono" placeholder="Enter QR Security Token (e.g. gg_dev_xxxxxxxx)" required autofocus>
             </div>
           </div>
 
-          <!-- Quick Test Demo Tokens -->
-          <div class="demo-token-box">
-            <div class="demo-token-header">⚡ Instant Test Shortcuts (Click to Auto-Fill):</div>
-            <div class="demo-token-chips">
-              <button type="button" class="demo-chip-btn missing" onclick="fillAndSubmitDemoToken('gg_dev_7c3b881e')">
-                <span class="chip-badge red">MISSING</span> iPad Air 5th Gen
-              </button>
-              <button type="button" class="demo-chip-btn custody" onclick="fillAndSubmitDemoToken('gg_dev_5e1a499f')">
-                <span class="chip-badge gold">IN CUSTODY</span> Sony WH-1000XM5
-              </button>
-              <button type="button" class="demo-chip-btn registered" onclick="fillAndSubmitDemoToken('gg_dev_9a4f210d')">
-                <span class="chip-badge blue">REGISTERED</span> MacBook Pro 14"
-              </button>
-            </div>
-          </div>
-
-          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 13px; font-weight: 800; font-size: 0.95rem; border-radius: 12px; margin-top: 8px;">
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 13px; font-weight: 800; font-size: 0.95rem; border-radius: 12px; margin-top: 14px;">
             🔍 Lookup Device Status & Records
           </button>
         </form>

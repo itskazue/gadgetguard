@@ -152,33 +152,8 @@ function closeModal(modalId) {
 }
 
 async function quickFillLogin(email, password) {
-  const roleName = email.includes('admin') ? 'Carlos Mendoza (OSA Admin)' : 'Denzel Kalingking (Student)';
-  const confirmLogin = await SwalHelper.confirm({
-    title: 'Fast Demo Sign In',
-    html: `<p>Instantly sign into NCST GadgetGuard as <strong>${roleName}</strong>?</p>
-           <p style="font-size:0.85rem; color:#64748b;">${email}</p>`,
-    icon: 'question',
-    confirmText: 'Sign In Now',
-    cancelText: 'Just Fill Form',
-    confirmColor: '#142a6d'
-  });
-
   document.getElementById('login-email').value = email;
   document.getElementById('login-password').value = password;
-
-  if (confirmLogin) {
-    try {
-      const res = await api.login(email, password);
-      closeModal('login-modal');
-      updateAuthUI();
-      await SwalHelper.success('Welcome Back!', `Signed in as ${res.user.name} (${res.user.role})`, 1200);
-      window.location.href = res.user.role === 'osa_admin' ? '/osa/' : '/student/';
-    } catch (err) {
-      await SwalHelper.error('Login Failed', err.message);
-    }
-  } else {
-    SwalHelper.toast('info', 'Credentials Populated', 'Click \'Sign In to Portal\' when ready.');
-  }
 }
 
 async function handleLoginSubmit(e) {
