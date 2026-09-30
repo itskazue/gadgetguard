@@ -1,8 +1,13 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// Create reusable transporter object using SMTP transport
-function createTransporter() {
+// ─── Singleton SMTP Transporter ───────────────────────────────────────────
+// Created once and reused across all email calls to avoid repeated TLS handshakes
+let _transporter = null;
+
+function getTransporter() {
+  if (_transporter) return _transporter;
+
   const user = process.env.SMTP_USER || 'kazinteg1@gmail.com';
   const pass = (process.env.SMTP_PASS || 'grwqbfuqotmtzsgp').replace(/\s+/g, '');
 
@@ -11,23 +16,33 @@ function createTransporter() {
     return null;
   }
 
-  return nodemailer.createTransport({
+  _transporter = nodemailer.createTransport({
     service: 'gmail',
-    auth: {
-      user,
-      pass
-    },
-    connectionTimeout: 8000,
-    greetingTimeout: 8000,
-    socketTimeout: 10000
+    auth: { user, pass },
+    pool: true,              // use connection pooling
+    maxConnections: 3,
+    maxMessages: 50,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000
   });
+
+  // Log pool events for debugging
+  _transporter.on('idle', () => console.log('📧 SMTP pool: idle, ready for messages'));
+  _transporter.on('error', (err) => {
+    console.error('📧 SMTP pool error:', err.message);
+    _transporter = null;     // force recreation on next call
+  });
+
+  console.log(`📧 SMTP transporter created (pool mode, user: ${user})`);
+  return _transporter;
 }
 
 /**
  * Verify SMTP connection configuration
  */
 async function verifySMTP() {
-  const transporter = createTransporter();
+  const transporter = getTransporter();
   if (!transporter) {
     return { success: false, error: 'SMTP credentials not configured.' };
   }
@@ -36,18 +51,19 @@ async function verifySMTP() {
     return { success: true, message: 'SMTP server is ready to deliver messages.' };
   } catch (error) {
     console.error('SMTP Verification Error:', error);
+    _transporter = null; // reset on failure
     return { success: false, error: error.message };
   }
 }
 
 /**
- * Send a custom or test email
+ * Send a custom or test email — with 1 automatic retry on failure
  */
 async function sendMail({ to, subject, html, text }) {
-  const transporter = createTransporter();
   const senderName = process.env.SYSTEM_SENDER_NAME || 'NCST GadgetGuard Campus Security';
   const senderEmail = process.env.SMTP_USER || 'kazinteg1@gmail.com';
 
+  let transporter = getTransporter();
   if (!transporter) {
     console.log(`\n📧 [SIMULATED EMAIL - NO SMTP CONFIGURED]`);
     console.log(`To: ${to}`);
@@ -56,19 +72,35 @@ async function sendMail({ to, subject, html, text }) {
     return { success: true, simulated: true };
   }
 
+  const mailOptions = {
+    from: `"${senderName}" <${senderEmail}>`,
+    to,
+    subject,
+    text: text || 'Please view this email in an HTML-compatible client.',
+    html
+  };
+
+  // Attempt 1
   try {
-    const info = await transporter.sendMail({
-      from: `"${senderName}" <${senderEmail}>`,
-      to,
-      subject,
-      text: text || 'Please view this email in an HTML-compatible client.',
-      html
-    });
+    const info = await transporter.sendMail(mailOptions);
     console.log(`✅ Email sent successfully to ${to} (Message ID: ${info.messageId})`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error(`❌ Failed to send email to ${to}:`, error.message);
-    return { success: false, error: error.message };
+    console.error(`❌ Email attempt 1 failed for ${to}:`, error.message);
+    // Reset transporter and retry once
+    _transporter = null;
+    transporter = getTransporter();
+    if (!transporter) {
+      return { success: false, error: error.message };
+    }
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log(`✅ Email sent on retry to ${to} (Message ID: ${info.messageId})`);
+      return { success: true, messageId: info.messageId, retried: true };
+    } catch (retryError) {
+      console.error(`❌ Email retry also failed for ${to}:`, retryError.message);
+      return { success: false, error: retryError.message };
+    }
   }
 }
 
