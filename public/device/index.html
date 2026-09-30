@@ -390,7 +390,7 @@
         <div id="osa-authenticated-box" style="display: none; margin-bottom: 16px;"></div>
 
         <!-- Official Surrender / Return Location Card -->
-        <div class="qr-location-card">
+        <div id="qr-location-card-box" class="qr-location-card">
           <div class="qr-location-header" id="qr-location-header-title">
             📍 Surrender Location
           </div>
@@ -532,6 +532,7 @@
         const descEl = document.getElementById('qr-status-desc');
         const deviceNameEl = document.getElementById('qr-device-name');
         const badgeEl = document.getElementById('qr-device-badge');
+        const locCardBox = document.getElementById('qr-location-card-box');
         const locHeaderTitle = document.getElementById('qr-location-header-title');
         const actionWrap = document.getElementById('qr-action-wrap');
         const osaBox = document.getElementById('osa-authenticated-box');
@@ -568,8 +569,10 @@
             </div>
           `;
 
-          locHeaderTitle.textContent = (res.gadget.status === 'MISSING') ? '📍 Return Location' : '📍 Surrender Location';
+          if (locCardBox) locCardBox.style.display = 'block';
+          if (locHeaderTitle) locHeaderTitle.textContent = (res.gadget.status === 'MISSING') ? '📍 Return Location' : '📍 Campus Office Reference';
 
+          actionWrap.style.display = 'block';
           actionWrap.innerHTML = `
             <a href="/osa/" class="btn-qr-action btn-qr-blue">Open in OSA Admin Console &rarr;</a>
           `;
@@ -582,19 +585,17 @@
           iconEl.innerHTML = '✓';
           titleEl.className = 'qr-scan-title title-safe';
           titleEl.textContent = 'This gadget is registered with GadgetGuard.';
-          descEl.innerHTML = 'This gadget is not currently reported as missing.<br><br>If you found this gadget unattended, please keep it safe and surrender it to the <strong>Office of Student Affairs (OSA)</strong>.';
+          descEl.innerHTML = 'This device is verified and actively registered in good standing.<br>It is not reported as missing.';
 
           badgeEl.className = 'badge-status badge-registered';
-          badgeEl.textContent = '● REGISTERED';
+          badgeEl.textContent = '● REGISTERED & PROTECTED';
 
           osaBox.style.display = 'none';
-          locHeaderTitle.textContent = '📍 Surrender Location';
-
-          actionWrap.innerHTML = `
-            <button type="button" class="btn-qr-action btn-qr-blue" onclick="openFinderModal()">
-              🤝 Surrender to OSA
-            </button>
-          `;
+          
+          // No surrender action or location card needed if not missing
+          if (locCardBox) locCardBox.style.display = 'none';
+          actionWrap.style.display = 'none';
+          actionWrap.innerHTML = '';
         } 
         // ==========================================
         // CASE C: PUBLIC USER — MISSING GADGET
@@ -610,8 +611,10 @@
           badgeEl.textContent = '● MISSING';
 
           osaBox.style.display = 'none'; // Strictly protected: Zero private owner information exposed
-          locHeaderTitle.textContent = '📍 Return Location';
+          if (locCardBox) locCardBox.style.display = 'block';
+          if (locHeaderTitle) locHeaderTitle.textContent = '📍 Return Location';
 
+          actionWrap.style.display = 'block';
           actionWrap.innerHTML = `
             <button type="button" class="btn-qr-action btn-qr-gold" onclick="openFinderModal()">
               🤝 Report Found & Surrender to OSA
