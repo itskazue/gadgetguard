@@ -5,23 +5,28 @@ require('dotenv').config();
 function createTransporter() {
   const host = process.env.SMTP_HOST || 'smtp.gmail.com';
   const port = parseInt(process.env.SMTP_PORT || '465', 10);
-  const secure = process.env.SMTP_SECURE !== 'false'; // true for 465, false for 587
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS ? process.env.SMTP_PASS.replace(/\s+/g, '') : '';
+  const secure = process.env.SMTP_SECURE !== 'false';
+  const user = process.env.SMTP_USER || 'kazinteg1@gmail.com';
+  const pass = (process.env.SMTP_PASS || 'grwqbfuqotmtzsgp').replace(/\s+/g, '');
 
   if (!user || !pass) {
-    console.warn('⚠️ SMTP Warning: SMTP_USER or SMTP_PASS is missing in .env. Emails will be logged to console.');
+    console.warn('⚠️ SMTP Warning: SMTP_USER or SMTP_PASS is missing. Emails will be logged to console.');
     return null;
   }
 
+  // Use Gmail service with TLS fallback
   return nodemailer.createTransport({
-    host,
-    port,
-    secure,
+    service: 'gmail',
     auth: {
       user,
       pass
-    }
+    },
+    tls: {
+      rejectUnauthorized: false
+    },
+    pool: true,
+    maxConnections: 3,
+    maxMessages: 100
   });
 }
 
@@ -31,7 +36,7 @@ function createTransporter() {
 async function verifySMTP() {
   const transporter = createTransporter();
   if (!transporter) {
-    return { success: false, error: 'SMTP credentials not configured in .env' };
+    return { success: false, error: 'SMTP credentials not configured.' };
   }
   try {
     await transporter.verify();
@@ -48,7 +53,7 @@ async function verifySMTP() {
 async function sendMail({ to, subject, html, text }) {
   const transporter = createTransporter();
   const senderName = process.env.SYSTEM_SENDER_NAME || 'NCST GadgetGuard Campus Security';
-  const senderEmail = process.env.SMTP_USER || 'no-reply@gadgetguard.edu';
+  const senderEmail = process.env.SMTP_USER || 'kazinteg1@gmail.com';
 
   if (!transporter) {
     console.log(`\n📧 [SIMULATED EMAIL - NO SMTP CONFIGURED]`);
