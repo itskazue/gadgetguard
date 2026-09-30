@@ -353,25 +353,27 @@ router.post('/:id/approve', authMiddleware, requireRole('osa_admin'), async (req
       linkUrl: `/student/#gadgets`
     });
 
-    // Send official Email Notification to student — awaited for reliability
+    // Send official Email Notification to student in background
     if (owner && owner.email) {
-      try {
-        console.log(`📧 Sending approval email to ${owner.email}...`);
-        const mailRes = await mailer.sendApprovalEmail({
-          studentEmail: owner.email,
-          studentName: owner.name,
-          studentId: owner.idNumber,
-          gadgetInfo: {
-            brand: gadget.brand,
-            model: gadget.model,
-            category: gadget.category,
-            serialNumber: gadget.serialNumber
-          }
-        });
-        console.log(`📧 Approval email result for ${owner.email}:`, JSON.stringify(mailRes));
-      } catch (e) {
-        console.error('Error sending approval email:', e.message);
-      }
+      setImmediate(async () => {
+        try {
+          console.log(`📧 [Async] Sending approval email to ${owner.email}...`);
+          const mailRes = await mailer.sendApprovalEmail({
+            studentEmail: owner.email,
+            studentName: owner.name,
+            studentId: owner.idNumber,
+            gadgetInfo: {
+              brand: gadget.brand,
+              model: gadget.model,
+              category: gadget.category,
+              serialNumber: gadget.serialNumber
+            }
+          });
+          console.log(`📧 [Async] Approval email result:`, JSON.stringify(mailRes));
+        } catch (e) {
+          console.error('Error sending approval email:', e.message);
+        }
+      });
     }
 
     return res.json({
