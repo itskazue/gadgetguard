@@ -157,21 +157,15 @@ router.post('/register', async (req, res) => {
 
     const { passwordHash, ...userSafe } = newUser;
 
-    // Send pre-registration acknowledgement email
+    // Send pre-registration email in background (pool already warmed up)
     if (newUser.email) {
       const deviceName = registeredDevice ? `${registeredDevice.brand} ${registeredDevice.model}` : null;
-      try {
-        console.log(`📧 Sending pre-registration email to ${newUser.email}...`);
-        const mailRes = await mailer.sendPreRegistrationEmail({
-          studentEmail: newUser.email,
-          studentName: newUser.name,
-          studentId: newUser.idNumber,
-          deviceName
-        });
-        console.log(`📧 Pre-registration email result:`, JSON.stringify(mailRes));
-      } catch (e) {
-        console.error('📧 Pre-registration email error:', e.message);
-      }
+      const emailData = { studentEmail: newUser.email, studentName: newUser.name, studentId: newUser.idNumber, deviceName };
+      setImmediate(() => {
+        mailer.sendPreRegistrationEmail(emailData)
+          .then(r => console.log(`📧 Pre-reg email sent to ${newUser.email}:`, JSON.stringify(r)))
+          .catch(e => console.error(`📧 Pre-reg email failed:`, e.message));
+      });
     }
 
     // Do NOT issue token if pending OSA approval
