@@ -17,7 +17,7 @@ let dbData = {
   system_settings: {
     schoolName: "National College of Science and Technology (NCST)",
     campusName: "Main Campus - Emilio Aguinaldo Hwy, Dasmariñas, Cavite",
-    osaOfficeLocation: "NCST Student Affairs Bldg, 2nd Floor, Room 201",
+    osaOfficeLocation: "Office of Student Affairs (OSA) — Room 204, NCST Main Campus",
     osaContactPhone: "(046) 416-0166 / +63 917 555 6278",
     osaEmail: "osa@ncst.edu.ph",
     operatingHours: "Monday - Friday: 8:00 AM - 5:00 PM",

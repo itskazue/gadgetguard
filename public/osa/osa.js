@@ -1187,7 +1187,7 @@ function exportAnalyticsSummary() {
           <div>✅ <strong>Recovery Success Rate:</strong> 100%</div>
           <div>⚡ <strong>Average Resolution Time:</strong> &lt; 24 Hours</div>
           <div>🛡️ <strong>System Protocol:</strong> Active 24/7 QR Telemetry</div>
-          <div>🏢 <strong>Supervision:</strong> Office of Student Affairs (OSA Room 201)</div>
+          <div>🏢 <strong>Supervision:</strong> Office of Student Affairs (OSA Room 204)</div>
         </div>
       `,
       confirmButtonText: 'Download Certificate Summary',

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GadgetGuard — QR Device Verification</title>
-  <meta name="description" content="Official GadgetGuard campus QR sticker verification.">
+  <title>GadgetGuard — Campus QR Verification</title>
+  <meta name="description" content="Official NCST GadgetGuard campus QR verification and return portal.">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#142a6d">
   
@@ -13,135 +13,269 @@
   <script src="/js/sweetalert2.all.min.js"></script>
   <link rel="stylesheet" href="/css/style.css">
   <style>
-    body {
-      background-color: #f8fafc;
-      color: #0a163a;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
 
-    .qr-scan-page-wrap {
-      flex: 1;
+    body {
+      background-color: #f1f5f9;
+      color: #0f172a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 40px 16px;
+      padding: 24px 16px;
+    }
+
+    .qr-scan-container {
+      width: 100%;
+      max-width: 460px;
+      margin: auto;
     }
 
     .qr-scan-card {
       background: #ffffff;
-      border: 2px solid #e2e8f0;
-      border-radius: 20px;
-      max-width: 500px;
-      width: 100%;
-      padding: 36px 30px;
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+      padding: 32px 24px;
       text-align: center;
-      box-shadow: 0 20px 40px -15px rgba(20, 42, 109, 0.15);
+      box-shadow: 0 10px 30px -5px rgba(20, 42, 109, 0.08), 0 4px 10px -2px rgba(0, 0, 0, 0.04);
     }
 
+    /* Brand Header */
     .qr-card-brand {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 12px;
       margin-bottom: 24px;
     }
 
+    .qr-card-brand img {
+      width: 44px;
+      height: 44px;
+      object-fit: contain;
+    }
+
+    .qr-brand-title {
+      font-weight: 800;
+      font-size: 1.15rem;
+      color: #142a6d;
+      line-height: 1.2;
+      text-align: left;
+    }
+
+    .qr-brand-sub {
+      font-size: 0.65rem;
+      color: #64748b;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* Status Icons */
     .qr-status-icon-circle {
-      width: 80px;
-      height: 80px;
+      width: 72px;
+      height: 72px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto 24px;
-      font-size: 2.2rem;
+      margin: 0 auto 18px;
+      font-size: 2rem;
     }
 
     .icon-safe {
       background: #ecfdf5;
       color: #059669;
-      border: 3px solid #a7f3d0;
+      border: 2.5px solid #a7f3d0;
     }
 
     .icon-missing {
       background: #fef2f2;
       color: #dc2626;
-      border: 3px solid #fecaca;
-      animation: pulse 1.8s infinite;
+      border: 2.5px solid #fecaca;
+      animation: alertPulse 2s infinite ease-in-out;
     }
 
-    @keyframes pulse {
-      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
-      70% { transform: scale(1.04); box-shadow: 0 0 0 12px rgba(220, 38, 38, 0); }
+    .icon-osa {
+      background: #eff6ff;
+      color: #1e40af;
+      border: 2.5px solid #bfdbfe;
+    }
+
+    @keyframes alertPulse {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.35); }
+      70% { transform: scale(1.03); box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
       100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
     }
 
+    /* Status Headings */
     .qr-scan-title {
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       font-weight: 800;
+      line-height: 1.3;
       margin-bottom: 8px;
       letter-spacing: -0.01em;
     }
 
-    .safe-text {
+    .title-safe {
       color: #047857;
     }
 
-    .danger-text {
+    .title-missing {
       color: #dc2626;
+    }
+
+    .title-osa {
+      color: #142a6d;
     }
 
     .qr-scan-desc {
       font-size: 0.9rem;
       color: #475569;
-      line-height: 1.55;
-      margin-bottom: 24px;
+      line-height: 1.5;
+      margin-bottom: 20px;
     }
 
-    .qr-info-table {
+    /* Device Info Box */
+    .qr-device-details-box {
       background: #f8fafc;
       border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 24px;
+      border-radius: 14px;
+      padding: 14px 18px;
+      margin-bottom: 16px;
       text-align: left;
     }
 
-    .qr-info-row {
+    .qr-device-row {
       display: flex;
       justify-content: space-between;
-      padding: 7px 0;
-      font-size: 0.85rem;
+      align-items: center;
+      padding: 6px 0;
+      font-size: 0.88rem;
+    }
+
+    .qr-device-row:not(:last-child) {
       border-bottom: 1px dashed #e2e8f0;
     }
 
-    .qr-info-row:last-child {
-      border-bottom: none;
-    }
-
-    .qr-info-label {
+    .qr-device-label {
       color: #64748b;
       font-weight: 600;
+      font-size: 0.85rem;
     }
 
-    .qr-info-val {
+    .qr-device-val {
       font-weight: 700;
-      color: #0a163a;
+      color: #0f172a;
+      text-align: right;
     }
 
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .badge-registered {
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+    }
+
+    .badge-missing {
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+    }
+
+    /* Surrender / Return Location Card */
+    .qr-location-card {
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 22px;
+      text-align: left;
+    }
+
+    .qr-location-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: #142a6d;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .qr-location-name {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.35;
+    }
+
+    .qr-location-sub {
+      font-size: 0.82rem;
+      color: #475569;
+      line-height: 1.4;
+      margin-top: 2px;
+    }
+
+    .qr-location-contact {
+      font-size: 0.78rem;
+      color: #64748b;
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px dashed #e2e8f0;
+    }
+
+    /* Action Buttons */
     .btn-qr-action {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
       width: 100%;
-      padding: 13px;
-      border-radius: 10px;
+      padding: 13px 18px;
+      border-radius: 12px;
       font-weight: 700;
       font-size: 0.95rem;
       text-decoration: none;
       cursor: pointer;
       border: none;
       transition: all 0.2s ease;
+      margin-bottom: 10px;
+    }
+
+    .btn-qr-gold {
+      background: #ffc72c;
+      color: #0c1b48;
+      border: 1px solid #f59e0b;
+      font-weight: 800;
+      box-shadow: 0 4px 14px rgba(255, 199, 44, 0.35);
+    }
+
+    .btn-qr-gold:hover {
+      background: #f59e0b;
+      color: #081026;
+      transform: translateY(-1px);
     }
 
     .btn-qr-blue {
@@ -155,139 +289,214 @@
       transform: translateY(-1px);
     }
 
-    .btn-qr-red {
-      background: #ffc72c;
-      color: #0c1b48;
-      border: 1px solid #f59e0b;
-      font-weight: 800;
-      box-shadow: 0 4px 14px rgba(255, 199, 44, 0.35);
+    .btn-qr-outline {
+      background: #ffffff;
+      color: #142a6d;
+      border: 1.5px solid #cbd5e1;
     }
 
-    .btn-qr-red:hover {
-      background: #f59e0b;
-      color: #081026;
-      transform: translateY(-1px);
+    .btn-qr-outline:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
     }
-</style>
+
+    /* Footer Note */
+    .qr-footer-brand {
+      margin-top: 14px;
+      font-size: 0.78rem;
+      color: #64748b;
+      line-height: 1.4;
+    }
+
+    .qr-footer-brand strong {
+      color: #475569;
+    }
+
+    /* Initial Clean Loader */
+    .qr-loading-state {
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .qr-spinner {
+      width: 38px;
+      height: 38px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #142a6d;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 14px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
 
   <script src="/js/api.js"></script>
 
-  <div class="qr-scan-page-wrap">
-    <!-- Loading Box -->
-    <div id="qr-loading-card" class="qr-scan-card">
+  <div class="qr-scan-container">
+    <div class="qr-scan-card">
       
+      <!-- Brand Header -->
       <div class="qr-card-brand">
-        <img src="/assets/ncst_logo.png" alt="NCST" style="height: 38px; width: auto;">
-        <div style="text-align: left;">
-          <div style="font-weight: 800; font-size: 1.15rem; color: #142a6d; letter-spacing: -0.01em;">NCST GADGETGUARD</div>
-          <div style="font-size: 0.72rem; color: #d97706; font-weight: 700; text-transform: uppercase;">National College of Science and Technology</div>
+        <img src="/assets/ncst_logo.png" alt="NCST Logo">
+        <div>
+          <div class="qr-brand-title">NCST <span style="color:#d97706;">GadgetGuard</span></div>
+          <div class="qr-brand-sub">National College of Science & Technology</div>
         </div>
       </div>
 
+      <!-- Initial Loading Placeholder (Subtle spinner, no technical jargon text) -->
+      <div id="qr-loading-box" class="qr-loading-state">
+        <div class="qr-spinner"></div>
       </div>
-      <div style="font-size: 2rem; margin-bottom: 12px;">🔍</div>
-      <h3 style="font-weight: 700; font-size: 1.1rem;">Verifying Device QR Sticker...</h3>
-      <p style="color: #64748b; font-size: 0.85rem; margin-top: 6px;">Querying centralized campus security database</p>
-    </div>
 
-    <!-- Case 1 / Case 2 Container -->
-    <div id="qr-main-card" class="qr-scan-card" style="display: none;">
-      
-      <!-- Logo Header -->
-      <div class="qr-card-brand" style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:16px;">
-        <img src="/assets/ncst_logo.png" alt="NCST Logo" style="height:44px; width:auto; object-fit:contain;">
-        <div style="text-align:left; line-height:1.2;">
-          <div style="font-weight:800; font-size:1.15rem; color:#142a6d;">NCST <span style="color:#d97706;">GadgetGuard</span></div>
-          <div style="font-size:0.65rem; color:#64748b; font-weight:700; text-transform:uppercase;">National College of Science & Technology</div>
+      <!-- Main Dynamic Content Container -->
+      <div id="qr-content-box" style="display: none;">
+        
+        <!-- Status Icon -->
+        <div id="qr-status-icon" class="qr-status-icon-circle icon-safe">
+          ✓
         </div>
-      </div>
 
-      <!-- Icon: Green Check or Red Warning -->
-      <div id="qr-icon-container" class="qr-status-icon-circle success">
-        ✔
-      </div>
+        <!-- Status Title & Explanation -->
+        <h1 id="qr-status-title" class="qr-scan-title title-safe">
+          This gadget is registered with GadgetGuard.
+        </h1>
+        <p id="qr-status-desc" class="qr-scan-desc">
+          This gadget is not currently reported as missing.<br>
+          If you found this gadget unattended, please keep it safe and surrender it to the Office of Student Affairs (OSA).
+        </p>
 
-      <!-- Title & Subtitle -->
-      <h2 id="qr-status-title" class="qr-scan-title">
-        This device is registered and not currently reported missing.
-      </h2>
-      <p id="qr-status-subtitle" class="qr-scan-subtitle">
-        No action is required.
-      </p>
-
-      <!-- Clean Device Info Badge -->
-      <div class="qr-device-details-box">
-        <div class="qr-device-details-row">
-          <span style="color: #64748b;">Device:</span>
-          <strong id="qr-device-name" style="color: #0f172a;">Apple iPhone 11</strong>
+        <!-- Device Info Box -->
+        <div class="qr-device-details-box">
+          <div class="qr-device-row">
+            <span class="qr-device-label">Device:</span>
+            <strong id="qr-device-name" class="qr-device-val">Apple iPhone 14 Pro Max</strong>
+          </div>
+          <div class="qr-device-row">
+            <span class="qr-device-label">Status:</span>
+            <span id="qr-device-badge" class="badge-status badge-registered">● REGISTERED</span>
+          </div>
         </div>
-        <div class="qr-device-details-row">
-          <span style="color: #64748b;">Status:</span>
-          <span id="qr-device-status-badge"></span>
+
+        <!-- OSA Staff Owner Box (Only displayed to authenticated OSA Staff) -->
+        <div id="osa-authenticated-box" style="display: none; margin-bottom: 16px;"></div>
+
+        <!-- Official Surrender / Return Location Card -->
+        <div class="qr-location-card">
+          <div class="qr-location-header" id="qr-location-header-title">
+            📍 Surrender Location
+          </div>
+          <div class="qr-location-name">
+            Office of Student Affairs (OSA)
+          </div>
+          <div class="qr-location-sub">
+            Room 204<br>
+            NCST — National College of Science and Technology<br>
+            Emilio Aguinaldo Hwy, Dasmariñas, Cavite
+          </div>
+          <div class="qr-location-contact">
+            📞 Official Tel: (046) 416-0166 &nbsp;|&nbsp; ✉️ osa@ncst.edu.ph
+          </div>
         </div>
-        <div class="qr-device-details-row" id="qr-owner-contact-row" style="display: none;">
-          <span style="color: #64748b;">Owner Contact:</span>
-          <strong id="qr-owner-contact-val" style="color: #dc2626;">-</strong>
+
+        <!-- Action Buttons Wrap -->
+        <div id="qr-action-wrap">
+          <button type="button" class="btn-qr-action btn-qr-blue" onclick="openFinderModal()">
+            🤝 Surrender to OSA
+          </button>
         </div>
+
+        <!-- Subtle Footer -->
+        <div class="qr-footer-brand">
+          <strong>GadgetGuard</strong><br>
+          Helping our community keep their gadgets safe.
+        </div>
+
       </div>
 
-      <!-- CTA Button -->
-      <div id="qr-action-btn-wrap">
-        <a href="/" class="btn-qr-action btn-qr-blue">Go to GadgetGuard Website</a>
+      <!-- Invalid / Not Found State Container -->
+      <div id="qr-error-box" style="display: none;">
+        <div class="qr-status-icon-circle icon-missing" style="animation: none;">
+          ✕
+        </div>
+        <h2 class="qr-scan-title title-missing" style="font-size: 1.15rem;">
+          Unrecognized QR Code
+        </h2>
+        <p class="qr-scan-desc" style="margin-top: 8px;">
+          This QR code is not registered in the GadgetGuard campus system. If you found this item on campus, please bring it to the <strong>Office of Student Affairs (Room 204)</strong>.
+        </p>
+        <div class="qr-location-card">
+          <div class="qr-location-header">📍 Surrender Location</div>
+          <div class="qr-location-name">Office of Student Affairs (OSA)</div>
+          <div class="qr-location-sub">Room 204, NCST Main Campus</div>
+        </div>
+        <a href="/" class="btn-qr-action btn-qr-blue">Return to Homepage</a>
       </div>
 
-      <!-- Footer -->
-      <div class="qr-card-footer-note">
-        <div style="font-weight: 700; color: #475569; margin-bottom: 2px;">GadgetGuard</div>
-        Helping our community keep their gadgets safe.
-      </div>
     </div>
   </div>
 
-  <!-- Finder Report Modal -->
+  <!-- Finder Report / Surrender Modal -->
   <div id="finder-report-modal" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header">
-        <h3 class="modal-title" style="color: #dc2626;">🤝 Report Found Gadget to OSA</h3>
-        <button class="btn btn-secondary btn-icon" onclick="closeModal('finder-report-modal')">&times;</button>
+        <h3 class="modal-title" style="color: #142a6d; display: flex; align-items: center; gap: 8px;">
+          🤝 Surrender Found Gadget to OSA
+        </h3>
+        <button type="button" class="btn btn-secondary btn-icon" onclick="closeModal('finder-report-modal')">&times;</button>
       </div>
       <form onsubmit="handleFinderFormSubmit(event)">
         <div class="modal-body">
+          <p style="font-size: 0.85rem; color: #475569; margin-bottom: 14px; line-height: 1.45;">
+            Thank you for helping our school community! Please provide your information below and bring the item to <strong>OSA Room 204</strong> or hand it to an on-duty Campus Security Guard.
+          </p>
+
           <div class="form-group">
-            <label class="form-label">Your Name / Title (Letters Only) *</label>
-            <input type="text" id="modal-finder-name" class="form-control" placeholder="e.g. Denzel Kalingking" required pattern="[a-zA-ZñÑ\s\.\,\-]+" title="Please enter letters and spaces only" oninput="this.value = this.value.replace(/[^a-zA-ZñÑ\s\.\,\-]/g, '')">
+            <label class="form-label">Your Full Name (Letters Only) *</label>
+            <input type="text" id="modal-finder-name" class="form-control" placeholder="e.g. Maria Santos" required pattern="[a-zA-ZñÑ\s\.\,\-]+" title="Please enter letters and spaces only" oninput="this.value = this.value.replace(/[^a-zA-ZñÑ\s\.\,\-]/g, '')">
           </div>
+          
           <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
             <div class="form-group">
               <label class="form-label">Contact Number (11 Digits) *</label>
-              <input type="tel" id="modal-finder-contact" class="form-control font-mono" placeholder="09123456789" maxlength="11" pattern="09[0-9]{9}" title="Must be exactly 11 digits starting with 09 (e.g. 09123456789)" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+              <input type="tel" id="modal-finder-contact" class="form-control font-mono" placeholder="09123456789" maxlength="11" pattern="09[0-9]{9}" title="Must be 11 digits starting with 09 (e.g. 09123456789)" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
             </div>
             <div class="form-group">
               <label class="form-label">Email (Optional)</label>
-              <input type="email" id="modal-finder-email" class="form-control" placeholder="finder@email.com">
+              <input type="email" id="modal-finder-email" class="form-control" placeholder="name@email.com">
             </div>
           </div>
+
           <div class="form-group">
             <label class="form-label">Where did you find this device? *</label>
-            <input type="text" id="modal-finder-location" class="form-control" placeholder="e.g. Library 3rd Floor Table #14" required>
+            <input type="text" id="modal-finder-location" class="form-control" placeholder="e.g. Library 3rd Floor, Room 204, Cafeteria" required>
           </div>
+
           <div class="form-group">
             <label class="form-label">Turn-in Plan *</label>
             <select id="modal-finder-turnin" class="form-control">
-              <option value="SUBMITTED_TO_OSA">I am surrendering it to OSA Office (Room 204)</option>
-              <option value="KEPT_SAFE_CONTACT_ME">I have the item safe, please call me</option>
+              <option value="SUBMITTED_TO_OSA">I am surrendering it directly to OSA (Room 204) / Security Guard</option>
+              <option value="KEPT_SAFE_CONTACT_ME">I am keeping it safe, please contact me immediately</option>
             </select>
           </div>
+
           <div class="form-group">
-            <label class="form-label">Notes / Condition</label>
-            <textarea id="modal-finder-notes" class="form-control" placeholder="Found on table, good condition..."></textarea>
+            <label class="form-label">Notes / Condition (Optional)</label>
+            <textarea id="modal-finder-notes" class="form-control" rows="2" placeholder="e.g. Found on desk with blue case, undamaged..."></textarea>
           </div>
         </div>
+
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('finder-report-modal')">Cancel</button>
-          <button type="submit" class="btn btn-danger btn-sm">Submit Report</button>
+          <button type="submit" class="btn btn-primary btn-sm" style="background:#142a6d; border-color:#142a6d;">Submit Found Report</button>
         </div>
       </form>
     </div>
@@ -309,100 +518,103 @@
         const res = await api.lookupDeviceQR(token, {});
         currentGadgetData = res.gadget;
 
-        document.getElementById('qr-loading-card').style.display = 'none';
-        document.getElementById('qr-main-card').style.display = 'block';
+        document.getElementById('qr-loading-box').style.display = 'none';
+        document.getElementById('qr-content-box').style.display = 'block';
 
-        const iconEl = document.getElementById('qr-icon-container');
+        const iconEl = document.getElementById('qr-status-icon');
         const titleEl = document.getElementById('qr-status-title');
-        const subtitleEl = document.getElementById('qr-status-subtitle');
+        const descEl = document.getElementById('qr-status-desc');
         const deviceNameEl = document.getElementById('qr-device-name');
-        const badgeEl = document.getElementById('qr-device-status-badge');
-        const contactRow = document.getElementById('qr-owner-contact-row');
-        const contactVal = document.getElementById('qr-owner-contact-val');
-        const actionWrap = document.getElementById('qr-action-btn-wrap');
+        const badgeEl = document.getElementById('qr-device-badge');
+        const locHeaderTitle = document.getElementById('qr-location-header-title');
+        const actionWrap = document.getElementById('qr-action-wrap');
+        const osaBox = document.getElementById('osa-authenticated-box');
 
         deviceNameEl.textContent = `${res.gadget.brand} ${res.gadget.model}`;
-        badgeEl.innerHTML = renderStatusBadge(res.gadget.status);
 
         // ==========================================
-        // CASE A: AUTHORIZED OSA STAFF VIEW
+        // CASE A: AUTHORIZED OSA STAFF SCANNER VIEW
         // ==========================================
         if (res.isAuthorizedOsa) {
-          iconEl.className = 'qr-status-icon-circle success';
+          iconEl.className = 'qr-status-icon-circle icon-osa';
           iconEl.innerHTML = '🛡️';
-          titleEl.className = 'qr-scan-title';
-          titleEl.innerHTML = `<span style="color:#142a6d;">Authorized OSA Verification</span>`;
-          subtitleEl.innerHTML = `Full official administrative access verified for <strong>${escapeHtml(res.gadget.brand)} ${escapeHtml(res.gadget.model)}</strong>.`;
+          titleEl.className = 'qr-scan-title title-osa';
+          titleEl.textContent = 'Authorized OSA Verification';
+          descEl.innerHTML = `Full official administrative access verified for <strong>${escapeHtml(res.gadget.brand)} ${escapeHtml(res.gadget.model)}</strong>.`;
 
-          contactRow.style.display = 'block';
-          contactRow.innerHTML = `
-            <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 10px; padding: 12px; margin-top: 10px; text-align: left; font-size: 0.825rem;">
-              <div style="font-weight: 800; color: #1e40af; margin-bottom: 6px; text-transform: uppercase; font-size: 0.75rem;">👤 Verified Owner Information</div>
-              <div><strong>Name:</strong> ${escapeHtml(res.owner?.name || 'N/A')}</div>
-              <div><strong>Student / Employee ID:</strong> <code class="font-mono">${escapeHtml(res.owner?.idNumber || 'N/A')}</code></div>
-              <div><strong>Active Email:</strong> ${escapeHtml(res.owner?.email || 'N/A')}</div>
-              <div><strong>Contact Number:</strong> <span class="font-mono">${escapeHtml(res.owner?.contactNumber || 'N/A')}</span></div>
-              <div><strong>Academic Dept:</strong> ${escapeHtml(res.owner?.department || 'N/A')}</div>
-              <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #cbd5e1;">
+          badgeEl.className = (res.gadget.status === 'MISSING') ? 'badge-status badge-missing' : 'badge-status badge-registered';
+          badgeEl.textContent = (res.gadget.status === 'MISSING') ? '● REPORTED MISSING' : '● REGISTERED';
+
+          osaBox.style.display = 'block';
+          osaBox.innerHTML = `
+            <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 14px; text-align: left; font-size: 0.84rem;">
+              <div style="font-weight: 800; color: #1e40af; margin-bottom: 8px; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.04em;">
+                👤 Verified Owner Information (OSA View)
+              </div>
+              <div style="margin-bottom: 3px;"><strong>Name:</strong> ${escapeHtml(res.owner?.name || 'N/A')}</div>
+              <div style="margin-bottom: 3px;"><strong>Student / Employee ID:</strong> <code class="font-mono">${escapeHtml(res.owner?.idNumber || 'N/A')}</code></div>
+              <div style="margin-bottom: 3px;"><strong>Active Email:</strong> ${escapeHtml(res.owner?.email || 'N/A')}</div>
+              <div style="margin-bottom: 3px;"><strong>Contact Number:</strong> <span class="font-mono">${escapeHtml(res.owner?.contactNumber || 'N/A')}</span></div>
+              <div style="margin-bottom: 3px;"><strong>Department:</strong> ${escapeHtml(res.owner?.department || 'N/A')}</div>
+              <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #cbd5e1;">
                 <strong>Serial / IMEI:</strong> <code class="font-mono">${escapeHtml(res.gadget?.serialNumber || 'N/A')}</code>
               </div>
             </div>
           `;
 
+          locHeaderTitle.textContent = (res.gadget.status === 'MISSING') ? '📍 Return Location' : '📍 Surrender Location';
+
           actionWrap.innerHTML = `
-            <a href="/osa/" class="btn-qr-action btn-qr-blue" style="background:#142a6d;">Open in OSA Admin Console &rarr;</a>
-            <div style="margin-top: 10px;">
-              <a href="/" style="font-size: 0.85rem; color: #64748b; text-decoration: underline;">Return to Home</a>
-            </div>
+            <a href="/osa/" class="btn-qr-action btn-qr-blue">Open in OSA Admin Console &rarr;</a>
           `;
         }
         // ==========================================
         // CASE B: PUBLIC USER — REGISTERED (NOT MISSING)
         // ==========================================
         else if (res.gadget.status !== 'MISSING') {
-          iconEl.className = 'qr-status-icon-circle success';
-          iconEl.innerHTML = '✔';
-          titleEl.className = 'qr-scan-title safe-text';
+          iconEl.className = 'qr-status-icon-circle icon-safe';
+          iconEl.innerHTML = '✓';
+          titleEl.className = 'qr-scan-title title-safe';
           titleEl.textContent = 'This gadget is registered with GadgetGuard.';
-          subtitleEl.innerHTML = 'This gadget is not currently reported as missing.<br><span style="font-size:0.825rem; color:#64748b; margin-top:4px; display:inline-block;">If you found this gadget unattended, please keep it safe and surrender it to the <strong>Office of Student Affairs (OSA Room 204)</strong>.</span>';
-          contactRow.style.display = 'none';
+          descEl.innerHTML = 'This gadget is not currently reported as missing.<br><br>If you found this gadget unattended, please keep it safe and surrender it to the <strong>Office of Student Affairs (OSA)</strong>.';
+
+          badgeEl.className = 'badge-status badge-registered';
+          badgeEl.textContent = '● REGISTERED';
+
+          osaBox.style.display = 'none';
+          locHeaderTitle.textContent = '📍 Surrender Location';
 
           actionWrap.innerHTML = `
-            <a href="/" class="btn-qr-action btn-qr-blue">Go to GadgetGuard Website</a>
-            <div style="margin-top: 10px;">
-              <button class="btn btn-secondary btn-sm" onclick="openFinderModal()" style="font-size:0.8rem; width:100%;">
-                🤝 Surrender Unattended Device to OSA
-              </button>
-            </div>
+            <button type="button" class="btn-qr-action btn-qr-blue" onclick="openFinderModal()">
+              🤝 Surrender to OSA
+            </button>
           `;
         } 
         // ==========================================
         // CASE C: PUBLIC USER — MISSING GADGET
         // ==========================================
         else {
-          iconEl.className = 'qr-status-icon-circle danger';
+          iconEl.className = 'qr-status-icon-circle icon-missing';
           iconEl.innerHTML = '⚠️';
-          titleEl.className = 'qr-scan-title danger-text';
+          titleEl.className = 'qr-scan-title title-missing';
           titleEl.textContent = 'This gadget has been reported as missing.';
-          subtitleEl.innerHTML = 'If you found this gadget, please keep it safe and surrender it to the <strong>Office of Student Affairs (OSA Room 204)</strong>.';
-          contactRow.style.display = 'none'; // Zero private owner info exposed
+          descEl.innerHTML = 'If you found this gadget, please keep it safe and surrender it to the <strong>Office of Student Affairs (OSA)</strong>.';
+
+          badgeEl.className = 'badge-status badge-missing';
+          badgeEl.textContent = '● MISSING';
+
+          osaBox.style.display = 'none'; // Strictly protected: Zero private owner information exposed
+          locHeaderTitle.textContent = '📍 Return Location';
 
           actionWrap.innerHTML = `
-            <button class="btn-qr-action btn-qr-red" onclick="openFinderModal()">🤝 Report Found & Surrender to OSA</button>
-            <div style="margin-top: 10px;">
-              <a href="/" style="font-size: 0.85rem; color: #64748b; text-decoration: underline;">Go to GadgetGuard Website</a>
-            </div>
+            <button type="button" class="btn-qr-action btn-qr-gold" onclick="openFinderModal()">
+              🤝 Report Found & Surrender to OSA
+            </button>
           `;
         }
       } catch (err) {
-        document.getElementById('qr-loading-card').innerHTML = `
-          <div style="font-size: 2.5rem; margin-bottom: 12px;">❌</div>
-          <h3 style="font-weight: 700; color: #dc2626;">Invalid or Unrecognized QR Token</h3>
-          <p style="color: #64748b; font-size: 0.85rem; margin-top: 6px;">This QR code is not registered in the GadgetGuard campus system.</p>
-          <div style="margin-top: 20px;">
-            <a href="/" class="btn-qr-action btn-qr-blue">Return to Home</a>
-          </div>
-        `;
+        document.getElementById('qr-loading-box').style.display = 'none';
+        document.getElementById('qr-error-box').style.display = 'block';
       }
     }
 
@@ -425,7 +637,7 @@
 
       const nameRegex = /^[a-zA-ZñÑ\s\.\,\-]+$/;
       if (!nameRegex.test(finderName)) {
-        await SwalHelper.warning('Invalid Name', 'Name must contain letters and spaces only.');
+        await SwalHelper.warning('Invalid Name', 'Please enter letters and spaces only.');
         return;
       }
 
@@ -434,7 +646,7 @@
         cleanContact = '0' + cleanContact.substring(2);
       }
       if (cleanContact.length !== 11 || !cleanContact.startsWith('09')) {
-        await SwalHelper.warning('Invalid Contact', 'Contact number must be 11 digits starting with 09 (e.g. 09123456789 or +63 912 345 6789).');
+        await SwalHelper.warning('Invalid Contact', 'Contact number must be 11 digits starting with 09 (e.g. 09123456789).');
         return;
       }
 
@@ -445,14 +657,14 @@
 
       const confirmResult = await SwalHelper.confirm({
         title: 'Submit Found Device Report?',
-        html: `<p>Confirm submission of found report for this item to the <strong>NCST Office of Student Affairs</strong>?</p>
+        html: `<p>Confirm submission of found report for this gadget to the <strong>NCST Office of Student Affairs</strong>?</p>
                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; font-size:0.85rem; text-align:left; margin:12px 0;">
                  <div>👤 <strong>Finder:</strong> ${escapeHtml(finderName)}</div>
                  <div>📍 <strong>Found At:</strong> ${escapeHtml(location)}</div>
-                 <div>🏢 <strong>Method:</strong> ${turnInMethod === 'SUBMITTED_TO_OSA' ? 'Surrendering to OSA Office / Security' : 'Finder keeping safe for direct contact'}</div>
+                 <div>🏢 <strong>Turn-in Method:</strong> ${turnInMethod === 'SUBMITTED_TO_OSA' ? 'Surrendering to OSA Office (Room 204)' : 'Keeping safe for direct contact'}</div>
                </div>`,
         icon: 'question',
-        confirmText: 'Yes, Submit Found Report',
+        confirmText: 'Yes, Submit Report',
         cancelText: 'Review Form',
         confirmColor: '#142a6d'
       });
@@ -470,12 +682,12 @@
         });
 
         closeModal('finder-report-modal');
-        await SwalHelper.success('Thank You, Good Citizen! 🌟', 'Your found report has been submitted to NCST OSA. The verified student owner and campus security officers have been notified.', 3000);
+        await SwalHelper.success('Thank You, Good Samaritan! 🌟', 'Your found report has been submitted to the NCST Office of Student Affairs. The owner has been notified.', 3500);
         
-        document.getElementById('qr-action-btn-wrap').innerHTML = `
-          <div style="background: #ecfdf5; border: 2px solid #a7f3d0; border-radius: 12px; padding: 18px; color: #047857; font-size: 0.9rem;">
+        document.getElementById('qr-action-wrap').innerHTML = `
+          <div style="background: #ecfdf5; border: 2px solid #a7f3d0; border-radius: 12px; padding: 16px; color: #047857; font-size: 0.9rem; text-align: center; margin-bottom: 10px;">
             <div style="font-weight: 800; font-size: 1.05rem; margin-bottom: 4px;">✅ Report Successfully Logged!</div>
-            Please surrender the device to <strong>OSA Room 204</strong> or to any Security Guard on campus.
+            Please surrender the device to <strong>OSA Room 204</strong> or to any on-duty Security Guard on campus.
           </div>
         `;
       } catch (err) {
