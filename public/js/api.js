@@ -360,7 +360,13 @@ const api = {
 
   // Finder
   async reportFoundGadget(token, data) {
-    return await this.submitFoundReport({ secureToken: token, ...data });
+    return await this.submitFoundReport({
+      token,
+      secureToken: token,
+      ...data,
+      foundLocation: data.location || data.foundLocation,
+      message: data.notes || data.message
+    });
   },
 
   async submitFoundReport(reportData) {

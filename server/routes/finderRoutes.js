@@ -6,24 +6,22 @@ const db = require('../db');
 // POST /api/finder/report (Public Finder submits found report for a gadget)
 router.post('/report', (req, res) => {
   try {
-    const { 
-      token, 
-      gadgetId, 
-      finderName, 
-      finderContact, 
-      finderEmail, 
-      foundLocation, 
-      foundDate, 
-      itemCondition, 
-      turnInMethod, 
-      message 
-    } = req.body;
+    const token = req.body.token || req.body.secureToken || req.body.gadgetToken;
+    const gadgetId = req.body.gadgetId;
+    const finderName = req.body.finderName;
+    const finderContact = req.body.finderContact;
+    const finderEmail = req.body.finderEmail;
+    const foundLocation = req.body.foundLocation || req.body.location;
+    const foundDate = req.body.foundDate;
+    const itemCondition = req.body.itemCondition || req.body.condition;
+    const turnInMethod = req.body.turnInMethod;
+    const message = req.body.message || req.body.notes;
 
     let targetGadget = null;
     if (token) {
-      targetGadget = db.findOne('gadgets', g => g.secureToken === token);
+      targetGadget = db.findOne('gadgets', g => g.secureToken === token || g.id === token);
     } else if (gadgetId) {
-      targetGadget = db.findById('gadgets', gadgetId);
+      targetGadget = db.findById('gadgets', gadgetId) || db.findOne('gadgets', g => g.secureToken === gadgetId);
     }
 
     if (!targetGadget) {

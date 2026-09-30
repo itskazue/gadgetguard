@@ -507,8 +507,11 @@
     let currentGadgetData = null;
 
     document.addEventListener('DOMContentLoaded', () => {
-      const parts = window.location.pathname.split('/');
-      scannedToken = parts[parts.length - 1] || 'gg_dev_7c3b881e';
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryToken = urlParams.get('token') || urlParams.get('t');
+      const cleanParts = window.location.pathname.split('/').filter(Boolean);
+      const pathToken = cleanParts[cleanParts.length - 1];
+      scannedToken = queryToken || (pathToken && pathToken !== 'device' ? pathToken : '') || window.location.hash.replace('#', '') || 'gg_dev_7c3b881e';
 
       executeScanLookup(scannedToken);
     });
@@ -517,6 +520,9 @@
       try {
         const res = await api.lookupDeviceQR(token, {});
         currentGadgetData = res.gadget;
+        if (res.gadget && res.gadget.secureToken) {
+          scannedToken = res.gadget.secureToken;
+        }
 
         document.getElementById('qr-loading-box').style.display = 'none';
         document.getElementById('qr-content-box').style.display = 'block';
@@ -693,12 +699,17 @@
 
       try {
         await api.reportFoundGadget(scannedToken, {
+          token: scannedToken,
+          secureToken: scannedToken,
+          gadgetId: currentGadgetData?.id,
           finderName,
           finderContact: cleanContact,
           finderEmail,
           location,
+          foundLocation: location,
           turnInMethod,
-          notes
+          notes,
+          message: notes
         });
 
         closeModal('finder-report-modal');
