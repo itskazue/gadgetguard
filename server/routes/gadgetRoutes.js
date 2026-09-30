@@ -6,14 +6,28 @@ const { authMiddleware, requireRole } = require('../auth');
 const db = require('../db');
 const mailer = require('../services/mailer');
 
-// Helper to generate QR code data URL
-async function generateGadgetQRCode(token) {
-  const url = `http://localhost:3000/device/${token}`;
+// Helper to determine the public base URL
+function getBaseUrl(req) {
+  if (process.env.APP_URL) {
+    return process.env.APP_URL.replace(/\/$/, '');
+  }
+  if (req) {
+    const proto = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.headers['x-forwarded-host'] || req.get('host');
+    if (host) return `${proto}://${host}`;
+  }
+  return 'https://ncstgadgetguard.onrender.com';
+}
+
+// Helper to generate QR code data URL matching current domain
+async function generateGadgetQRCode(token, req) {
+  const base = getBaseUrl(req);
+  const url = `${base}/device/${token}`;
   return await QRCode.toDataURL(url, {
     errorCorrectionLevel: 'H',
     margin: 2,
     color: {
-      dark: '#1e1b4b',
+      dark: '#142a6d',
       light: '#ffffff'
     },
     width: 350
@@ -145,7 +159,7 @@ router.get('/my', authMiddleware, (req, res) => {
 });
 
 // GET /api/gadgets (OSA Admin fetches all gadgets)
-router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
+router.get('/', authMiddleware, requireRole('osa_admin'), async (req, res) => {
   try {
     const { status, category, search } = req.query;
     let gadgets = db.get('gadgets');
@@ -166,7 +180,7 @@ router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
       );
     }
 
-    const enriched = gadgets.map(g => {
+    const enriched = await Promise.all(gadgets.map(async g => {
       const owner = db.findById('users', g.userId);
       const ownerSafe = owner ? {
         id: owner.id,
@@ -182,14 +196,20 @@ router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
       const scanCount = db.find('qr_scans', s => s.gadgetId === g.id).length;
       const foundReport = db.findOne('found_reports', f => f.gadgetId === g.id);
 
+      let qrCodeDataUrl = g.qrCodeDataUrl;
+      if (g.status === 'REGISTERED' && g.secureToken) {
+        qrCodeDataUrl = await generateGadgetQRCode(g.secureToken, req);
+      }
+
       return {
         ...g,
+        qrCodeDataUrl,
         owner: ownerSafe,
         missingReport,
         scanCount,
         foundReport
       };
-    });
+    }));
 
     return res.json({ success: true, gadgets: enriched });
   } catch (err) {
@@ -198,7 +218,7 @@ router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
 });
 
 // GET /api/gadgets/:id (Single gadget details)
-router.get('/:id', authMiddleware, (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const gadget = db.findById('gadgets', req.params.id);
     if (!gadget) {
@@ -227,10 +247,16 @@ router.get('/:id', authMiddleware, (req, res) => {
     const returnRecord = db.findOne('returns', r => r.gadgetId === gadget.id);
     const foundReports = db.find('found_reports', f => f.gadgetId === gadget.id);
 
+    let qrCodeDataUrl = gadget.qrCodeDataUrl;
+    if (gadget.status === 'REGISTERED' && gadget.secureToken) {
+      qrCodeDataUrl = await generateGadgetQRCode(gadget.secureToken, req);
+    }
+
     return res.json({
       success: true,
       gadget: {
         ...gadget,
+        qrCodeDataUrl,
         owner: ownerSafe,
         missingReport,
         scans,
@@ -254,7 +280,7 @@ router.post('/:id/approve', authMiddleware, requireRole('osa_admin'), async (req
 
     // Generate secure token and QR Code
     const secureToken = 'gg_dev_' + Math.random().toString(36).substring(2, 10);
-    const qrCodeDataUrl = await generateGadgetQRCode(secureToken);
+    const qrCodeDataUrl = await generateGadgetQRCode(secureToken, req);
 
     const updated = db.update('gadgets', gadget.id, {
       status: 'REGISTERED',

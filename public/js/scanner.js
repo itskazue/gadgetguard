@@ -215,11 +215,88 @@ function toggleCameraStream() {
   startCameraScanner();
 }
 
-function tickScan() {
-  const video = document.getElementById('qr-video');
-  if (video && video.readyState === video.HAVE_ENOUGH_DATA) {
-    // In production with jsQR, video frames are decoded here.
+// Helper to extract token from either full URL or raw token
+function extractTokenFromQR(rawString) {
+  if (!rawString || typeof rawString !== 'string') return null;
+  const str = rawString.trim();
+  const urlMatch = str.match(/\/device\/([a-zA-Z0-9_\-]+)/);
+  if (urlMatch && urlMatch[1]) {
+    return urlMatch[1];
   }
+  if (str.startsWith('gg_dev_')) {
+    return str;
+  }
+  if (/^[a-zA-Z0-9_\-]{6,32}$/.test(str)) {
+    return str;
+  }
+  return str;
+}
+
+let scanIsThrottled = false;
+
+async function decodeCanvasQR(canvas) {
+  if (!canvas) return null;
+
+  // 1. Native hardware accelerated BarcodeDetector
+  if ('BarcodeDetector' in window) {
+    try {
+      const barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+      const barcodes = await barcodeDetector.detect(canvas);
+      if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+        return barcodes[0].rawValue;
+      }
+    } catch (e) {
+      // Fall through to jsQR
+    }
+  }
+
+  // 2. Fallback to jsQR
+  if (typeof jsQR === 'function') {
+    try {
+      const ctx = canvas.getContext('2d');
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: 'attemptBoth'
+      });
+      if (code && code.data) {
+        return code.data;
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }
+  return null;
+}
+
+async function tickScan() {
+  const video = document.getElementById('qr-video');
+  const canvas = document.getElementById('qr-canvas');
+
+  if (scannerActiveTab === 'camera' && video && canvas && !scanIsThrottled) {
+    if (video.readyState >= 2 && video.videoWidth > 0) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const rawData = await decodeCanvasQR(canvas);
+      if (rawData) {
+        scanIsThrottled = true;
+        const token = extractTokenFromQR(rawData);
+        const statusEl = document.getElementById('camera-overlay-status');
+        if (statusEl) {
+          statusEl.innerHTML = `<span class="status-dot green"></span> Verified QR: <strong>${escapeHtml(token)}</strong>! Opening...`;
+          statusEl.style.background = '#059669';
+        }
+        setTimeout(() => {
+          dispatchScanSuccess(token);
+          scanIsThrottled = false;
+        }, 500);
+        return;
+      }
+    }
+  }
+
   if (scannerActiveTab === 'camera') {
     scannerAnimFrame = requestAnimationFrame(tickScan);
   }
@@ -254,24 +331,58 @@ function setupDropZone() {
   }, false);
 }
 
-function handleQRFileUpload(input) {
+async function handleQRFileUpload(input) {
   if (!input.files || !input.files[0]) return;
   const file = input.files[0];
   const status = document.getElementById('file-scan-status');
   if (status) {
     status.style.display = 'block';
+    status.style.color = '#1e40af';
     status.innerHTML = `⏳ Analyzing image "<strong>${escapeHtml(file.name)}</strong>" for QR code...`;
   }
 
-  // Simulate scanning QR token
-  setTimeout(() => {
-    const token = 'gg_dev_7c3b881e'; // Default to demo missing token
+  try {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.src = objectUrl;
+
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = () => reject(new Error('Unable to read image file.'));
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth || img.width;
+    canvas.height = img.naturalHeight || img.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+
+    URL.revokeObjectURL(objectUrl);
+
+    const rawData = await decodeCanvasQR(canvas);
+
+    if (!rawData) {
+      if (status) {
+        status.innerHTML = `⚠️ <strong>No QR Code Detected</strong> in this photo. Please make sure the QR sticker is clear, focused, and well-lit.`;
+        status.style.color = '#dc2626';
+      }
+      return;
+    }
+
+    const token = extractTokenFromQR(rawData);
     if (status) {
-      status.innerHTML = `✅ <strong>QR Token Detected: ${token}</strong>! Retrieving records...`;
+      status.innerHTML = `✅ <strong>QR Sticker Verified! Token: ${escapeHtml(token)}</strong>. Opening device records...`;
       status.style.color = '#047857';
     }
+
     setTimeout(() => {
       dispatchScanSuccess(token);
     }, 600);
-  }, 1000);
+  } catch (err) {
+    console.error('File scan error:', err);
+    if (status) {
+      status.innerHTML = `❌ Failed to process image: ${err.message}.`;
+      status.style.color = '#dc2626';
+    }
+  }
 }

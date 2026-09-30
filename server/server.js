@@ -189,6 +189,10 @@ app.get(/^\/osa/, (req, res) => {
   res.sendFile('osa/index.html', { root: PUBLIC_DIR });
 });
 
+app.get(/^\/scan/, (req, res) => {
+  res.sendFile('scan.html', { root: PUBLIC_DIR });
+});
+
 app.get(/^\/device/, (req, res) => {
   res.sendFile('device/index.html', { root: PUBLIC_DIR });
 });
