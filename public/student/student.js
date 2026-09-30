@@ -385,6 +385,25 @@ function openGadgetDetailsModal(gadgetId) {
         ✅ Mark as Recovered / Safe
       </button>
     `;
+    if (gadget.finderInfo) {
+      actionHtml += `
+        <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: var(--radius-md); padding: 14px; margin-top: 12px; text-align: left;">
+          <div style="font-weight: 800; color: #047857; font-size: 0.88rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+            <span>🌟</span> Good Samaritan Contact Information:
+          </div>
+          <div style="font-size: 0.825rem; color: #065f46; line-height: 1.55;">
+            <div>👤 <strong>Finder:</strong> ${escapeHtml(gadget.finderInfo.finderName)}</div>
+            <div>📞 <strong>Phone:</strong> <a href="tel:${escapeHtml(gadget.finderInfo.finderContact)}" style="font-weight: 800; color: #1e40af; text-decoration: underline;">${escapeHtml(gadget.finderInfo.finderContact)}</a></div>
+            ${gadget.finderInfo.finderEmail ? `<div>✉️ <strong>Email:</strong> <a href="mailto:${escapeHtml(gadget.finderInfo.finderEmail)}">${escapeHtml(gadget.finderInfo.finderEmail)}</a></div>` : ''}
+            <div>📍 <strong>Found Location:</strong> ${escapeHtml(gadget.finderInfo.foundLocation)}</div>
+            ${gadget.finderInfo.message ? `<div>📝 <strong>Notes:</strong> "${escapeHtml(gadget.finderInfo.message)}"</div>` : ''}
+          </div>
+          <div style="margin-top: 8px; font-size: 0.76rem; color: #047857; font-weight: 600;">
+            💡 Contact the finder directly to coordinate safe handover of your device!
+          </div>
+        </div>
+      `;
+    }
   } else if (gadget.status === 'FOUND_IN_CUSTODY') {
     actionHtml += `
       <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: var(--radius-md); padding: 12px; font-size: 0.825rem; color: #065f46;">
@@ -977,6 +996,27 @@ async function loadLostStatusScreen() {
           `;
         }
 
+        let finderCardHtml = '';
+        if (g.finderInfo) {
+          finderCardHtml = `
+            <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 10px; padding: 14px; margin-top: 6px;">
+              <div style="font-weight: 800; color: #047857; font-size: 0.88rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                <span>🌟</span> Good Samaritan is Keeping Your Gadget Safe!
+              </div>
+              <div style="font-size: 0.825rem; color: #065f46; line-height: 1.55;">
+                <div>👤 <strong>Finder Name:</strong> ${escapeHtml(g.finderInfo.finderName)}</div>
+                <div>📞 <strong>Contact Number:</strong> <a href="tel:${escapeHtml(g.finderInfo.finderContact)}" style="font-weight: 800; color: #1e40af; text-decoration: underline;">${escapeHtml(g.finderInfo.finderContact)}</a></div>
+                ${g.finderInfo.finderEmail ? `<div>✉️ <strong>Email:</strong> <a href="mailto:${escapeHtml(g.finderInfo.finderEmail)}">${escapeHtml(g.finderInfo.finderEmail)}</a></div>` : ''}
+                <div>📍 <strong>Found Location:</strong> ${escapeHtml(g.finderInfo.foundLocation)}</div>
+                ${g.finderInfo.message ? `<div>📝 <strong>Notes:</strong> "${escapeHtml(g.finderInfo.message)}"</div>` : ''}
+              </div>
+              <div style="margin-top: 8px; font-size: 0.76rem; color: #047857; font-weight: 600;">
+                💡 You can directly call or text the finder above to meet up and safely retrieve your gadget!
+              </div>
+            </div>
+          `;
+        }
+
         return `
           <div style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: var(--radius-md); padding: 18px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
@@ -994,6 +1034,7 @@ async function loadLostStatusScreen() {
                 <button class="btn btn-success btn-sm" onclick="cancelMissingReportFor('${g.missingReport?.id || g.id}')">✅ I Found My Device (Cancel Alert)</button>
               </div>
             </div>
+            ${finderCardHtml}
             ${scansListHtml}
           </div>
         `;

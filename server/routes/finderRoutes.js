@@ -78,12 +78,18 @@ router.post('/report', (req, res) => {
     });
 
     // Notify Owner
+    const isKeeping = (turnInMethod === 'KEPT_SAFE_CONTACT_ME' || turnInMethod === 'FINDER_HOLDING');
+    const ownerNotifTitle = isKeeping ? 'Someone Found Your Gadget (Finder Direct Contact) 🌟' : 'Found Gadget Surrendered to OSA 📦';
+    const ownerNotifMsg = isKeeping 
+      ? `Good news! ${finderName} found your ${targetGadget.brand} ${targetGadget.model} and is keeping it safe for you.\n\n👤 Finder: ${finderName}\n📞 Contact: ${finderContact || 'Not provided'}${finderEmail ? '\n✉️ Email: ' + finderEmail : ''}\n📍 Found At: ${foundLocation}${message ? '\n📝 Notes: ' + message : ''}\n\n💡 You may call or message the finder directly to coordinate retrieval!`
+      : `A finder (${finderName}) reported surrendering your ${targetGadget.brand} ${targetGadget.model} found at "${foundLocation}" to OSA Room 1109.`;
+
     db.addNotification({
       userId: targetGadget.userId,
-      title: 'Finder Report Received! 🌟',
-      message: `A finder (${finderName}) reported locating your ${targetGadget.brand} ${targetGadget.model} at "${foundLocation}". Method: ${turnInMethod === 'SUBMITTED_TO_OSA' ? 'Surrendering to OSA' : 'Finder has item, OSA coordinating'}.`,
+      title: ownerNotifTitle,
+      message: ownerNotifMsg,
       type: 'GADGET_FOUND',
-      linkUrl: '/student/#gadgets'
+      linkUrl: '/student/#lost-status'
     });
 
     // Notify OSA Admins
