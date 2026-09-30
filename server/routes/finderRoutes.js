@@ -77,20 +77,19 @@ router.post('/report', (req, res) => {
       ipAddress: req.ip
     });
 
-    // Notify Owner
+    // Notify Owner ONLY if finder chose direct contact (KEPT_SAFE_CONTACT_ME / FINDER_HOLDING).
+    // If finder selected SUBMITTED_TO_OSA, do not notify student yet to prevent false hope.
+    // Student will only be officially notified once OSA accepts the item into custody.
     const isKeeping = (turnInMethod === 'KEPT_SAFE_CONTACT_ME' || turnInMethod === 'FINDER_HOLDING');
-    const ownerNotifTitle = isKeeping ? 'Someone Found Your Gadget (Finder Direct Contact) 🌟' : 'Found Gadget Surrendered to OSA 📦';
-    const ownerNotifMsg = isKeeping 
-      ? `Good news! ${finderName} found your ${targetGadget.brand} ${targetGadget.model} and is keeping it safe for you.\n\n👤 Finder: ${finderName}\n📞 Contact: ${finderContact || 'Not provided'}${finderEmail ? '\n✉️ Email: ' + finderEmail : ''}\n📍 Found At: ${foundLocation}${message ? '\n📝 Notes: ' + message : ''}\n\n💡 You may contact the finder to arrange the return of your gadget. For your safety, we recommend completing the return through the OSA (Room 1109) whenever possible.`
-      : `A finder (${finderName}) reported surrendering your ${targetGadget.brand} ${targetGadget.model} found at "${foundLocation}" to OSA Room 1109.`;
-
-    db.addNotification({
-      userId: targetGadget.userId,
-      title: ownerNotifTitle,
-      message: ownerNotifMsg,
-      type: 'GADGET_FOUND',
-      linkUrl: '/student/#lost-status'
-    });
+    if (isKeeping) {
+      db.addNotification({
+        userId: targetGadget.userId,
+        title: 'Someone Found Your Gadget (Finder Direct Contact) 🌟',
+        message: `Good news! ${finderName} found your ${targetGadget.brand} ${targetGadget.model} and is keeping it safe for you.\n\n👤 Finder: ${finderName}\n📞 Contact: ${finderContact || 'Not provided'}${finderEmail ? '\n✉️ Email: ' + finderEmail : ''}\n📍 Found At: ${foundLocation}${message ? '\n📝 Notes: ' + message : ''}\n\n💡 You may contact the finder to arrange the return of your gadget. For your safety, we recommend completing the return through the OSA (Room 1109) whenever possible.`,
+        type: 'GADGET_FOUND',
+        linkUrl: '/student/#lost-status'
+      });
+    }
 
     // Notify OSA Admins
     const osaAdmins = db.find('users', u => u.role === 'osa_admin');
