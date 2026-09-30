@@ -353,18 +353,26 @@ router.post('/:id/approve', authMiddleware, requireRole('osa_admin'), async (req
       linkUrl: `/student/#gadgets`
     });
 
-    // Send Email in background (pool already warmed up at startup)
+    // Send official Email Notification to student asynchronously in background
     if (owner && owner.email) {
-      const emailData = {
-        studentEmail: owner.email,
-        studentName: owner.name,
-        studentId: owner.idNumber,
-        gadgetInfo: { brand: gadget.brand, model: gadget.model, category: gadget.category, serialNumber: gadget.serialNumber }
-      };
-      setImmediate(() => {
-        mailer.sendApprovalEmail(emailData)
-          .then(r => console.log(`📧 Approval email sent to ${owner.email}:`, JSON.stringify(r)))
-          .catch(e => console.error(`📧 Approval email failed:`, e.message));
+      setImmediate(async () => {
+        try {
+          console.log(`📧 [Async] Sending approval email to ${owner.email}...`);
+          const mailRes = await mailer.sendApprovalEmail({
+            studentEmail: owner.email,
+            studentName: owner.name,
+            studentId: owner.idNumber,
+            gadgetInfo: {
+              brand: gadget.brand,
+              model: gadget.model,
+              category: gadget.category,
+              serialNumber: gadget.serialNumber
+            }
+          });
+          console.log(`📧 [Async] Approval email result for ${owner.email}:`, mailRes);
+        } catch (e) {
+          console.error('Error sending approval email in background:', e.message);
+        }
       });
     }
 

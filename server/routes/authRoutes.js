@@ -157,14 +157,22 @@ router.post('/register', async (req, res) => {
 
     const { passwordHash, ...userSafe } = newUser;
 
-    // Send pre-registration email in background (pool already warmed up)
+    // Send pre-registration acknowledgement email asynchronously in background
     if (newUser.email) {
       const deviceName = registeredDevice ? `${registeredDevice.brand} ${registeredDevice.model}` : null;
-      const emailData = { studentEmail: newUser.email, studentName: newUser.name, studentId: newUser.idNumber, deviceName };
-      setImmediate(() => {
-        mailer.sendPreRegistrationEmail(emailData)
-          .then(r => console.log(`📧 Pre-reg email sent to ${newUser.email}:`, JSON.stringify(r)))
-          .catch(e => console.error(`📧 Pre-reg email failed:`, e.message));
+      setImmediate(async () => {
+        try {
+          console.log(`📧 [Async] Sending pre-registration email to ${newUser.email}...`);
+          const mailRes = await mailer.sendPreRegistrationEmail({
+            studentEmail: newUser.email,
+            studentName: newUser.name,
+            studentId: newUser.idNumber,
+            deviceName
+          });
+          console.log(`📧 [Async] Pre-registration email result for ${newUser.email}:`, mailRes);
+        } catch (e) {
+          console.error('Error sending registration email in background:', e.message);
+        }
       });
     }
 
