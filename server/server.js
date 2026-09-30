@@ -205,6 +205,8 @@ app.get(/^\/(?!api|uploads).*/, (req, res) => {
 // Start Server and initialize seed data
 async function startServer() {
   await seedDatabase();
+  // Pre-connect SMTP pool so email sends are instant
+  mailer.warmupSMTP();
   server.listen(PORT, () => {
     console.log(`
 ===============================================================
@@ -227,3 +229,4 @@ Demo Accounts:
 }
 
 startServer();
+

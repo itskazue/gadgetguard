@@ -267,5 +267,16 @@ module.exports = {
   verifySMTP,
   sendMail,
   sendApprovalEmail,
-  sendPreRegistrationEmail
+  sendPreRegistrationEmail,
+  warmupSMTP: async () => {
+    try {
+      const t = getTransporter();
+      if (t) {
+        await t.verify();
+        console.log('📧 SMTP pool warmed up and ready!');
+      }
+    } catch (e) {
+      console.warn('📧 SMTP warmup failed (will retry on first send):', e.message);
+    }
+  }
 };
