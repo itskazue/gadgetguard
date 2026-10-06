@@ -57,12 +57,29 @@
   font-weight: 600;
   font-size: 0.9rem;
   text-decoration: none;
-  transition: color 0.15s ease;
+  transition: all 0.2s ease;
   padding: 6px 2px;
+  position: relative;
 }
 
-.nav-link:hover, .nav-link.active {
+.nav-link:hover {
   color: #142a6d;
+}
+
+.nav-link.active {
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: #2563eb;
+  border-radius: 999px;
 }
 
 .nav-actions {
@@ -72,87 +89,140 @@
 }
 
 .btn-nav-student-login {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: #142a6d;
+  background: #0f172a;
   color: #ffffff;
   font-weight: 700;
-  font-size: 0.875rem;
-  padding: 9px 22px;
-  border-radius: 10px;
-  border: none;
+  font-size: 0.85rem;
+  padding: 10px 22px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(20, 42, 109, 0.3);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
   transition: all 0.2s ease;
 }
 
 .btn-nav-student-login:hover {
-  background: #0b1a45;
+  background: #1e293b;
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(20, 42, 109, 0.45);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.35);
 }
 
 /* ==========================================
-   HERO BANNER SECTION (Matching Screen 1)
+   HERO BANNER SECTION (Target Design Exact Match)
    ========================================== */
 .hero-banner-wrap {
-  background: linear-gradient(135deg, rgba(14, 38, 108, 0.92) 0%, rgba(20, 42, 109, 0.88) 60%, rgba(10, 26, 75, 0.95) 100%), 
-              url('/assets/ncst_campus.png') center/cover no-repeat;
-  padding: 70px 6% 100px;
+  background: url('/assets/ncst_campus.png') center/cover no-repeat;
+  padding: 70px 6% 115px;
   position: relative;
+  overflow: hidden;
+}
+
+/* Diagonal Modern Angular Geometric Overlay */
+.hero-banner-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(108deg, 
+    rgba(10, 24, 70, 0.97) 0%, 
+    rgba(14, 34, 96, 0.93) 38%, 
+    rgba(14, 34, 96, 0.68) 58%, 
+    rgba(10, 24, 70, 0.38) 78%,
+    rgba(10, 24, 70, 0.20) 100%);
+  z-index: 1;
+}
+
+/* Golden & Navy Geometric Diagonal Accent Stripes */
+.hero-banner-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    linear-gradient(125deg, transparent 0%, transparent 5%, rgba(255, 199, 44, 0.45) 5.2%, rgba(255, 199, 44, 0.05) 5.8%, transparent 6.5%),
+    linear-gradient(125deg, transparent 0%, transparent 8%, rgba(37, 99, 235, 0.35) 8.2%, rgba(10, 24, 70, 0.75) 15%, transparent 26%),
+    linear-gradient(60deg, transparent 86%, rgba(255, 199, 44, 0.4) 86.3%, transparent 87.2%);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .hero-banner-container {
-  max-width: 1200px;
+  max-width: 1220px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 40px;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 32px;
   align-items: center;
+  position: relative;
+  z-index: 3;
+}
+
+/* Tag Pill Badge */
+.hero-tag-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 9999px;
+  padding: 6px 16px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 20px;
 }
 
 .hero-banner-title {
-  font-size: 2.8rem;
+  font-size: 3.1rem;
   font-weight: 800;
   color: #ffffff;
-  line-height: 1.2;
+  line-height: 1.15;
   margin-bottom: 18px;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
+}
+
+.hero-title-highlight {
+  color: #ffc72c;
 }
 
 .hero-banner-subtitle {
-  font-size: 1.05rem;
+  font-size: 0.98rem;
   color: #cbd5e1;
   line-height: 1.6;
-  max-width: 520px;
-  margin-bottom: 30px;
+  max-width: 530px;
+  margin-bottom: 26px;
 }
 
 .hero-btn-row {
   display: flex;
   align-items: center;
   gap: 14px;
+  margin-bottom: 24px;
 }
 
 .btn-hero-primary {
-  background: var(--gold);
-  color: var(--gold-text);
+  background: #ffc72c;
+  color: #081026;
   font-weight: 800;
   font-size: 0.95rem;
   padding: 13px 28px;
-  border-radius: 8px;
-  border: 1px solid var(--gold-hover);
+  border-radius: 12px;
+  border: none;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 14px var(--gold-glow);
+  box-shadow: 0 4px 16px rgba(255, 199, 44, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .btn-hero-primary:hover {
-  background: var(--gold-hover);
-  color: #081026;
+  background: #f59e0b;
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(255, 199, 44, 0.5);
+  box-shadow: 0 6px 20px rgba(255, 199, 44, 0.5);
 }
 
 .btn-hero-secondary {
@@ -161,134 +231,342 @@
   font-weight: 700;
   font-size: 0.95rem;
   padding: 13px 26px;
-  border-radius: 8px;
-  border: 1px solid #ffffff;
+  border-radius: 12px;
+  border: none;
   text-decoration: none;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .btn-hero-secondary:hover {
-  background: #eef3ff;
+  background: #f8fafc;
   color: #0c1c4f;
   transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
 }
 
-/* Smartphone Mockup Graphic with QR Sticker */
+/* 3 Bullet Checklist */
+.hero-features-checklist {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.check-circle {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+/* Smartphone & Floating Cards Showcase */
 .hero-device-col {
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-.phone-mockup-wrapper {
-  width: 220px;
-  height: 380px;
-  background: #081026;
-  border-radius: 36px;
-  padding: 10px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 30px rgba(56, 189, 248, 0.2);
-  border: 4px solid #334155;
-  transform: rotate(4deg);
-  transition: transform 0.3s ease;
-}
-
-.phone-mockup-wrapper:hover {
-  transform: rotate(0deg) scale(1.02);
-}
-
-.phone-body {
-  width: 100%;
-  height: 100%;
-  background: #1e293b;
-  border-radius: 28px;
-  overflow: hidden;
   position: relative;
 }
 
-.phone-screen {
+.hero-showcase-wrap {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  width: 100%;
+  max-width: 440px;
+}
+
+/* Smartphone Mockup */
+.phone-mockup-frame {
+  width: 250px;
+  height: 485px;
+  background: #090e1a;
+  border-radius: 40px;
+  padding: 10px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 40px rgba(37, 99, 235, 0.18);
+  border: 3.5px solid #334155;
+  position: relative;
+  z-index: 5;
+}
+
+.phone-inner-screen {
   width: 100%;
   height: 100%;
-  background: linear-gradient(180deg, #142a6d 0%, #09153a 100%);
+  background: #f8fafc;
+  border-radius: 32px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   position: relative;
-  padding: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-.phone-notch {
+.phone-top-bar {
+  background: #0f172a;
+  color: #ffffff;
+  padding: 8px 14px 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.phone-dynamic-island {
   width: 60px;
   height: 14px;
-  background: #081026;
-  border-radius: 0 0 10px 10px;
-  margin: -12px auto 8px;
+  background: #000000;
+  border-radius: 10px;
 }
 
-.phone-clock {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #93c5fd;
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.phone-widget-card {
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 16px 12px;
-  text-align: center;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-}
-
-.phone-widget-brand {
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: #1e40af;
-  margin-bottom: 10px;
-}
-
-.phone-qr-sticker {
+.phone-header-user {
+  background: #0f172a;
+  padding: 6px 14px 12px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  border-radius: 8px;
-  padding: 8px;
+  justify-content: space-between;
+  color: #ffffff;
 }
 
-.phone-token-code {
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
-  font-weight: 700;
-  color: #475569;
+.phone-user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.phone-secure-status {
-  font-size: 0.625rem;
-  color: #059669;
-  font-weight: 700;
-  margin-top: 10px;
+.phone-user-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #1e293b;
+  border: 1.5px solid #ffc72c;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  font-size: 0.75rem;
 }
 
-.phone-green-dot {
-  width: 6px;
-  height: 6px;
-  background: #10b981;
+/* Phone Main QR Card */
+.phone-main-card {
+  background: #ffffff;
+  margin: 10px 10px 8px;
+  border-radius: 14px;
+  padding: 12px 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  text-align: center;
+  border: 1px solid #e2e8f0;
+}
+
+.phone-app-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.phone-qr-box {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 8px;
+  display: inline-block;
+  margin-bottom: 4px;
+}
+
+.phone-qr-img {
+  width: 86px;
+  height: 86px;
+  display: block;
+}
+
+.phone-token-lbl {
+  font-size: 0.6rem;
+  font-family: monospace;
+  color: #475569;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.phone-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #ecfdf5;
+  color: #059669;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.phone-view-btn {
+  width: calc(100% - 20px);
+  margin: 0 10px 8px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.phone-view-btn:hover {
+  background: #1d4ed8;
+}
+
+.phone-menu-list {
+  padding: 0 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.phone-menu-row {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 6px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.675rem;
+  color: #1e293b;
+  font-weight: 600;
+  border: 1px solid #f1f5f9;
+}
+
+/* Floating Glass Widget 1: Top Right (Scan Report Recover) */
+.floating-glass-top {
+  position: absolute;
+  right: -25px;
+  top: 35px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 16px;
+  padding: 12px 16px;
+  color: #ffffff;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 6;
+  animation: floatSubtle 4s ease-in-out infinite alternate;
+}
+
+.floating-glass-top .scan-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.floating-glass-top .scan-text-lines {
+  font-weight: 800;
+  font-size: 0.95rem;
+  line-height: 1.15;
+  color: #ffffff;
+}
+
+.floating-glass-top .scan-sub-note {
+  font-size: 0.65rem;
+  color: #cbd5e1;
+  margin-top: 3px;
+}
+
+/* Floating Glass Widget 2: Bottom Right (Metrics) */
+.floating-glass-bottom {
+  position: absolute;
+  right: -25px;
+  bottom: 25px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 16px;
+  padding: 14px 16px;
+  color: #ffffff;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 160px;
+  z-index: 6;
+  animation: floatSubtle 4.5s ease-in-out infinite alternate-reverse;
+}
+
+.stat-mini-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stat-mini-icon {
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
+  background: rgba(37, 99, 235, 0.4);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+}
+
+.stat-mini-val {
+  font-weight: 800;
+  font-size: 0.9rem;
+  line-height: 1;
+  color: #ffffff;
+}
+
+.stat-mini-lbl {
+  font-size: 0.65rem;
+  color: #cbd5e1;
+}
+
+@keyframes floatSubtle {
+  0% { transform: translateY(0px); }
+  100% { transform: translateY(-6px); }
 }
 
 /* ==========================================
-   3 BOTTOM FEATURE CARDS (Screen 1 Strip)
+   3 BOTTOM FEATURE STRIP CARDS (Matching Target Screen)
    ========================================== */
 .feature-strip-container {
-  max-width: 1100px;
-  margin: -50px auto 0;
+  max-width: 1160px;
+  margin: -45px auto 0;
   position: relative;
   z-index: 50;
   padding: 0 20px;
@@ -302,29 +580,27 @@
 
 .feature-strip-card {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-top: 4px solid #ffc72c;
-  border-radius: 16px;
-  padding: 22px 24px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 18px;
+  padding: 20px 22px;
   box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.03);
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .feature-strip-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 18px 32px -6px rgba(20, 42, 109, 0.16);
+  box-shadow: 0 20px 35px -8px rgba(20, 42, 109, 0.15);
   border-color: #cbd5e1;
-  border-top-color: #f59e0b;
 }
 
 .feature-strip-icon-circle {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -333,27 +609,58 @@
 
 .feature-strip-icon-circle.blue-light {
   background: #eff6ff;
+  color: #2563eb;
 }
 
 .feature-strip-icon-circle.red-light {
   background: #fef2f2;
+  color: #ef4444;
 }
 
 .feature-strip-icon-circle.green-light {
-  background: #ecfdf5;
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.feature-strip-text {
+  flex: 1;
+  min-width: 0;
 }
 
 .feature-strip-title {
-  font-size: 1rem;
+  font-size: 0.98rem;
   font-weight: 800;
-  color: #081026;
-  margin-bottom: 2px;
+  color: #0f172a;
+  margin-bottom: 3px;
 }
 
 .feature-strip-desc {
-  font-size: 0.8rem;
+  font-size: 0.775rem;
   color: #64748b;
+  line-height: 1.35;
 }
+
+.feature-card-arrow {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  margin-left: 6px;
+  transition: all 0.2s ease;
+}
+
+.feature-strip-card:hover .feature-card-arrow {
+  background: #2563eb;
+  color: #ffffff;
+  transform: translateX(3px);
+}
+
 
 /* ==========================================
    ABOUT GADGETGUARD SECTION (Matching Screen 2)

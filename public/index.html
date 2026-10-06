@@ -8,14 +8,14 @@
   <meta name="theme-color" content="#142a6d">
   
   <link rel="icon" type="image/png" href="/assets/ncst_logo.png">
-  <link rel="stylesheet" href="/css/sweetalert2.min.css?v=3.1">
-  <script src="/js/sweetalert2.all.min.js?v=3.1"></script>
-  <link rel="stylesheet" href="/css/style.css?v=3.1">
-  <link rel="stylesheet" href="/css/public.css?v=3.1">
+  <link rel="stylesheet" href="/css/sweetalert2.min.css?v=3.2">
+  <script src="/js/sweetalert2.all.min.js?v=3.2"></script>
+  <link rel="stylesheet" href="/css/style.css?v=3.2">
+  <link rel="stylesheet" href="/css/public.css?v=3.2">
 </head>
 <body>
 
-  <script src="/js/api.js?v=3.1"></script>
+  <script src="/js/api.js?v=3.2"></script>
 
   <!-- Site 1 Navigation Header -->
   <header class="public-nav">
@@ -32,105 +32,260 @@
       <li><a href="#about" class="nav-link">About</a></li>
       <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
       <li><a href="#missing-board" class="nav-link">Missing Board</a></li>
+      <li><a href="#faqs" class="nav-link">FAQs</a></li>
     </ul>
 
     <div class="nav-actions" id="nav-auth-actions">
       <button class="btn-nav-student-login" onclick="openLoginModal()">
-        <span>🔐</span> Student Login
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        Student Login
       </button>
     </div>
   </header>
 
-  <!-- Section 1: Hero Banner -->
+  <!-- Section 1: Hero Banner (Exact Match to Target Mockup with NCST Campus Background) -->
   <section id="home" class="hero-banner-wrap">
     <div class="hero-banner-container">
+      <!-- Left Column: Content -->
       <div class="hero-text-col">
+        <!-- Top Pill Tag -->
+        <div class="hero-tag-badge">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Official NCST Lost-and-Found System
+        </div>
+
+        <!-- Headline with Gold Accent -->
         <h1 class="hero-banner-title">
-          Secure Your Gadgets,<br>Stay Connected
+          Secure Your Gadgets,<br>
+          <span class="hero-title-highlight">Stay Connected.</span>
         </h1>
+
+        <!-- Subtitle -->
         <p class="hero-banner-subtitle">
           GadgetGuard is the official NCST lost-and-found and campus asset protection ecosystem. Log in with your NCST student credentials to manage and safeguard your devices.
         </p>
 
+        <!-- CTA Buttons -->
         <div class="hero-btn-row">
           <button class="btn-hero-primary" onclick="openLoginModal()">
-            Student Login &rarr;
+            <span style="font-size: 1.15rem; line-height: 1;">🎓</span> Student Login &rarr;
           </button>
           <a href="#about" class="btn-hero-secondary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
             Learn More
           </a>
         </div>
+
+        <!-- Checkmark Bullets Row -->
+        <div class="hero-features-checklist">
+          <div class="check-item">
+            <span class="check-circle">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3.5">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </span>
+            <span>Register Your Gadgets</span>
+          </div>
+          <div class="check-item">
+            <span class="check-circle">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3.5">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </span>
+            <span>Report When Missing</span>
+          </div>
+          <div class="check-item">
+            <span class="check-circle">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3.5">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </span>
+            <span>Scan & Recover</span>
+          </div>
+        </div>
       </div>
 
-      <!-- Right Floating Smartphone with QR Sticker Showcase -->
+      <!-- Right Column: Smartphone Mockup with Floating Glass Cards -->
       <div class="hero-device-col">
-        <div class="phone-mockup-wrapper">
-          <div class="phone-body">
-            <div class="phone-screen">
-              <div class="phone-notch"></div>
-              <div class="phone-screen-content">
-                <div class="phone-clock">10:32</div>
-                <div class="phone-widget-card">
-                  <div class="phone-widget-brand">🛡️ GadgetGuard Protection</div>
-                  <div class="phone-qr-sticker">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="#0f172a">
-                      <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm10-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm14 0h4v2h-4v-2zm-4 0h2v2h-2v-2zm2 2h2v2h-2v-2zm-2 2h2v2h-2v-2zm4 0h2v2h-2v-2zm-2 2h2v2h-2v-2zm4-4h2v2h-2v-2zm0 4h2v2h-2v-2zM6 6h2v2H6V6zm10 0h2v2h-2V6zm-10 12h2v2H6v-2z"/>
-                    </svg>
-                    <span class="phone-token-code">TOKEN: GG-89241</span>
+        <div class="hero-showcase-wrap">
+
+          <!-- Floating Glass Card 1: Top-Right (Scan Report Recover) -->
+          <div class="floating-glass-top">
+            <div class="scan-icon-wrap">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2">
+                <path d="M3 7V5a2 2 0 0 1 2-2h2m10 0h2a2 2 0 0 1 2 2v2m0 10v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"></path>
+                <rect x="7" y="7" width="3" height="3" fill="#ffffff"></rect>
+                <rect x="14" y="7" width="3" height="3" fill="#ffffff"></rect>
+                <rect x="7" y="14" width="3" height="3" fill="#ffffff"></rect>
+                <rect x="14" y="14" width="3" height="3" fill="#ffffff"></rect>
+              </svg>
+            </div>
+            <div>
+              <div class="scan-text-lines">
+                Scan<br>Report<br>Recover
+              </div>
+              <div class="scan-sub-note">A safer campus for everyone.</div>
+            </div>
+          </div>
+
+          <!-- Phone Mockup Frame -->
+          <div class="phone-mockup-frame">
+            <div class="phone-inner-screen">
+              <!-- Top bar with dynamic island -->
+              <div class="phone-top-bar">
+                <span>9:41</span>
+                <div class="phone-dynamic-island"></div>
+                <span>5G 🔋</span>
+              </div>
+
+              <!-- Header Greeting -->
+              <div class="phone-header-user">
+                <div class="phone-user-info">
+                  <div class="phone-user-avatar">🎓</div>
+                  <div>
+                    <div style="font-size: 0.55rem; color: #94a3b8; line-height: 1;">Welcome,</div>
+                    <div style="font-size: 0.72rem; font-weight: 800; color: #ffffff;">NCST Student</div>
                   </div>
-                  <div class="phone-secure-status">
-                    <span class="phone-green-dot"></span> Active QR Linked to OSA
-                  </div>
+                </div>
+                <div style="width: 24px; height: 24px; border-radius: 50%; background: rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center; font-size: 0.65rem;">
+                  👤
+                </div>
+              </div>
+
+              <!-- Main QR Card -->
+              <div class="phone-main-card">
+                <div class="phone-app-brand">
+                  <img src="/assets/ncst_logo.png" alt="NCST" style="width: 14px; height: 14px; object-fit: contain;">
+                  <span>GadgetGuard</span>
+                </div>
+
+                <div class="phone-qr-box">
+                  <svg width="84" height="84" viewBox="0 0 24 24" fill="#0f172a" class="phone-qr-img">
+                    <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm10-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm14 0h4v2h-4v-2zm-4 0h2v2h-2v-2zm2 2h2v2h-2v-2zm-2 2h2v2h-2v-2zm4 0h2v2h-2v-2zm-2 2h2v2h-2v-2zm4-4h2v2h-2v-2zm0 4h2v2h-2v-2zM6 6h2v2H6V6zm10 0h2v2h-2V6zm-10 12h2v2H6v-2z"/>
+                  </svg>
+                </div>
+
+                <div class="phone-token-lbl">TOKEN: GG-89241</div>
+
+                <div class="phone-status-pill">
+                  <span style="width: 5px; height: 5px; border-radius: 50%; background: #10b981;"></span>
+                  Active • Linked to OSA
+                </div>
+              </div>
+
+              <!-- Blue Action Button -->
+              <button class="phone-view-btn" onclick="openLoginModal()">
+                View My Devices
+              </button>
+
+              <!-- Quick List Rows -->
+              <div class="phone-menu-list">
+                <div class="phone-menu-row">
+                  <span>📱 My Registered Gadgets</span>
+                  <span style="color: #94a3b8;">&rsaquo;</span>
+                </div>
+                <div class="phone-menu-row">
+                  <span style="color: #dc2626;">⚠️ Report Missing</span>
+                  <span style="color: #94a3b8;">&rsaquo;</span>
+                </div>
+                <div class="phone-menu-row">
+                  <span>🔔 My Notifications</span>
+                  <span style="color: #94a3b8;">&rsaquo;</span>
+                </div>
+                <div class="phone-menu-row">
+                  <span>📋 Claim History</span>
+                  <span style="color: #94a3b8;">&rsaquo;</span>
                 </div>
               </div>
             </div>
           </div>
+
+          <!-- Floating Glass Card 2: Bottom-Right (Metrics) -->
+          <div class="floating-glass-bottom">
+            <div class="stat-mini-pill">
+              <div class="stat-mini-icon">👥</div>
+              <div>
+                <div class="stat-mini-val">3K+</div>
+                <div class="stat-mini-lbl">NCST Community</div>
+              </div>
+            </div>
+            <div class="stat-mini-pill">
+              <div class="stat-mini-icon">📱</div>
+              <div>
+                <div class="stat-mini-val">1.5K+</div>
+                <div class="stat-mini-lbl">Registered Devices</div>
+              </div>
+            </div>
+            <div class="stat-mini-pill">
+              <div class="stat-mini-icon">✓</div>
+              <div>
+                <div class="stat-mini-val">300+</div>
+                <div class="stat-mini-lbl">Items Recovered</div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
 
-    <!-- 3 Bottom Feature Cards -->
+    <!-- 3 Bottom Feature Cards (Matching Screen 2 Strip Exactly) -->
     <div class="feature-strip-container">
       <div class="feature-strip-grid">
+        <!-- Card 1: Student Portal -->
         <div class="feature-strip-card" onclick="handleStudentPortalClick()">
           <div class="feature-strip-icon-circle blue-light">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
           </div>
-          <div>
+          <div class="feature-strip-text">
             <h3 class="feature-strip-title">Student Portal</h3>
-            <p class="feature-strip-desc">Access your registered devices and sticker status.</p>
+            <p class="feature-strip-desc">Access your registered devices, sticker status, and notifications.</p>
           </div>
+          <div class="feature-card-arrow">&rarr;</div>
         </div>
 
+        <!-- Card 2: Report Missing -->
         <div class="feature-strip-card" onclick="handleReportMissingClick()">
           <div class="feature-strip-icon-circle red-light">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"></circle>
               <line x1="12" y1="8" x2="12" y2="12"></line>
               <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
           </div>
-          <div>
+          <div class="feature-strip-text">
             <h3 class="feature-strip-title">Report Missing</h3>
-            <p class="feature-strip-desc">Instant broadcast alert across the campus network.</p>
+            <p class="feature-strip-desc">Instantly notify the campus and receive scan alerts.</p>
           </div>
+          <div class="feature-card-arrow">&rarr;</div>
         </div>
 
+        <!-- Card 3: Scan & Recover -->
         <div class="feature-strip-card" onclick="window.location.href='/scan'">
           <div class="feature-strip-icon-circle green-light">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="3" width="7" height="7"></rect>
               <rect x="14" y="3" width="7" height="7"></rect>
               <rect x="14" y="14" width="7" height="7"></rect>
               <rect x="3" y="14" width="7" height="7"></rect>
             </svg>
           </div>
-          <div>
+          <div class="feature-strip-text">
             <h3 class="feature-strip-title">Scan & Recover</h3>
-            <p class="feature-strip-desc">Simple QR sticker verification for fast surrender.</p>
+            <p class="feature-strip-desc">Simple QR sticker verification for fast and safe surrender.</p>
           </div>
+          <div class="feature-card-arrow">&rarr;</div>
         </div>
       </div>
     </div>
@@ -244,7 +399,48 @@
     </div>
   </section>
 
-  <!-- Section 5: OSA Information & Drop-off -->
+  <!-- Section 5: FAQs -->
+  <section id="faqs" class="section-container" style="background: #f8fafc; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
+    <div class="section-heading-center">
+      <span class="section-tag" style="background:#eff6ff; color:#2563eb;">Help & Answers</span>
+      <h2 class="section-headline">Frequently Asked Questions</h2>
+      <p class="section-subtext">Quick information on how gadget registration, stickers, and recovery work on campus.</p>
+    </div>
+
+    <div style="max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px;">
+      <details style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px 22px; cursor: pointer;">
+        <summary style="font-weight: 700; color: #0f172a; font-size: 0.95rem; outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+          <span>How do I get an official NCST QR security sticker for my gadget?</span>
+          <span style="color: #2563eb; font-size: 1.2rem; font-weight: 800;">+</span>
+        </summary>
+        <p style="margin: 12px 0 0; color: #64748b; font-size: 0.85rem; line-height: 1.6;">
+          Log in with your NCST student account, register your gadget specifications (Brand, Model, Serial Number / IMEI), and present the device at the Office of Student Affairs (Room 1109). An OSA officer verifies the serial number and issues your tamper-evident QR security sticker.
+        </p>
+      </details>
+
+      <details style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px 22px; cursor: pointer;">
+        <summary style="font-weight: 700; color: #0f172a; font-size: 0.95rem; outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+          <span>What happens if someone scans my lost gadget's QR sticker?</span>
+          <span style="color: #2563eb; font-size: 1.2rem; font-weight: 800;">+</span>
+        </summary>
+        <p style="margin: 12px 0 0; color: #64748b; font-size: 0.85rem; line-height: 1.6;">
+          The finder will see immediate drop-off guidance to surrender the item to OSA Room 1109 or the main campus guard post. A real-time notification is generated for your account, and your private contact details remain protected and anonymous.
+        </p>
+      </details>
+
+      <details style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px 22px; cursor: pointer;">
+        <summary style="font-weight: 700; color: #0f172a; font-size: 0.95rem; outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+          <span>How do I access my student account?</span>
+          <span style="color: #2563eb; font-size: 1.2rem; font-weight: 800;">+</span>
+        </summary>
+        <p style="margin: 12px 0 0; color: #64748b; font-size: 0.85rem; line-height: 1.6;">
+          All NCST student accounts are pre-provisioned via the official Student Information System. Click the "Student Login" button in the upper right and enter your Student ID number (e.g. 2024-58694) or your active registered email.
+        </p>
+      </details>
+    </div>
+  </section>
+
+  <!-- Section 6: OSA Information & Drop-off -->
   <section id="contact" class="section-container" style="background: #ffffff; border-top: 1px solid #e2e8f0;">
     <div class="contact-card-box">
       <div>
@@ -327,6 +523,7 @@
         <a href="javascript:void(0)" onclick="openLoginModal()">Student Login</a>
         <a href="#missing-board">Missing Board</a>
         <a href="#about">About System</a>
+        <a href="#faqs">FAQs</a>
       </div>
     </div>
 
@@ -338,7 +535,7 @@
   <!-- Modal: Student Login (Direct Access & SIS Ready) -->
   <div id="login-modal" class="modal-overlay">
     <div class="modal-box" style="max-width: 480px; padding: 0; overflow: hidden; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25); border: 1px solid #e2e8f0;">
-      <!-- Elegant Header with Gradient & App Identity -->
+      <!-- Header -->
       <div style="background: linear-gradient(135deg, #142a6d 0%, #1e40af 100%); padding: 26px 24px; text-align: center; color: #ffffff; position: relative;">
         <button class="btn btn-icon" onclick="closeModal('login-modal')" style="position: absolute; top: 14px; right: 14px; background: rgba(255, 255, 255, 0.15); color: #ffffff; border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; cursor: pointer; transition: background 0.2s;">
           &times;
@@ -407,6 +604,6 @@
     </div>
   </div>
 
-  <script src="/js/public.js?v=3.1"></script>
+  <script src="/js/public.js?v=3.2"></script>
 </body>
 </html>
