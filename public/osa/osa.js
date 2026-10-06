@@ -378,7 +378,6 @@ function renderApprovalsTable(gadgets, activeFilter = '') {
     </table>
   `;
 }
-}
 
 function previewOsaDevicePhoto(photoUrl, deviceTitle, ownerName) {
   if (typeof Swal !== 'undefined') {
