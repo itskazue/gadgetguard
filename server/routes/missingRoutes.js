@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { authMiddleware } = require('../auth');
+const jwt = require('jsonwebtoken');
+const { authMiddleware, JWT_SECRET } = require('../auth');
 const db = require('../db');
 
 // POST /api/missing/report (Student or OSA Admin reports gadget missing)
@@ -94,9 +95,20 @@ router.post('/report', authMiddleware, (req, res) => {
   }
 });
 
-// GET /api/missing/active (Public / Campus-wide missing board)
+// GET /api/missing/active (Public board + Full details for authenticated OSA Admins)
 router.get('/active', (req, res) => {
   try {
+    let isOsa = false;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const decoded = jwt.verify(authHeader.substring(7), JWT_SECRET);
+        if (decoded && (decoded.role === 'osa_admin' || decoded.role === 'admin')) {
+          isOsa = true;
+        }
+      } catch (e) {}
+    }
+
     const missingReports = db.find('missing_reports', m => m.status === 'ACTIVE');
     
     const enriched = missingReports.map(report => {
@@ -111,12 +123,16 @@ router.get('/active', (req, res) => {
           brand: gadget.brand,
           model: gadget.model,
           color: gadget.color,
+          serialNumber: isOsa ? gadget.serialNumber : undefined,
           photoUrl: gadget.photoUrl,
           status: gadget.status,
           secureToken: gadget.secureToken
         } : null,
         owner: owner ? {
-          name: owner.name.charAt(0) + '*** ' + owner.name.split(' ').slice(-1)[0], // Masked name for privacy
+          name: isOsa ? owner.name : (owner.name.charAt(0) + '*** ' + owner.name.split(' ').slice(-1)[0]),
+          idNumber: isOsa ? owner.idNumber : undefined,
+          email: isOsa ? owner.email : undefined,
+          contactNumber: isOsa ? owner.contactNumber : undefined,
           department: owner.department
         } : null
       };

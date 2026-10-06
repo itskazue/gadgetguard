@@ -265,16 +265,62 @@ async function loadDashboardAuditFeed() {
   } catch (e) {}
 }
 
-// 2. Gadget Approvals Full Queue
+// 2. Gadget Approvals Full Queue (Registration Requests)
+let approvalsQueueCache = [];
+
 async function loadApprovalsQueue() {
   const container = document.getElementById('approvals-full-table');
   if (!container) return;
 
   try {
     const res = await api.getAllGadgets({ status: 'PENDING_APPROVAL' });
-    const gadgets = res.gadgets || [];
+    approvalsQueueCache = res.gadgets || [];
+    filterApprovalsTable();
+  } catch (e) {
+    container.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted);">Error loading pending approvals.</div>`;
+  }
+}
 
-    if (gadgets.length === 0) {
+function filterApprovalsTable() {
+  const query = (document.getElementById('approvals-student-filter')?.value || '').trim().toLowerCase();
+
+  let filtered = approvalsQueueCache;
+  if (query) {
+    filtered = filtered.filter(g => {
+      const studentId = (g.owner?.idNumber || '').toLowerCase();
+      const studentName = (g.owner?.name || '').toLowerCase();
+      const studentEmail = (g.owner?.email || '').toLowerCase();
+      const brand = (g.brand || '').toLowerCase();
+      const model = (g.model || '').toLowerCase();
+      const sn = (g.serialNumber || '').toLowerCase();
+      return studentId.includes(query) || studentName.includes(query) || studentEmail.includes(query) || brand.includes(query) || model.includes(query) || sn.includes(query);
+    });
+  }
+
+  renderApprovalsTable(filtered, query);
+}
+
+function clearApprovalsFilter() {
+  const input = document.getElementById('approvals-student-filter');
+  if (input) input.value = '';
+  filterApprovalsTable();
+}
+
+function renderApprovalsTable(gadgets, activeFilter = '') {
+  const container = document.getElementById('approvals-full-table');
+  if (!container) return;
+
+  if (gadgets.length === 0) {
+    if (activeFilter) {
+      container.innerHTML = `
+        <div style="padding: 40px; text-align: center; color: var(--text-muted);">
+          <div style="font-size: 2rem; margin-bottom: 6px;">🔍</div>
+          <h4 style="font-weight: 700; color: var(--text-main);">No Registration Requests Found</h4>
+          <p style="font-size: 0.85rem;">No pending submissions match "<strong>${escapeHtml(activeFilter)}</strong>".</p>
+          <button class="btn btn-secondary btn-sm" onclick="clearApprovalsFilter()" style="margin-top: 10px;">Clear Filter</button>
+        </div>
+      `;
+    } else {
       container.innerHTML = `
         <div style="padding: 40px; text-align: center; color: var(--text-muted);">
           <div style="font-size: 2rem; margin-bottom: 6px;">🎉</div>
@@ -282,52 +328,56 @@ async function loadApprovalsQueue() {
           <p style="font-size: 0.85rem;">All submitted gadgets have been verified.</p>
         </div>
       `;
-      return;
     }
+    return;
+  }
 
-    container.innerHTML = `
-      <table class="clean-table">
-        <thead>
+  container.innerHTML = `
+    <table class="clean-table">
+      <thead>
+        <tr>
+          <th style="width: 70px;">Photo</th>
+          <th>Device Specs</th>
+          <th>Student Information</th>
+          <th>Serial Number</th>
+          <th>Description & Marks</th>
+          <th>Submission Date</th>
+          <th class="text-right">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${gadgets.map(g => `
           <tr>
-            <th style="width: 70px;">Photo</th>
-            <th>Device Specs</th>
-            <th>Owner Information</th>
-            <th>Serial Number</th>
-            <th>Description & Marks</th>
-            <th>Submission Date</th>
-            <th class="text-right">Action</th>
+            <td>
+              <img src="${g.photoUrl || 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500'}" alt="Proof" style="width: 54px; height: 54px; object-fit: cover; border-radius: 8px; border: 1.5px solid #cbd5e1; cursor: pointer;" onclick="previewOsaDevicePhoto('${g.photoUrl || 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500'}', '${escapeHtml(g.brand + ' ' + g.model)}', '${escapeHtml(g.owner?.name || 'Student')}')" title="Click to enlarge photo proof">
+            </td>
+            <td>
+              <div class="table-primary-title">${escapeHtml(g.brand)} ${escapeHtml(g.model)}</div>
+              <div class="table-secondary-sub">${escapeHtml(g.category)} • Color: ${escapeHtml(g.color || 'Standard')}</div>
+            </td>
+            <td>
+              <div style="font-weight: 700; color: #0f172a;">${escapeHtml(g.owner?.name || 'Student')}</div>
+              <div class="font-mono" style="font-size: 0.8rem; color: var(--primary); font-weight: 700; margin-top: 2px;">
+                ${g.owner?.idNumber ? `ID: ${escapeHtml(g.owner.idNumber)}` : '-'}
+              </div>
+              ${g.owner?.department ? `<div style="font-size: 0.725rem; color: #64748b;">${escapeHtml(g.owner.department)}</div>` : ''}
+              ${g.owner?.email ? `<div style="font-size: 0.7rem; color: #94a3b8;">${escapeHtml(g.owner.email)}</div>` : ''}
+            </td>
+            <td class="font-mono" style="font-size: 0.825rem; font-weight: 700;">${escapeHtml(g.serialNumber)}</td>
+            <td style="font-size: 0.8rem; color: var(--text-secondary); max-width: 200px;">"${escapeHtml(g.description || 'None')}"</td>
+            <td style="font-size: 0.8rem; color: var(--text-muted);">${formatDate(g.registrationDate)}</td>
+            <td class="text-right">
+              <div class="table-action-btns">
+                <button class="btn btn-success btn-sm" onclick="handleApproveGadget('${g.id}')">✓ Approve & Generate QR</button>
+                <button class="btn btn-danger btn-sm" onclick="openRejectGadgetModal('${g.id}')">✕ Reject</button>
+              </div>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          ${gadgets.map(g => `
-            <tr>
-              <td>
-                <img src="${g.photoUrl || 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500'}" alt="Proof" style="width: 54px; height: 54px; object-fit: cover; border-radius: 8px; border: 1.5px solid #cbd5e1; cursor: pointer;" onclick="previewOsaDevicePhoto('${g.photoUrl || 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500'}', '${escapeHtml(g.brand + ' ' + g.model)}', '${escapeHtml(g.owner?.name || 'Student')}')" title="Click to enlarge photo proof">
-              </td>
-              <td>
-                <div class="table-primary-title">${escapeHtml(g.brand)} ${escapeHtml(g.model)}</div>
-                <div class="table-secondary-sub">${escapeHtml(g.category)} • Color: ${escapeHtml(g.color || 'Standard')}</div>
-              </td>
-              <td>
-                <div style="font-weight: 600;">${escapeHtml(g.owner?.name || 'Student')}</div>
-                <div style="font-size: 0.75rem; color: var(--primary); font-family: var(--font-mono);">${escapeHtml(g.owner?.idNumber || '-')}</div>
-                ${g.owner?.department ? `<div style="font-size: 0.7rem; color: #1e40af; font-weight: 600;">${escapeHtml(g.owner.department)}</div>` : ''}
-              </td>
-              <td class="font-mono" style="font-size: 0.825rem; font-weight: 700;">${escapeHtml(g.serialNumber)}</td>
-              <td style="font-size: 0.8rem; color: var(--text-secondary); max-width: 200px;">"${escapeHtml(g.description || 'None')}"</td>
-              <td style="font-size: 0.8rem; color: var(--text-muted);">${formatDate(g.registrationDate)}</td>
-              <td class="text-right">
-                <div class="table-action-btns">
-                  <button class="btn btn-success btn-sm" onclick="handleApproveGadget('${g.id}')">✓ Approve & Generate QR</button>
-                  <button class="btn btn-danger btn-sm" onclick="openRejectGadgetModal('${g.id}')">✕ Reject</button>
-                </div>
-              </td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
-  } catch (e) {}
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
 }
 
 function previewOsaDevicePhoto(photoUrl, deviceTitle, ownerName) {
@@ -463,37 +513,69 @@ async function loadRegisteredVault() {
   try {
     const res = await api.getAllGadgets();
     allGadgetsCache = res.gadgets || [];
-    renderVaultTable(allGadgetsCache);
+    filterVaultTable();
   } catch (e) {}
 }
 
 function filterVaultTable() {
-  const search = (document.getElementById('vault-search-input')?.value || '').toLowerCase();
+  const studentFilter = (document.getElementById('vault-student-filter')?.value || '').trim().toLowerCase();
+  const search = (document.getElementById('vault-search-input')?.value || '').trim().toLowerCase();
   const status = document.getElementById('vault-status-select')?.value || 'ALL';
 
   let filtered = allGadgetsCache;
+
   if (status !== 'ALL') {
     filtered = filtered.filter(g => g.status === status);
   }
+
+  // Filter specifically by Student Number/ID or Student Name/Email
+  if (studentFilter) {
+    filtered = filtered.filter(g => {
+      const sId = (g.owner?.idNumber || '').toLowerCase();
+      const sName = (g.owner?.name || '').toLowerCase();
+      const sEmail = (g.owner?.email || '').toLowerCase();
+      return sId.includes(studentFilter) || sName.includes(studentFilter) || sEmail.includes(studentFilter);
+    });
+  }
+
+  // General equipment search
   if (search) {
     filtered = filtered.filter(g => 
-      g.brand.toLowerCase().includes(search) ||
-      g.model.toLowerCase().includes(search) ||
-      g.serialNumber.toLowerCase().includes(search) ||
+      (g.brand && g.brand.toLowerCase().includes(search)) ||
+      (g.model && g.model.toLowerCase().includes(search)) ||
+      (g.serialNumber && g.serialNumber.toLowerCase().includes(search)) ||
       (g.secureToken && g.secureToken.toLowerCase().includes(search)) ||
-      (g.owner?.name && g.owner.name.toLowerCase().includes(search))
+      (g.owner?.name && g.owner.name.toLowerCase().includes(search)) ||
+      (g.owner?.idNumber && g.owner.idNumber.toLowerCase().includes(search))
     );
   }
 
-  renderVaultTable(filtered);
+  renderVaultTable(filtered, Boolean(studentFilter || search || status !== 'ALL'));
 }
 
-function renderVaultTable(gadgets) {
+function clearVaultFilter() {
+  const stInput = document.getElementById('vault-student-filter');
+  const searchInput = document.getElementById('vault-search-input');
+  const statusSelect = document.getElementById('vault-status-select');
+  if (stInput) stInput.value = '';
+  if (searchInput) searchInput.value = '';
+  if (statusSelect) statusSelect.value = 'ALL';
+  filterVaultTable();
+}
+
+function renderVaultTable(gadgets, hasFilter = false) {
   const container = document.getElementById('registered-vault-table');
   if (!container) return;
 
   if (gadgets.length === 0) {
-    container.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted);">No matching equipment found in vault.</div>`;
+    container.innerHTML = `
+      <div style="padding: 35px; text-align: center; color: var(--text-muted);">
+        <div style="font-size: 1.8rem; margin-bottom: 6px;">🔍</div>
+        <h4 style="font-weight: 700; color: var(--text-main);">No Equipment Found</h4>
+        <p style="font-size: 0.85rem;">No registered gadgets match the current student ID or search criteria.</p>
+        ${hasFilter ? `<button class="btn btn-secondary btn-sm" onclick="clearVaultFilter()" style="margin-top: 10px;">Clear Filters</button>` : ''}
+      </div>
+    `;
     return;
   }
 
@@ -502,7 +584,7 @@ function renderVaultTable(gadgets) {
       <thead>
         <tr>
           <th>Device</th>
-          <th>Owner</th>
+          <th>Student Owner</th>
           <th>Serial Number</th>
           <th>QR Token</th>
           <th>Status</th>
@@ -518,7 +600,10 @@ function renderVaultTable(gadgets) {
             </td>
             <td>
               <div style="font-weight: 700; color: #0f172a; margin-bottom: 3px;">${escapeHtml(g.owner?.name || 'Student')}</div>
-              <div class="font-mono" style="font-size: 0.775rem; color: var(--primary); font-weight: 600;">${escapeHtml(g.owner?.idNumber || '-')}</div>
+              <div class="font-mono" style="font-size: 0.775rem; color: var(--primary); font-weight: 700;">
+                ${g.owner?.idNumber ? `ID: ${escapeHtml(g.owner.idNumber)}` : '-'}
+              </div>
+              ${g.owner?.department ? `<div style="font-size: 0.7rem; color: #64748b;">${escapeHtml(g.owner.department)}</div>` : ''}
             </td>
             <td>
               <span class="font-mono" style="font-size: 0.825rem; font-weight: 700; color: #1e293b; background: #f8fafc; padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0; display: inline-block;">
@@ -652,67 +737,118 @@ function openPrintStickerModal(gadgetId) {
 }
 
 // 4. Missing Incidents Monitor
+let missingReportsCache = [];
+
 async function loadMissingIncidents() {
   const container = document.getElementById('missing-incidents-table');
   if (!container) return;
 
   try {
     const res = await api.getActiveMissing();
-    const reports = res.reports || [];
+    missingReportsCache = res.reports || [];
+    filterMissingTable();
+  } catch (e) {
+    container.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted);">Error loading missing incidents.</div>`;
+  }
+}
 
-    if (reports.length === 0) {
+function filterMissingTable() {
+  const query = (document.getElementById('missing-student-filter')?.value || '').trim().toLowerCase();
+
+  let filtered = missingReportsCache;
+  if (query) {
+    filtered = filtered.filter(r => {
+      const studentId = (r.owner?.idNumber || '').toLowerCase();
+      const studentName = (r.owner?.name || '').toLowerCase();
+      const studentEmail = (r.owner?.email || '').toLowerCase();
+      const brand = (r.gadget?.brand || '').toLowerCase();
+      const model = (r.gadget?.model || '').toLowerCase();
+      const sn = (r.gadget?.serialNumber || '').toLowerCase();
+      const loc = (r.lastSeenLocation || '').toLowerCase();
+      return studentId.includes(query) || studentName.includes(query) || studentEmail.includes(query) || brand.includes(query) || model.includes(query) || sn.includes(query) || loc.includes(query);
+    });
+  }
+
+  renderMissingTable(filtered, query);
+}
+
+function clearMissingFilter() {
+  const input = document.getElementById('missing-student-filter');
+  if (input) input.value = '';
+  filterMissingTable();
+}
+
+function renderMissingTable(reports, activeFilter = '') {
+  const container = document.getElementById('missing-incidents-table');
+  if (!container) return;
+
+  if (reports.length === 0) {
+    if (activeFilter) {
+      container.innerHTML = `
+        <div style="padding: 35px; text-align: center; color: var(--text-muted);">
+          <div style="font-size: 1.8rem; margin-bottom: 6px;">🔍</div>
+          <h4 style="font-weight: 700; color: var(--text-main);">No Missing Reports Found</h4>
+          <p style="font-size: 0.85rem;">No active missing incidents match "<strong>${escapeHtml(activeFilter)}</strong>".</p>
+          <button class="btn btn-secondary btn-sm" onclick="clearMissingFilter()" style="margin-top: 10px;">Clear Filter</button>
+        </div>
+      `;
+    } else {
       container.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted);">No active missing incidents on campus.</div>`;
-      return;
     }
+    return;
+  }
 
-    container.innerHTML = `
-      <table class="clean-table">
-        <thead>
+  container.innerHTML = `
+    <table class="clean-table">
+      <thead>
+        <tr>
+          <th>Missing Gadget</th>
+          <th>Student Owner</th>
+          <th>Last Known Location</th>
+          <th>Date & Time</th>
+          <th>Circumstances</th>
+          <th class="text-right">Intake / Recovery Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${reports.map(r => `
           <tr>
-            <th>Missing Gadget</th>
-            <th>Owner</th>
-            <th>Last Known Location</th>
-            <th>Date & Time</th>
-            <th>Circumstances</th>
-            <th class="text-right">Intake / Recovery Action</th>
+            <td>
+              <div class="table-primary-title" style="color: #b91c1c;">${escapeHtml(r.gadget?.brand)} ${escapeHtml(r.gadget?.model)}</div>
+              <div class="table-secondary-sub">${escapeHtml(r.gadget?.category)} ${r.gadget?.serialNumber ? `• S/N: <span class="font-mono">${escapeHtml(r.gadget.serialNumber)}</span>` : ''}</div>
+            </td>
+            <td>
+              <div style="font-weight: 700; color: #0f172a; margin-bottom: 3px;">${escapeHtml(r.owner?.name || 'Student')}</div>
+              <div class="font-mono" style="font-size: 0.775rem; color: var(--primary); font-weight: 700;">
+                ${r.owner?.idNumber ? `ID: ${escapeHtml(r.owner.idNumber)}` : '-'}
+              </div>
+              ${r.owner?.department ? `<div style="font-size: 0.725rem; color: #64748b;">${escapeHtml(r.owner.department)}</div>` : ''}
+              ${r.owner?.email ? `<div style="font-size: 0.7rem; color: #94a3b8;">${escapeHtml(r.owner.email)}</div>` : ''}
+            </td>
+            <td>
+              <div style="font-size: 0.875rem; color: #b91c1c; font-weight: 700; display:flex; align-items:center; gap:6px;">
+                📍 ${escapeHtml(r.lastSeenLocation)}
+              </div>
+            </td>
+            <td style="font-size: 0.825rem; color: #64748b;">${formatDate(r.lastSeenDate)}</td>
+            <td style="font-size: 0.825rem; color: #475569; max-width: 240px; line-height: 1.45;">"${escapeHtml(r.details || 'None')}"</td>
+            <td class="text-right">
+              <div class="table-action-btns" style="display:inline-flex; align-items:center; gap:6px; justify-content:flex-end;">
+                <button class="btn btn-primary btn-sm" onclick="openReceiveCustodyModal('${r.gadgetId || r.gadget?.id}', '${escapeHtml(r.gadget?.brand || '')} ${escapeHtml(r.gadget?.model || '')}', '${escapeHtml(r.owner?.name || 'Student')}')" style="display:inline-flex; align-items:center; gap:5px;" title="Receive gadget into custody vault (surrendered f2f)">
+                  📦 Receive into Vault
+                </button>
+                ${r.gadget?.secureToken ? `
+                  <a href="/device/${r.gadget?.secureToken}" target="_blank" class="btn btn-secondary btn-sm" style="display:inline-flex; align-items:center; gap:4px;" title="Open public QR recovery page">
+                    🔗
+                  </a>
+                ` : ''}
+              </div>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          ${reports.map(r => `
-            <tr>
-              <td>
-                <div class="table-primary-title" style="color: #b91c1c;">${escapeHtml(r.gadget?.brand)} ${escapeHtml(r.gadget?.model)}</div>
-                <div class="table-secondary-sub">${escapeHtml(r.gadget?.category)}</div>
-              </td>
-              <td>
-                <div style="font-weight: 700; color: #0f172a; margin-bottom: 3px;">${escapeHtml(r.owner?.name || 'Student')}</div>
-                <div style="font-size: 0.775rem; color: #64748b;">${escapeHtml(r.owner?.department || '-')}</div>
-              </td>
-              <td>
-                <div style="font-size: 0.875rem; color: #b91c1c; font-weight: 700; display:flex; align-items:center; gap:6px;">
-                  📍 ${escapeHtml(r.lastSeenLocation)}
-                </div>
-              </td>
-              <td style="font-size: 0.825rem; color: #64748b;">${formatDate(r.lastSeenDate)}</td>
-              <td style="font-size: 0.825rem; color: #475569; max-width: 240px; line-height: 1.45;">"${escapeHtml(r.details || 'None')}"</td>
-              <td class="text-right">
-                <div class="table-action-btns" style="display:inline-flex; align-items:center; gap:6px; justify-content:flex-end;">
-                  <button class="btn btn-primary btn-sm" onclick="openReceiveCustodyModal('${r.gadgetId || r.gadget?.id}', '${escapeHtml(r.gadget?.brand || '')} ${escapeHtml(r.gadget?.model || '')}', '${escapeHtml(r.owner?.name || 'Student')}')" style="display:inline-flex; align-items:center; gap:5px;" title="Receive gadget into custody vault (surrendered f2f)">
-                    📦 Receive into Vault
-                  </button>
-                  ${r.gadget?.secureToken ? `
-                    <a href="/device/${r.gadget?.secureToken}" target="_blank" class="btn btn-secondary btn-sm" style="display:inline-flex; align-items:center; gap:4px;" title="Open public QR recovery page">
-                      🔗
-                    </a>
-                  ` : ''}
-                </div>
-              </td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
-  } catch (e) {}
+        `).join('')}
+      </tbody>
+    </table>
+  `;
 }
 
 // 5. Custody & Found Intake
@@ -1463,4 +1599,31 @@ function printExecutiveReport() {
   setTimeout(() => {
     window.print();
   }, 400);
+}
+
+// Quick cross-section filter helper for OSA
+function filterOsaByStudentId(screen, studentId) {
+  if (!studentId) return;
+  navigateOsa(screen);
+  setTimeout(() => {
+    if (screen === 'registered') {
+      const input = document.getElementById('vault-student-filter');
+      if (input) {
+        input.value = studentId;
+        filterVaultTable();
+      }
+    } else if (screen === 'missing') {
+      const input = document.getElementById('missing-student-filter');
+      if (input) {
+        input.value = studentId;
+        filterMissingTable();
+      }
+    } else if (screen === 'approvals') {
+      const input = document.getElementById('approvals-student-filter');
+      if (input) {
+        input.value = studentId;
+        filterApprovalsTable();
+      }
+    }
+  }, 120);
 }

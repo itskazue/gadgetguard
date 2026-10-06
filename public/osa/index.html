@@ -240,6 +240,10 @@
                 <h3 style="font-weight: 800; font-size: 1.1rem;">Pending Gadget Registration Submissions</h3>
                 <div style="font-size: 0.8rem; color: var(--text-muted);">Review student hardware specs, photo evidence, and approve to generate official QR sticker</div>
               </div>
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <input type="text" id="approvals-student-filter" class="form-control" style="width: 250px; padding: 7px 12px; font-size: 0.8rem;" placeholder="🎓 Filter by Student ID / Name..." oninput="filterApprovalsTable()">
+                <button class="btn btn-secondary btn-sm" onclick="clearApprovalsFilter()" style="padding: 7px 12px;">Clear</button>
+              </div>
             </div>
             <div class="table-responsive-wrapper" id="approvals-full-table">
               <!-- Injected by JS -->
@@ -255,9 +259,10 @@
                 <h3 style="font-weight: 800; font-size: 1.1rem;">Registered Gadgets Vault Directory</h3>
                 <div style="font-size: 0.8rem; color: var(--text-muted);">Searchable inventory of all campus-registered equipment</div>
               </div>
-              <div style="display: flex; gap: 8px;">
-                <input type="text" id="vault-search-input" class="form-control" style="width: 240px; padding: 6px 12px; font-size: 0.8rem;" placeholder="Search S/N, model, student, or token..." oninput="filterVaultTable()">
-                <select id="vault-status-select" class="form-control" style="width: 140px; padding: 6px 12px; font-size: 0.8rem;" onchange="filterVaultTable()">
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <input type="text" id="vault-student-filter" class="form-control" style="width: 200px; padding: 7px 12px; font-size: 0.8rem;" placeholder="🎓 Filter by Student ID..." oninput="filterVaultTable()">
+                <input type="text" id="vault-search-input" class="form-control" style="width: 210px; padding: 7px 12px; font-size: 0.8rem;" placeholder="Search S/N, model, token..." oninput="filterVaultTable()">
+                <select id="vault-status-select" class="form-control" style="width: 135px; padding: 7px 12px; font-size: 0.8rem;" onchange="filterVaultTable()">
                   <option value="ALL">All Statuses</option>
                   <option value="REGISTERED">Registered</option>
                   <option value="PENDING_APPROVAL">Pending</option>
@@ -265,6 +270,7 @@
                   <option value="FOUND_IN_CUSTODY">In Custody</option>
                   <option value="RETURNED">Returned</option>
                 </select>
+                <button class="btn btn-secondary btn-sm" onclick="clearVaultFilter()" style="padding: 7px 12px;">Clear</button>
               </div>
             </div>
             <div class="table-responsive-wrapper" id="registered-vault-table">
@@ -280,6 +286,10 @@
               <div>
                 <h3 style="font-weight: 800; font-size: 1.1rem; color: #b91c1c;">🚨 Active Missing Incidents Monitor</h3>
                 <div style="font-size: 0.8rem; color: var(--text-muted);">Devices actively reported as lost across campus grounds</div>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <input type="text" id="missing-student-filter" class="form-control" style="width: 250px; padding: 7px 12px; font-size: 0.8rem;" placeholder="🎓 Filter by Student ID / Name / S/N..." oninput="filterMissingTable()">
+                <button class="btn btn-secondary btn-sm" onclick="clearMissingFilter()" style="padding: 7px 12px;">Clear</button>
               </div>
             </div>
             <div class="table-responsive-wrapper" id="missing-incidents-table">
@@ -860,6 +870,6 @@
 
   <script src="/js/jsQR.min.js"></script>
   <script src="/js/scanner.js"></script>
-  <script src="/osa/osa.js"></script>
+  <script src="/osa/osa.js?v=3.5"></script>
 </body>
 </html>
