@@ -329,8 +329,9 @@ const api = {
     });
   },
 
-  async getActiveMissing() {
-    return await this.request('/missing/active');
+  async getActiveMissing(params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return await this.request('/missing/active' + (q ? '?' + q : ''));
   },
 
   async cancelMissing(id) {

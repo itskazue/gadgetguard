@@ -237,12 +237,57 @@
           <div class="table-container-card">
             <div class="table-title-bar">
               <div>
-                <h3 style="font-weight: 800; font-size: 1.1rem;">Pending Gadget Registration Submissions</h3>
+                <h3 style="font-weight: 800; font-size: 1.1rem;">⏳ Gadget Registration Submissions</h3>
                 <div style="font-size: 0.8rem; color: var(--text-muted);">Review student hardware specs, photo evidence, and approve to generate official QR sticker</div>
               </div>
-              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                <input type="text" id="approvals-student-filter" class="form-control" style="width: 250px; padding: 7px 12px; font-size: 0.8rem;" placeholder="🎓 Filter by Student ID / Name..." oninput="filterApprovalsTable()">
-                <button class="btn btn-secondary btn-sm" onclick="clearApprovalsFilter()" style="padding: 7px 12px;">Clear</button>
+            </div>
+            <!-- Filter & Search Toolbar -->
+            <div class="osa-toolbar-filter-grid">
+              <div class="osa-filter-item grow">
+                <label class="osa-filter-label" for="approvals-student-filter">🎓 Student Search</label>
+                <input type="text" id="approvals-student-filter" class="form-control osa-filter-input" placeholder="Search Student ID or Surname..." oninput="filterApprovalsTable()">
+              </div>
+              <div class="osa-filter-item grow">
+                <label class="osa-filter-label" for="approvals-device-search">🔍 Device Search</label>
+                <input type="text" id="approvals-device-search" class="form-control osa-filter-input" placeholder="Search device, serial no., or QR token" oninput="filterApprovalsTable()">
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="approvals-type-filter">💻 Device Type</label>
+                <select id="approvals-type-filter" class="form-control osa-filter-select" onchange="filterApprovalsTable()">
+                  <option value="ALL">All Devices</option>
+                  <option value="Smartphone">Smartphone</option>
+                  <option value="Laptop">Laptop</option>
+                  <option value="Tablet">Tablet</option>
+                  <option value="Smartwatch">Smartwatch</option>
+                  <option value="Earbuds">Earbuds / Headphones</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="approvals-status-filter">📋 Registration Status</label>
+                <select id="approvals-status-filter" class="form-control osa-filter-select" onchange="filterApprovalsTable()">
+                  <option value="PENDING_APPROVAL" selected>Pending</option>
+                  <option value="ALL">All Submissions</option>
+                  <option value="REGISTERED">Approved</option>
+                  <option value="REJECTED">Rejected</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="approvals-sort-filter">↕️ Sort By</label>
+                <select id="approvals-sort-filter" class="form-control osa-filter-select" onchange="filterApprovalsTable()">
+                  <option value="SURNAME_ASC" selected>Surname A–Z</option>
+                  <option value="SURNAME_DESC">Surname Z–A</option>
+                  <option value="ID_ASC">Student ID Ascending</option>
+                  <option value="ID_DESC">Student ID Descending</option>
+                  <option value="NEWEST">Newest Registration</option>
+                  <option value="OLDEST">Oldest Registration</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label">&nbsp;</label>
+                <button class="btn btn-secondary btn-sm" onclick="clearApprovalsFilter()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset to default table view">
+                  ↺ Reset Filters
+                </button>
               </div>
             </div>
             <div class="table-responsive-wrapper" id="approvals-full-table">
@@ -256,21 +301,59 @@
           <div class="table-container-card">
             <div class="table-title-bar">
               <div>
-                <h3 style="font-weight: 800; font-size: 1.1rem;">Registered Gadgets Vault Directory</h3>
+                <h3 style="font-weight: 800; font-size: 1.1rem;">💻 Registered Gadgets Vault Directory</h3>
                 <div style="font-size: 0.8rem; color: var(--text-muted);">Searchable inventory of all campus-registered equipment</div>
               </div>
-              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                <input type="text" id="vault-student-filter" class="form-control" style="width: 200px; padding: 7px 12px; font-size: 0.8rem;" placeholder="🎓 Filter by Student ID..." oninput="filterVaultTable()">
-                <input type="text" id="vault-search-input" class="form-control" style="width: 210px; padding: 7px 12px; font-size: 0.8rem;" placeholder="Search S/N, model, token..." oninput="filterVaultTable()">
-                <select id="vault-status-select" class="form-control" style="width: 135px; padding: 7px 12px; font-size: 0.8rem;" onchange="filterVaultTable()">
-                  <option value="ALL">All Statuses</option>
+            </div>
+            <!-- Filter & Search Toolbar -->
+            <div class="osa-toolbar-filter-grid">
+              <div class="osa-filter-item grow">
+                <label class="osa-filter-label" for="vault-student-filter">🎓 Student Search</label>
+                <input type="text" id="vault-student-filter" class="form-control osa-filter-input" placeholder="Search Student ID or Surname..." oninput="filterVaultTable()">
+              </div>
+              <div class="osa-filter-item grow">
+                <label class="osa-filter-label" for="vault-search-input">🔍 Device Search</label>
+                <input type="text" id="vault-search-input" class="form-control osa-filter-input" placeholder="Search device, serial no., or QR token" oninput="filterVaultTable()">
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="vault-type-filter">💻 Device Type</label>
+                <select id="vault-type-filter" class="form-control osa-filter-select" onchange="filterVaultTable()">
+                  <option value="ALL">All Devices</option>
+                  <option value="Smartphone">Smartphone</option>
+                  <option value="Laptop">Laptop</option>
+                  <option value="Tablet">Tablet</option>
+                  <option value="Smartwatch">Smartwatch</option>
+                  <option value="Earbuds">Earbuds / Headphones</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="vault-status-select">📋 Gadget Status</label>
+                <select id="vault-status-select" class="form-control osa-filter-select" onchange="filterVaultTable()">
+                  <option value="ALL" selected>All Statuses</option>
                   <option value="REGISTERED">Registered</option>
                   <option value="PENDING_APPROVAL">Pending</option>
                   <option value="MISSING">Missing</option>
                   <option value="FOUND_IN_CUSTODY">In Custody</option>
                   <option value="RETURNED">Returned</option>
                 </select>
-                <button class="btn btn-secondary btn-sm" onclick="clearVaultFilter()" style="padding: 7px 12px;">Clear</button>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="vault-sort-filter">↕️ Sort By</label>
+                <select id="vault-sort-filter" class="form-control osa-filter-select" onchange="filterVaultTable()">
+                  <option value="SURNAME_ASC" selected>Surname A–Z</option>
+                  <option value="SURNAME_DESC">Surname Z–A</option>
+                  <option value="ID_ASC">Student ID Ascending</option>
+                  <option value="ID_DESC">Student ID Descending</option>
+                  <option value="NEWEST">Newest Registration</option>
+                  <option value="OLDEST">Oldest Registration</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label">&nbsp;</label>
+                <button class="btn btn-secondary btn-sm" onclick="clearVaultFilter()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset to default table view">
+                  ↺ Reset Filters
+                </button>
               </div>
             </div>
             <div class="table-responsive-wrapper" id="registered-vault-table">
@@ -287,9 +370,54 @@
                 <h3 style="font-weight: 800; font-size: 1.1rem; color: #b91c1c;">🚨 Active Missing Incidents Monitor</h3>
                 <div style="font-size: 0.8rem; color: var(--text-muted);">Devices actively reported as lost across campus grounds</div>
               </div>
-              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                <input type="text" id="missing-student-filter" class="form-control" style="width: 250px; padding: 7px 12px; font-size: 0.8rem;" placeholder="🎓 Filter by Student ID / Name / S/N..." oninput="filterMissingTable()">
-                <button class="btn btn-secondary btn-sm" onclick="clearMissingFilter()" style="padding: 7px 12px;">Clear</button>
+            </div>
+            <!-- Filter & Search Toolbar -->
+            <div class="osa-toolbar-filter-grid">
+              <div class="osa-filter-item grow">
+                <label class="osa-filter-label" for="missing-student-filter">🎓 Student Search</label>
+                <input type="text" id="missing-student-filter" class="form-control osa-filter-input" placeholder="Search Student ID or Surname..." oninput="filterMissingTable()">
+              </div>
+              <div class="osa-filter-item grow">
+                <label class="osa-filter-label" for="missing-device-search">🔍 Device Search</label>
+                <input type="text" id="missing-device-search" class="form-control osa-filter-input" placeholder="Search device, serial no., or QR token" oninput="filterMissingTable()">
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="missing-type-filter">💻 Device Type</label>
+                <select id="missing-type-filter" class="form-control osa-filter-select" onchange="filterMissingTable()">
+                  <option value="ALL">All Devices</option>
+                  <option value="Smartphone">Smartphone</option>
+                  <option value="Laptop">Laptop</option>
+                  <option value="Tablet">Tablet</option>
+                  <option value="Smartwatch">Smartwatch</option>
+                  <option value="Earbuds">Earbuds / Headphones</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="missing-status-filter">📋 Missing Status</label>
+                <select id="missing-status-filter" class="form-control osa-filter-select" onchange="filterMissingTable()">
+                  <option value="ACTIVE" selected>Active Missing</option>
+                  <option value="ALL">All Incidents</option>
+                  <option value="FOUND_IN_CUSTODY">In Custody</option>
+                  <option value="RESOLVED">Returned / Resolved</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="missing-sort-filter">↕️ Sort By</label>
+                <select id="missing-sort-filter" class="form-control osa-filter-select" onchange="filterMissingTable()">
+                  <option value="SURNAME_ASC" selected>Surname A–Z</option>
+                  <option value="SURNAME_DESC">Surname Z–A</option>
+                  <option value="ID_ASC">Student ID Ascending</option>
+                  <option value="ID_DESC">Student ID Descending</option>
+                  <option value="NEWEST">Newest Missing Report</option>
+                  <option value="OLDEST">Oldest Missing Report</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label">&nbsp;</label>
+                <button class="btn btn-secondary btn-sm" onclick="clearMissingFilter()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset to default table view">
+                  ↺ Reset Filters
+                </button>
               </div>
             </div>
             <div class="table-responsive-wrapper" id="missing-incidents-table">
@@ -870,6 +998,6 @@
 
   <script src="/js/jsQR.min.js"></script>
   <script src="/js/scanner.js"></script>
-  <script src="/osa/osa.js?v=3.6"></script>
+  <script src="/osa/osa.js?v=4.0"></script>
 </body>
 </html>

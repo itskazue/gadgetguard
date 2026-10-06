@@ -209,7 +209,7 @@ async function loadDashboardTriage() {
                 <div class="table-secondary-sub">${escapeHtml(g.category)} • ${escapeHtml(g.color || 'Standard')}</div>
               </td>
               <td>
-                <div style="font-weight:700; color:#0f172a; margin-bottom:3px;">${escapeHtml(g.owner?.name || 'Student')}</div>
+                <div style="font-weight:700; color:#0f172a; margin-bottom:3px;">${escapeHtml(formatStudentDisplayName(g.owner?.name))}</div>
                 <div style="font-family:var(--font-mono); font-size:0.775rem; color:var(--primary); font-weight:600; margin-bottom:2px;">${escapeHtml(g.owner?.idNumber || '-')}</div>
                 ${g.owner?.department ? `<div style="font-size:0.725rem; color:#475569;">${escapeHtml(g.owner.department)}</div>` : ''}
               </td>
@@ -265,6 +265,156 @@ async function loadDashboardAuditFeed() {
   } catch (e) {}
 }
 
+// ==========================================
+// STUDENT SURNAME, FILTERING & SORTING UTILITIES
+// ==========================================
+
+// Extracts student surname, handling single names, comma format ("Dela Cruz, Juan"), and Filipino prefix surnames ("Juan Dela Cruz" -> "Dela Cruz")
+function getStudentSurname(fullName) {
+  if (!fullName || typeof fullName !== 'string') return '';
+  const trimmed = fullName.trim();
+  if (!trimmed) return '';
+
+  if (trimmed.includes(',')) {
+    return trimmed.split(',')[0].trim();
+  }
+
+  const parts = trimmed.split(/\s+/);
+  if (parts.length === 1) return parts[0];
+
+  const lowerParts = parts.map(p => p.toLowerCase());
+  const len = parts.length;
+
+  // Multi-word Filipino compound surnames: "de la Cruz", "de los Santos"
+  if (len >= 3) {
+    const thirdFromLast = lowerParts[len - 3];
+    const secondFromLast = lowerParts[len - 2];
+    if ((thirdFromLast === 'de' && (secondFromLast === 'la' || secondFromLast === 'los')) ||
+        (thirdFromLast === 'del' && secondFromLast === 'os')) {
+      return parts.slice(len - 3).join(' ');
+    }
+  }
+
+  // Common prefixes: "Dela Cruz", "Del Rosario", "San Juan", "Santa Maria"
+  if (len >= 2) {
+    const secondFromLast = lowerParts[len - 2];
+    const prefixes = ['de', 'del', 'dela', 'delos', 'san', 'santa', 'sto.', 'sto', 'sta.', 'sta'];
+    if (prefixes.includes(secondFromLast)) {
+      return parts.slice(len - 2).join(' ');
+    }
+  }
+
+  return parts[len - 1];
+}
+
+// Formats display name as "Surname, First Name" (e.g. "Dela Cruz, Juan")
+function formatStudentDisplayName(fullName) {
+  if (!fullName || typeof fullName !== 'string') return 'Student';
+  const trimmed = fullName.trim();
+  if (!trimmed) return 'Student';
+  if (trimmed.includes(',')) return trimmed;
+
+  const surname = getStudentSurname(trimmed);
+  if (surname && trimmed.endsWith(surname) && trimmed !== surname) {
+    const firstName = trimmed.slice(0, trimmed.length - surname.length).trim();
+    if (firstName) {
+      return `${surname}, ${firstName}`;
+    }
+  }
+  return trimmed;
+}
+
+// Device Category Matcher
+function matchesDeviceCategory(gadgetCategory, filterCategory) {
+  if (!filterCategory || filterCategory === 'ALL') return true;
+  const cat = (gadgetCategory || '').toLowerCase();
+  const target = filterCategory.toLowerCase();
+
+  if (target === 'smartphone') {
+    return cat.includes('phone');
+  }
+  if (target === 'laptop') {
+    return cat.includes('laptop') || cat.includes('macbook') || cat.includes('notebook');
+  }
+  if (target === 'tablet') {
+    return cat.includes('tablet') || cat.includes('ipad');
+  }
+  if (target === 'smartwatch') {
+    return cat.includes('watch') || cat.includes('wearable');
+  }
+  if (target === 'earbuds') {
+    return cat.includes('earbud') || cat.includes('headphone') || cat.includes('airpod');
+  }
+  if (target === 'other') {
+    const standard = ['smartphone', 'phone', 'laptop', 'macbook', 'notebook', 'tablet', 'ipad', 'watch', 'wearable', 'earbud', 'headphone', 'airpod'];
+    return cat.includes('other') || !standard.some(s => cat.includes(s));
+  }
+  return cat.includes(target);
+}
+
+// Unified Sorting Pipeline
+// Default: Primary = Student Surname (A-Z), Secondary = Student ID (Ascending)
+// If the same student has multiple records, they are kept consecutive.
+function sortGadgetsList(items, sortOption, getOwnerFn, getDateFn) {
+  const opt = sortOption || 'SURNAME_ASC';
+  return [...items].sort((a, b) => {
+    const ownerA = getOwnerFn(a) || {};
+    const ownerB = getOwnerFn(b) || {};
+    const surnameA = getStudentSurname(ownerA.name || '').toLowerCase();
+    const surnameB = getStudentSurname(ownerB.name || '').toLowerCase();
+    const idA = (ownerA.idNumber || '').toLowerCase();
+    const idB = (ownerB.idNumber || '').toLowerCase();
+    const dateA = new Date(getDateFn(a) || 0).getTime();
+    const dateB = new Date(getDateFn(b) || 0).getTime();
+
+    if (opt === 'SURNAME_DESC') {
+      const cmp = surnameB.localeCompare(surnameA);
+      if (cmp !== 0) return cmp;
+      const idCmp = idA.localeCompare(idB);
+      if (idCmp !== 0) return idCmp;
+      return dateB - dateA;
+    }
+
+    if (opt === 'ID_ASC') {
+      const cmp = idA.localeCompare(idB);
+      if (cmp !== 0) return cmp;
+      const sCmp = surnameA.localeCompare(surnameB);
+      if (sCmp !== 0) return sCmp;
+      return dateB - dateA;
+    }
+
+    if (opt === 'ID_DESC') {
+      const cmp = idB.localeCompare(idA);
+      if (cmp !== 0) return cmp;
+      const sCmp = surnameA.localeCompare(surnameB);
+      if (sCmp !== 0) return sCmp;
+      return dateB - dateA;
+    }
+
+    if (opt === 'NEWEST') {
+      if (dateB !== dateA) return dateB - dateA;
+      const sCmp = surnameA.localeCompare(surnameB);
+      if (sCmp !== 0) return sCmp;
+      return idA.localeCompare(idB);
+    }
+
+    if (opt === 'OLDEST') {
+      if (dateA !== dateB) return dateA - dateB;
+      const sCmp = surnameA.localeCompare(surnameB);
+      if (sCmp !== 0) return sCmp;
+      return idA.localeCompare(idB);
+    }
+
+    // Default: SURNAME_ASC (Primary: Surname A-Z, Secondary: Student ID Ascending)
+    // Ensures all gadgets belonging to the same student appear consecutively!
+    const sCmp = surnameA.localeCompare(surnameB);
+    if (sCmp !== 0) return sCmp;
+    const idCmp = idA.localeCompare(idB);
+    if (idCmp !== 0) return idCmp;
+    return dateB - dateA;
+  });
+}
+
 // 2. Gadget Approvals Full Queue (Registration Requests)
 let approvalsQueueCache = [];
 
@@ -273,58 +423,104 @@ async function loadApprovalsQueue() {
   if (!container) return;
 
   try {
-    const res = await api.getAllGadgets({ status: 'PENDING_APPROVAL' });
+    const res = await api.getAllGadgets();
     approvalsQueueCache = res.gadgets || [];
+    const pendingCount = approvalsQueueCache.filter(g => g.status === 'PENDING_APPROVAL').length;
+    const badge = document.getElementById('badge-pending-count');
+    if (badge) {
+      badge.textContent = pendingCount;
+      badge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
+    }
     filterApprovalsTable();
   } catch (e) {
-    container.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted);">Error loading pending approvals.</div>`;
+    container.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted);">Error loading gadget registrations.</div>`;
   }
 }
 
 function filterApprovalsTable() {
-  const query = (document.getElementById('approvals-student-filter')?.value || '').trim().toLowerCase();
+  const studentQuery = (document.getElementById('approvals-student-filter')?.value || '').trim().toLowerCase();
+  const deviceQuery = (document.getElementById('approvals-device-search')?.value || '').trim().toLowerCase();
+  const categoryFilter = document.getElementById('approvals-type-filter')?.value || 'ALL';
+  const statusFilter = document.getElementById('approvals-status-filter')?.value || 'PENDING_APPROVAL';
+  const sortOption = document.getElementById('approvals-sort-filter')?.value || 'SURNAME_ASC';
 
   let filtered = approvalsQueueCache;
-  if (query) {
+
+  // 1. Status Filter (Pending by default, All, Approved, Rejected)
+  if (statusFilter !== 'ALL') {
+    filtered = filtered.filter(g => g.status === statusFilter);
+  }
+
+  // 2. Device Type Filter
+  if (categoryFilter !== 'ALL') {
+    filtered = filtered.filter(g => matchesDeviceCategory(g.category, categoryFilter));
+  }
+
+  // 3. Dedicated Search by Student ID or Student Surname
+  if (studentQuery) {
     filtered = filtered.filter(g => {
       const studentId = (g.owner?.idNumber || '').toLowerCase();
       const studentName = (g.owner?.name || '').toLowerCase();
-      const studentEmail = (g.owner?.email || '').toLowerCase();
-      const brand = (g.brand || '').toLowerCase();
-      const model = (g.model || '').toLowerCase();
-      const sn = (g.serialNumber || '').toLowerCase();
-      return studentId.includes(query) || studentName.includes(query) || studentEmail.includes(query) || brand.includes(query) || model.includes(query) || sn.includes(query);
+      const surname = getStudentSurname(g.owner?.name || '').toLowerCase();
+      return studentId.includes(studentQuery) || surname.includes(studentQuery) || studentName.includes(studentQuery);
     });
   }
 
-  renderApprovalsTable(filtered, query);
+  // 4. Device Search (device brand, model, serial no., QR token)
+  if (deviceQuery) {
+    filtered = filtered.filter(g => {
+      const brand = (g.brand || '').toLowerCase();
+      const model = (g.model || '').toLowerCase();
+      const fullDev = `${brand} ${model}`;
+      const sn = (g.serialNumber || '').toLowerCase();
+      const token = (g.secureToken || '').toLowerCase();
+      return brand.includes(deviceQuery) || model.includes(deviceQuery) || fullDev.includes(deviceQuery) || sn.includes(deviceQuery) || token.includes(deviceQuery);
+    });
+  }
+
+  // 5. Automatic Sort (Default: Surname A-Z, then Student ID Ascending)
+  // Consecutive grouping for same student
+  const sorted = sortGadgetsList(filtered, sortOption, g => g.owner, g => g.registrationDate || g.createdAt);
+
+  const hasActiveFilters = Boolean(studentQuery || deviceQuery || categoryFilter !== 'ALL' || statusFilter !== 'PENDING_APPROVAL' || sortOption !== 'SURNAME_ASC');
+  renderApprovalsTable(sorted, hasActiveFilters);
 }
 
 function clearApprovalsFilter() {
-  const input = document.getElementById('approvals-student-filter');
-  if (input) input.value = '';
+  const stInput = document.getElementById('approvals-student-filter');
+  const devInput = document.getElementById('approvals-device-search');
+  const catSelect = document.getElementById('approvals-type-filter');
+  const statusSelect = document.getElementById('approvals-status-filter');
+  const sortSelect = document.getElementById('approvals-sort-filter');
+
+  if (stInput) stInput.value = '';
+  if (devInput) devInput.value = '';
+  if (catSelect) catSelect.value = 'ALL';
+  if (statusSelect) statusSelect.value = 'PENDING_APPROVAL';
+  if (sortSelect) sortSelect.value = 'SURNAME_ASC';
+
   filterApprovalsTable();
 }
 
-function renderApprovalsTable(gadgets, activeFilter = '') {
+function renderApprovalsTable(gadgets, hasActiveFilter = false) {
   const container = document.getElementById('approvals-full-table');
   if (!container) return;
 
   if (gadgets.length === 0) {
-    if (activeFilter) {
+    if (hasActiveFilter) {
       container.innerHTML = `
         <div style="padding: 40px; text-align: center; color: var(--text-muted);">
           <div style="font-size: 2rem; margin-bottom: 6px;">🔍</div>
-          <h4 style="font-weight: 700; color: var(--text-main);">No Registration Requests Found</h4>
-          <p style="font-size: 0.85rem;">No pending submissions match "<strong>${escapeHtml(activeFilter)}</strong>".</p>
-          <button class="btn btn-secondary btn-sm" onclick="clearApprovalsFilter()" style="margin-top: 10px;">Clear Filter</button>
+          <h4 style="font-weight: 700; color: var(--text-main);">No Registration Submissions Found</h4>
+          <p style="font-size: 0.85rem;">No gadget records match your search or filter selection.</p>
+          <button class="btn btn-secondary btn-sm" onclick="clearApprovalsFilter()" style="margin-top: 10px;">Reset Filters</button>
         </div>
       `;
     } else {
       container.innerHTML = `
         <div style="padding: 40px; text-align: center; color: var(--text-muted);">
           <div style="font-size: 2rem; margin-bottom: 6px;">🎉</div>
-          <h4 style="font-weight: 700; color: var(--text-main);">No Pending Approvals!</h4>
+          <h4 style="font-weight: 700; color: var(--text-main);">No Pending Submissions</h4>
           <p style="font-size: 0.85rem;">All submitted gadgets have been verified.</p>
         </div>
       `;
@@ -340,40 +536,53 @@ function renderApprovalsTable(gadgets, activeFilter = '') {
           <th>Device Specs</th>
           <th>Student Information</th>
           <th>Serial Number</th>
-          <th>Description & Marks</th>
+          <th>Status</th>
           <th>Submission Date</th>
           <th class="text-right">Action</th>
         </tr>
       </thead>
       <tbody>
-        ${gadgets.map(g => `
-          <tr>
+        ${gadgets.map((g, idx) => {
+          const prevG = idx > 0 ? gadgets[idx - 1] : null;
+          const isSameStudent = prevG && prevG.owner?.idNumber && prevG.owner?.idNumber === g.owner?.idNumber;
+          const rowClass = isSameStudent ? 'student-group-accent' : '';
+          return `
+          <tr class="${rowClass}">
             <td>
-              <img src="${g.photoUrl || 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500'}" alt="Proof" style="width: 54px; height: 54px; object-fit: cover; border-radius: 8px; border: 1.5px solid #cbd5e1; cursor: pointer;" onclick="previewOsaDevicePhoto('${g.photoUrl || 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500'}', '${escapeHtml(g.brand + ' ' + g.model)}', '${escapeHtml(g.owner?.name || 'Student')}')" title="Click to enlarge photo proof">
+              <img src="${g.photoUrl || 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500'}" alt="Proof" style="width: 52px; height: 52px; object-fit: cover; border-radius: 8px; border: 1.5px solid #cbd5e1; cursor: pointer;" onclick="previewOsaDevicePhoto('${g.photoUrl || 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500'}', '${escapeHtml(g.brand + ' ' + g.model)}', '${escapeHtml(g.owner?.name || 'Student')}')" title="Click to enlarge photo proof">
             </td>
             <td>
               <div class="table-primary-title">${escapeHtml(g.brand)} ${escapeHtml(g.model)}</div>
               <div class="table-secondary-sub">${escapeHtml(g.category)} • Color: ${escapeHtml(g.color || 'Standard')}</div>
             </td>
             <td>
-              <div style="font-weight: 700; color: #0f172a;">${escapeHtml(g.owner?.name || 'Student')}</div>
+              <div style="font-weight: 700; color: #0f172a;">${escapeHtml(formatStudentDisplayName(g.owner?.name))}</div>
               <div class="font-mono" style="font-size: 0.8rem; color: var(--primary); font-weight: 700; margin-top: 2px;">
                 ${g.owner?.idNumber ? `ID: ${escapeHtml(g.owner.idNumber)}` : '-'}
               </div>
               ${g.owner?.department ? `<div style="font-size: 0.725rem; color: #64748b;">${escapeHtml(g.owner.department)}</div>` : ''}
               ${g.owner?.email ? `<div style="font-size: 0.7rem; color: #94a3b8;">${escapeHtml(g.owner.email)}</div>` : ''}
             </td>
-            <td class="font-mono" style="font-size: 0.825rem; font-weight: 700;">${escapeHtml(g.serialNumber)}</td>
-            <td style="font-size: 0.8rem; color: var(--text-secondary); max-width: 200px;">"${escapeHtml(g.description || 'None')}"</td>
-            <td style="font-size: 0.8rem; color: var(--text-muted);">${formatDate(g.registrationDate)}</td>
+            <td class="font-mono" style="font-size: 0.825rem; font-weight: 700;">${escapeHtml(g.serialNumber || 'N/A')}</td>
+            <td>${renderStatusBadge(g.status)}</td>
+            <td style="font-size: 0.8rem; color: var(--text-muted);">${formatDate(g.registrationDate || g.createdAt)}</td>
             <td class="text-right">
-              <div class="table-action-btns">
-                <button class="btn btn-success btn-sm" onclick="handleApproveGadget('${g.id}')">✓ Approve & Generate QR</button>
-                <button class="btn btn-danger btn-sm" onclick="openRejectGadgetModal('${g.id}')">✕ Reject</button>
+              <div class="table-action-btns" style="display:inline-flex; align-items:center; gap:6px; justify-content:flex-end;">
+                ${g.status === 'PENDING_APPROVAL' ? `
+                  <button class="btn btn-success btn-sm" onclick="handleApproveGadget('${g.id}')">✓ Approve & Generate QR</button>
+                  <button class="btn btn-danger btn-sm" onclick="openRejectGadgetModal('${g.id}')">✕ Reject</button>
+                ` : ''}
+                ${g.status === 'REGISTERED' && g.secureToken ? `
+                  <button class="btn btn-secondary btn-sm" onclick="openPrintStickerModal('${g.id}')" title="Print QR Security Sticker">🏷️ Sticker</button>
+                ` : ''}
+                ${g.status === 'REJECTED' ? `
+                  <span style="font-size:0.75rem; color:#b91c1c;" title="${escapeHtml(g.rejectionReason || 'Rejected')}">Reason: ${escapeHtml(g.rejectionReason || 'Unverified')}</span>
+                ` : ''}
               </div>
             </td>
           </tr>
-        `).join('')}
+        `;
+        }).join('')}
       </tbody>
     </table>
   `;
@@ -517,48 +726,67 @@ async function loadRegisteredVault() {
 }
 
 function filterVaultTable() {
-  const studentFilter = (document.getElementById('vault-student-filter')?.value || '').trim().toLowerCase();
-  const search = (document.getElementById('vault-search-input')?.value || '').trim().toLowerCase();
+  const studentQuery = (document.getElementById('vault-student-filter')?.value || '').trim().toLowerCase();
+  const deviceQuery = (document.getElementById('vault-search-input')?.value || '').trim().toLowerCase();
+  const categoryFilter = document.getElementById('vault-type-filter')?.value || 'ALL';
   const status = document.getElementById('vault-status-select')?.value || 'ALL';
+  const sortOption = document.getElementById('vault-sort-filter')?.value || 'SURNAME_ASC';
 
   let filtered = allGadgetsCache;
 
+  // 1. Status Filter
   if (status !== 'ALL') {
     filtered = filtered.filter(g => g.status === status);
   }
 
-  // Filter specifically by Student Number/ID or Student Name/Email
-  if (studentFilter) {
+  // 2. Device Type Filter
+  if (categoryFilter !== 'ALL') {
+    filtered = filtered.filter(g => matchesDeviceCategory(g.category, categoryFilter));
+  }
+
+  // 3. Dedicated Search by Student ID or Student Surname
+  if (studentQuery) {
     filtered = filtered.filter(g => {
       const sId = (g.owner?.idNumber || '').toLowerCase();
       const sName = (g.owner?.name || '').toLowerCase();
-      const sEmail = (g.owner?.email || '').toLowerCase();
-      return sId.includes(studentFilter) || sName.includes(studentFilter) || sEmail.includes(studentFilter);
+      const surname = getStudentSurname(g.owner?.name || '').toLowerCase();
+      return sId.includes(studentQuery) || surname.includes(studentQuery) || sName.includes(studentQuery);
     });
   }
 
-  // General equipment search
-  if (search) {
-    filtered = filtered.filter(g => 
-      (g.brand && g.brand.toLowerCase().includes(search)) ||
-      (g.model && g.model.toLowerCase().includes(search)) ||
-      (g.serialNumber && g.serialNumber.toLowerCase().includes(search)) ||
-      (g.secureToken && g.secureToken.toLowerCase().includes(search)) ||
-      (g.owner?.name && g.owner.name.toLowerCase().includes(search)) ||
-      (g.owner?.idNumber && g.owner.idNumber.toLowerCase().includes(search))
-    );
+  // 4. Device Search (Search device, serial no., or QR token)
+  if (deviceQuery) {
+    filtered = filtered.filter(g => {
+      const brand = (g.brand || '').toLowerCase();
+      const model = (g.model || '').toLowerCase();
+      const fullDev = `${brand} ${model}`;
+      const sn = (g.serialNumber || '').toLowerCase();
+      const token = (g.secureToken || '').toLowerCase();
+      return brand.includes(deviceQuery) || model.includes(deviceQuery) || fullDev.includes(deviceQuery) || sn.includes(deviceQuery) || token.includes(deviceQuery);
+    });
   }
 
-  renderVaultTable(filtered, Boolean(studentFilter || search || status !== 'ALL'));
+  // 5. Automatic Sort (Default: Surname A-Z, then Student ID Ascending)
+  // Keeps all devices belonging to the same student consecutive
+  const sorted = sortGadgetsList(filtered, sortOption, g => g.owner, g => g.registrationDate || g.createdAt);
+
+  const hasFilter = Boolean(studentQuery || deviceQuery || categoryFilter !== 'ALL' || status !== 'ALL' || sortOption !== 'SURNAME_ASC');
+  renderVaultTable(sorted, hasFilter);
 }
 
 function clearVaultFilter() {
   const stInput = document.getElementById('vault-student-filter');
   const searchInput = document.getElementById('vault-search-input');
+  const catSelect = document.getElementById('vault-type-filter');
   const statusSelect = document.getElementById('vault-status-select');
+  const sortSelect = document.getElementById('vault-sort-filter');
+
   if (stInput) stInput.value = '';
   if (searchInput) searchInput.value = '';
+  if (catSelect) catSelect.value = 'ALL';
   if (statusSelect) statusSelect.value = 'ALL';
+  if (sortSelect) sortSelect.value = 'SURNAME_ASC';
+
   filterVaultTable();
 }
 
@@ -571,8 +799,8 @@ function renderVaultTable(gadgets, hasFilter = false) {
       <div style="padding: 35px; text-align: center; color: var(--text-muted);">
         <div style="font-size: 1.8rem; margin-bottom: 6px;">🔍</div>
         <h4 style="font-weight: 700; color: var(--text-main);">No Equipment Found</h4>
-        <p style="font-size: 0.85rem;">No registered gadgets match the current student ID or search criteria.</p>
-        ${hasFilter ? `<button class="btn btn-secondary btn-sm" onclick="clearVaultFilter()" style="margin-top: 10px;">Clear Filters</button>` : ''}
+        <p style="font-size: 0.85rem;">No registered gadgets match the current search or filter criteria.</p>
+        ${hasFilter ? `<button class="btn btn-secondary btn-sm" onclick="clearVaultFilter()" style="margin-top: 10px;">Reset Filters</button>` : ''}
       </div>
     `;
     return;
@@ -591,14 +819,18 @@ function renderVaultTable(gadgets, hasFilter = false) {
         </tr>
       </thead>
       <tbody>
-        ${gadgets.map(g => `
-          <tr>
+        ${gadgets.map((g, idx) => {
+          const prevG = idx > 0 ? gadgets[idx - 1] : null;
+          const isSameStudent = prevG && prevG.owner?.idNumber && prevG.owner?.idNumber === g.owner?.idNumber;
+          const rowClass = isSameStudent ? 'student-group-accent' : '';
+          return `
+          <tr class="${rowClass}">
             <td>
               <div class="table-primary-title">${escapeHtml(g.brand)} ${escapeHtml(g.model)}</div>
-              <div class="table-secondary-sub">${escapeHtml(g.category)}</div>
+              <div class="table-secondary-sub">${escapeHtml(g.category)} ${g.color ? `• Color: ${escapeHtml(g.color)}` : ''}</div>
             </td>
             <td>
-              <div style="font-weight: 700; color: #0f172a; margin-bottom: 3px;">${escapeHtml(g.owner?.name || 'Student')}</div>
+              <div style="font-weight: 700; color: #0f172a; margin-bottom: 3px;">${escapeHtml(formatStudentDisplayName(g.owner?.name))}</div>
               <div class="font-mono" style="font-size: 0.775rem; color: var(--primary); font-weight: 700;">
                 ${g.owner?.idNumber ? `ID: ${escapeHtml(g.owner.idNumber)}` : '-'}
               </div>
@@ -606,7 +838,7 @@ function renderVaultTable(gadgets, hasFilter = false) {
             </td>
             <td>
               <span class="font-mono" style="font-size: 0.825rem; font-weight: 700; color: #1e293b; background: #f8fafc; padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0; display: inline-block;">
-                ${escapeHtml(g.serialNumber)}
+                ${escapeHtml(g.serialNumber || 'N/A')}
               </span>
             </td>
             <td>
@@ -650,7 +882,8 @@ function renderVaultTable(gadgets, hasFilter = false) {
               </div>
             </td>
           </tr>
-        `).join('')}
+        `;
+        }).join('')}
       </tbody>
     </table>
   `;
@@ -743,8 +976,14 @@ async function loadMissingIncidents() {
   if (!container) return;
 
   try {
-    const res = await api.getActiveMissing();
+    const res = await api.getActiveMissing({ all: true });
     missingReportsCache = res.reports || [];
+    const activeCount = missingReportsCache.filter(r => r.status === 'ACTIVE' && (r.gadget?.status === 'MISSING' || !r.gadget?.status)).length;
+    const badge = document.getElementById('badge-missing-count');
+    if (badge) {
+      badge.textContent = activeCount;
+      badge.style.display = activeCount > 0 ? 'inline-block' : 'none';
+    }
     filterMissingTable();
   } catch (e) {
     container.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted);">Error loading missing incidents.</div>`;
@@ -752,43 +991,89 @@ async function loadMissingIncidents() {
 }
 
 function filterMissingTable() {
-  const query = (document.getElementById('missing-student-filter')?.value || '').trim().toLowerCase();
+  const studentQuery = (document.getElementById('missing-student-filter')?.value || '').trim().toLowerCase();
+  const deviceQuery = (document.getElementById('missing-device-search')?.value || '').trim().toLowerCase();
+  const categoryFilter = document.getElementById('missing-type-filter')?.value || 'ALL';
+  const statusFilter = document.getElementById('missing-status-filter')?.value || 'ACTIVE';
+  const sortOption = document.getElementById('missing-sort-filter')?.value || 'SURNAME_ASC';
 
   let filtered = missingReportsCache;
-  if (query) {
+
+  // 1. Missing Status Filter (ACTIVE, ALL, FOUND_IN_CUSTODY, RESOLVED)
+  if (statusFilter === 'ACTIVE') {
+    filtered = filtered.filter(r => r.status === 'ACTIVE' && (r.gadget?.status === 'MISSING' || !r.gadget?.status));
+  } else if (statusFilter === 'FOUND_IN_CUSTODY') {
+    filtered = filtered.filter(r => r.gadget?.status === 'FOUND_IN_CUSTODY');
+  } else if (statusFilter === 'RESOLVED') {
+    filtered = filtered.filter(r => r.status === 'RESOLVED' || r.status === 'CANCELLED' || r.gadget?.status === 'RETURNED');
+  }
+  // statusFilter === 'ALL' includes all incident records
+
+  // 2. Device Type Filter
+  if (categoryFilter !== 'ALL') {
+    filtered = filtered.filter(r => matchesDeviceCategory(r.gadget?.category, categoryFilter));
+  }
+
+  // 3. Dedicated Search by Student ID or Student Surname
+  if (studentQuery) {
     filtered = filtered.filter(r => {
       const studentId = (r.owner?.idNumber || '').toLowerCase();
       const studentName = (r.owner?.name || '').toLowerCase();
-      const studentEmail = (r.owner?.email || '').toLowerCase();
-      const brand = (r.gadget?.brand || '').toLowerCase();
-      const model = (r.gadget?.model || '').toLowerCase();
-      const sn = (r.gadget?.serialNumber || '').toLowerCase();
-      const loc = (r.lastSeenLocation || '').toLowerCase();
-      return studentId.includes(query) || studentName.includes(query) || studentEmail.includes(query) || brand.includes(query) || model.includes(query) || sn.includes(query) || loc.includes(query);
+      const surname = getStudentSurname(r.owner?.name || '').toLowerCase();
+      return studentId.includes(studentQuery) || surname.includes(studentQuery) || studentName.includes(studentQuery);
     });
   }
 
-  renderMissingTable(filtered, query);
+  // 4. Device Search (Search device, serial no., or QR token)
+  if (deviceQuery) {
+    filtered = filtered.filter(r => {
+      const brand = (r.gadget?.brand || '').toLowerCase();
+      const model = (r.gadget?.model || '').toLowerCase();
+      const fullDev = `${brand} ${model}`;
+      const sn = (r.gadget?.serialNumber || '').toLowerCase();
+      const token = (r.gadget?.secureToken || '').toLowerCase();
+      const loc = (r.lastSeenLocation || '').toLowerCase();
+      const details = (r.details || '').toLowerCase();
+      return brand.includes(deviceQuery) || model.includes(deviceQuery) || fullDev.includes(deviceQuery) || sn.includes(deviceQuery) || token.includes(deviceQuery) || loc.includes(deviceQuery) || details.includes(deviceQuery);
+    });
+  }
+
+  // 5. Automatic Sort (Default: Surname A-Z, then Student ID Ascending)
+  // Keeps all missing gadgets belonging to the same student consecutive
+  const sorted = sortGadgetsList(filtered, sortOption, r => r.owner, r => r.lastSeenDate || r.reportedAt || r.createdAt);
+
+  const hasFilter = Boolean(studentQuery || deviceQuery || categoryFilter !== 'ALL' || statusFilter !== 'ACTIVE' || sortOption !== 'SURNAME_ASC');
+  renderMissingTable(sorted, hasFilter);
 }
 
 function clearMissingFilter() {
-  const input = document.getElementById('missing-student-filter');
-  if (input) input.value = '';
+  const stInput = document.getElementById('missing-student-filter');
+  const devInput = document.getElementById('missing-device-search');
+  const catSelect = document.getElementById('missing-type-filter');
+  const statusSelect = document.getElementById('missing-status-filter');
+  const sortSelect = document.getElementById('missing-sort-filter');
+
+  if (stInput) stInput.value = '';
+  if (devInput) devInput.value = '';
+  if (catSelect) catSelect.value = 'ALL';
+  if (statusSelect) statusSelect.value = 'ACTIVE';
+  if (sortSelect) sortSelect.value = 'SURNAME_ASC';
+
   filterMissingTable();
 }
 
-function renderMissingTable(reports, activeFilter = '') {
+function renderMissingTable(reports, hasFilter = false) {
   const container = document.getElementById('missing-incidents-table');
   if (!container) return;
 
   if (reports.length === 0) {
-    if (activeFilter) {
+    if (hasFilter) {
       container.innerHTML = `
         <div style="padding: 35px; text-align: center; color: var(--text-muted);">
           <div style="font-size: 1.8rem; margin-bottom: 6px;">🔍</div>
           <h4 style="font-weight: 700; color: var(--text-main);">No Missing Reports Found</h4>
-          <p style="font-size: 0.85rem;">No active missing incidents match "<strong>${escapeHtml(activeFilter)}</strong>".</p>
-          <button class="btn btn-secondary btn-sm" onclick="clearMissingFilter()" style="margin-top: 10px;">Clear Filter</button>
+          <p style="font-size: 0.85rem;">No missing incidents match your search or filter selection.</p>
+          <button class="btn btn-secondary btn-sm" onclick="clearMissingFilter()" style="margin-top: 10px;">Reset Filters</button>
         </div>
       `;
     } else {
@@ -803,6 +1088,7 @@ function renderMissingTable(reports, activeFilter = '') {
         <tr>
           <th>Missing Gadget</th>
           <th>Student Owner</th>
+          <th>Status</th>
           <th>Last Known Location</th>
           <th>Date & Time</th>
           <th>Circumstances</th>
@@ -810,32 +1096,44 @@ function renderMissingTable(reports, activeFilter = '') {
         </tr>
       </thead>
       <tbody>
-        ${reports.map(r => `
-          <tr>
+        ${reports.map((r, idx) => {
+          const prevR = idx > 0 ? reports[idx - 1] : null;
+          const isSameStudent = prevR && prevR.owner?.idNumber && prevR.owner?.idNumber === r.owner?.idNumber;
+          const rowClass = isSameStudent ? 'student-group-accent' : '';
+          return `
+          <tr class="${rowClass}">
             <td>
               <div class="table-primary-title" style="color: #b91c1c;">${escapeHtml(r.gadget?.brand)} ${escapeHtml(r.gadget?.model)}</div>
               <div class="table-secondary-sub">${escapeHtml(r.gadget?.category)} ${r.gadget?.serialNumber ? `• S/N: <span class="font-mono">${escapeHtml(r.gadget.serialNumber)}</span>` : ''}</div>
             </td>
             <td>
-              <div style="font-weight: 700; color: #0f172a; margin-bottom: 3px;">${escapeHtml(r.owner?.name || 'Student')}</div>
+              <div style="font-weight: 700; color: #0f172a; margin-bottom: 3px;">${escapeHtml(formatStudentDisplayName(r.owner?.name))}</div>
               <div class="font-mono" style="font-size: 0.775rem; color: var(--primary); font-weight: 700;">
                 ${r.owner?.idNumber ? `ID: ${escapeHtml(r.owner.idNumber)}` : '-'}
               </div>
               ${r.owner?.department ? `<div style="font-size: 0.725rem; color: #64748b;">${escapeHtml(r.owner.department)}</div>` : ''}
               ${r.owner?.email ? `<div style="font-size: 0.7rem; color: #94a3b8;">${escapeHtml(r.owner.email)}</div>` : ''}
             </td>
+            <td>${renderStatusBadge(r.gadget?.status || r.status)}</td>
             <td>
               <div style="font-size: 0.875rem; color: #b91c1c; font-weight: 700; display:flex; align-items:center; gap:6px;">
                 📍 ${escapeHtml(r.lastSeenLocation)}
               </div>
             </td>
-            <td style="font-size: 0.825rem; color: #64748b;">${formatDate(r.lastSeenDate)}</td>
+            <td style="font-size: 0.825rem; color: #64748b;">${formatDate(r.lastSeenDate || r.reportedAt)}</td>
             <td style="font-size: 0.825rem; color: #475569; max-width: 240px; line-height: 1.45;">"${escapeHtml(r.details || 'None')}"</td>
             <td class="text-right">
               <div class="table-action-btns" style="display:inline-flex; align-items:center; gap:6px; justify-content:flex-end;">
-                <button class="btn btn-primary btn-sm" onclick="openReceiveCustodyModal('${r.gadgetId || r.gadget?.id}', '${escapeHtml(r.gadget?.brand || '')} ${escapeHtml(r.gadget?.model || '')}', '${escapeHtml(r.owner?.name || 'Student')}')" style="display:inline-flex; align-items:center; gap:5px;" title="Receive gadget into custody vault (surrendered f2f)">
-                  📦 Receive into Vault
-                </button>
+                ${(r.gadget?.status === 'MISSING' || r.status === 'ACTIVE') ? `
+                  <button class="btn btn-primary btn-sm" onclick="openReceiveCustodyModal('${r.gadgetId || r.gadget?.id}', '${escapeHtml(r.gadget?.brand || '')} ${escapeHtml(r.gadget?.model || '')}', '${escapeHtml(r.owner?.name || 'Student')}')" style="display:inline-flex; align-items:center; gap:5px;" title="Receive gadget into custody vault (surrendered f2f)">
+                    📦 Receive into Vault
+                  </button>
+                ` : ''}
+                ${r.gadget?.status === 'FOUND_IN_CUSTODY' ? `
+                  <button class="btn btn-primary btn-sm" onclick="navigateOsa('claims')" style="display:inline-flex; align-items:center; gap:5px;">
+                    🤝 Review Claims
+                  </button>
+                ` : ''}
                 ${r.gadget?.secureToken ? `
                   <a href="/device/${r.gadget?.secureToken}" target="_blank" class="btn btn-secondary btn-sm" style="display:inline-flex; align-items:center; gap:4px;" title="Open public QR recovery page">
                     🔗
@@ -844,7 +1142,8 @@ function renderMissingTable(reports, activeFilter = '') {
               </div>
             </td>
           </tr>
-        `).join('')}
+        `;
+        }).join('')}
       </tbody>
     </table>
   `;

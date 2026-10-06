@@ -109,7 +109,9 @@ router.get('/active', (req, res) => {
       } catch (e) {}
     }
 
-    const missingReports = db.find('missing_reports', m => m.status === 'ACTIVE');
+    const missingReports = isOsa 
+      ? db.get('missing_reports') 
+      : db.find('missing_reports', m => m.status === 'ACTIVE');
     
     const enriched = missingReports.map(report => {
       const gadget = db.findById('gadgets', report.gadgetId);
@@ -136,7 +138,7 @@ router.get('/active', (req, res) => {
           department: owner.department
         } : null
       };
-    }).filter(r => r.gadget && r.gadget.status === 'MISSING');
+    }).filter(r => r.gadget && (isOsa ? true : (r.status === 'ACTIVE' && r.gadget.status === 'MISSING')));
 
     return res.json({ success: true, count: enriched.length, reports: enriched });
   } catch (err) {
