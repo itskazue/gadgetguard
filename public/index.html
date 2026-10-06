@@ -114,126 +114,29 @@
         </div>
       </div>
 
-      <!-- Right Column: Smartphone Mockup with Floating Glass Cards -->
+      <!-- Right Floating Smartphone with QR Sticker Showcase -->
       <div class="hero-device-col">
-        <div class="hero-showcase-wrap">
-
-          <!-- Floating Glass Card 1: Top-Right (Scan Report Recover) -->
-          <div class="floating-glass-top">
-            <div class="scan-icon-wrap">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2">
-                <path d="M3 7V5a2 2 0 0 1 2-2h2m10 0h2a2 2 0 0 1 2 2v2m0 10v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"></path>
-                <rect x="7" y="7" width="3" height="3" fill="#ffffff"></rect>
-                <rect x="14" y="7" width="3" height="3" fill="#ffffff"></rect>
-                <rect x="7" y="14" width="3" height="3" fill="#ffffff"></rect>
-                <rect x="14" y="14" width="3" height="3" fill="#ffffff"></rect>
-              </svg>
-            </div>
-            <div>
-              <div class="scan-text-lines">
-                Scan<br>Report<br>Recover
-              </div>
-              <div class="scan-sub-note">A safer campus for everyone.</div>
-            </div>
-          </div>
-
-          <!-- Phone Mockup Frame -->
-          <div class="phone-mockup-frame">
-            <div class="phone-inner-screen">
-              <!-- Top bar with dynamic island -->
-              <div class="phone-top-bar">
-                <span>9:41</span>
-                <div class="phone-dynamic-island"></div>
-                <span>5G 🔋</span>
-              </div>
-
-              <!-- Header Greeting -->
-              <div class="phone-header-user">
-                <div class="phone-user-info">
-                  <div class="phone-user-avatar">🎓</div>
-                  <div>
-                    <div style="font-size: 0.55rem; color: #94a3b8; line-height: 1;">Welcome,</div>
-                    <div style="font-size: 0.72rem; font-weight: 800; color: #ffffff;">NCST Student</div>
+        <div class="phone-mockup-wrapper">
+          <div class="phone-body">
+            <div class="phone-screen">
+              <div class="phone-notch"></div>
+              <div class="phone-screen-content">
+                <div class="phone-clock">10:32</div>
+                <div class="phone-widget-card">
+                  <div class="phone-widget-brand">🛡️ GadgetGuard Protection</div>
+                  <div class="phone-qr-sticker">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="#0f172a">
+                      <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm10-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm14 0h4v2h-4v-2zm-4 0h2v2h-2v-2zm2 2h2v2h-2v-2zm-2 2h2v2h-2v-2zm4 0h2v2h-2v-2zm-2 2h2v2h-2v-2zm4-4h2v2h-2v-2zm0 4h2v2h-2v-2zM6 6h2v2H6V6zm10 0h2v2h-2V6zm-10 12h2v2H6v-2z"/>
+                    </svg>
+                    <span class="phone-token-code">TOKEN: GG-89241</span>
+                  </div>
+                  <div class="phone-secure-status">
+                    <span class="phone-green-dot"></span> Active QR Linked to OSA
                   </div>
                 </div>
-                <div style="width: 24px; height: 24px; border-radius: 50%; background: rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center; font-size: 0.65rem;">
-                  👤
-                </div>
-              </div>
-
-              <!-- Main QR Card -->
-              <div class="phone-main-card">
-                <div class="phone-app-brand">
-                  <img src="/assets/ncst_logo.png" alt="NCST" style="width: 14px; height: 14px; object-fit: contain;">
-                  <span>GadgetGuard</span>
-                </div>
-
-                <div class="phone-qr-box">
-                  <svg width="84" height="84" viewBox="0 0 24 24" fill="#0f172a" class="phone-qr-img">
-                    <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm10-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm14 0h4v2h-4v-2zm-4 0h2v2h-2v-2zm2 2h2v2h-2v-2zm-2 2h2v2h-2v-2zm4 0h2v2h-2v-2zm-2 2h2v2h-2v-2zm4-4h2v2h-2v-2zm0 4h2v2h-2v-2zM6 6h2v2H6V6zm10 0h2v2h-2V6zm-10 12h2v2H6v-2z"/>
-                  </svg>
-                </div>
-
-                <div class="phone-token-lbl">TOKEN: GG-89241</div>
-
-                <div class="phone-status-pill">
-                  <span style="width: 5px; height: 5px; border-radius: 50%; background: #10b981;"></span>
-                  Active • Linked to OSA
-                </div>
-              </div>
-
-              <!-- Blue Action Button -->
-              <button class="phone-view-btn" onclick="openLoginModal()">
-                View My Devices
-              </button>
-
-              <!-- Quick List Rows -->
-              <div class="phone-menu-list">
-                <div class="phone-menu-row">
-                  <span>📱 My Registered Gadgets</span>
-                  <span style="color: #94a3b8;">&rsaquo;</span>
-                </div>
-                <div class="phone-menu-row">
-                  <span style="color: #dc2626;">⚠️ Report Missing</span>
-                  <span style="color: #94a3b8;">&rsaquo;</span>
-                </div>
-                <div class="phone-menu-row">
-                  <span>🔔 My Notifications</span>
-                  <span style="color: #94a3b8;">&rsaquo;</span>
-                </div>
-                <div class="phone-menu-row">
-                  <span>📋 Claim History</span>
-                  <span style="color: #94a3b8;">&rsaquo;</span>
-                </div>
               </div>
             </div>
           </div>
-
-          <!-- Floating Glass Card 2: Bottom-Right (Metrics) -->
-          <div class="floating-glass-bottom">
-            <div class="stat-mini-pill">
-              <div class="stat-mini-icon">👥</div>
-              <div>
-                <div class="stat-mini-val">3K+</div>
-                <div class="stat-mini-lbl">NCST Community</div>
-              </div>
-            </div>
-            <div class="stat-mini-pill">
-              <div class="stat-mini-icon">📱</div>
-              <div>
-                <div class="stat-mini-val">1.5K+</div>
-                <div class="stat-mini-lbl">Registered Devices</div>
-              </div>
-            </div>
-            <div class="stat-mini-pill">
-              <div class="stat-mini-icon">✓</div>
-              <div>
-                <div class="stat-mini-val">300+</div>
-                <div class="stat-mini-lbl">Items Recovered</div>
-              </div>
-            </div>
-          </div>
-
         </div>
       </div>
     </div>
