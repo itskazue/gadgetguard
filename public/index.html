@@ -8,14 +8,14 @@
   <meta name="theme-color" content="#142a6d">
   
   <link rel="icon" type="image/png" href="/assets/ncst_logo.png">
-  <link rel="stylesheet" href="/css/sweetalert2.min.css?v=3.0">
-  <script src="/js/sweetalert2.all.min.js?v=3.0"></script>
-  <link rel="stylesheet" href="/css/style.css?v=3.0">
-  <link rel="stylesheet" href="/css/public.css?v=3.0">
+  <link rel="stylesheet" href="/css/sweetalert2.min.css?v=3.1">
+  <script src="/js/sweetalert2.all.min.js?v=3.1"></script>
+  <link rel="stylesheet" href="/css/style.css?v=3.1">
+  <link rel="stylesheet" href="/css/public.css?v=3.1">
 </head>
 <body>
 
-  <script src="/js/api.js?v=3.0"></script>
+  <script src="/js/api.js?v=3.1"></script>
 
   <!-- Site 1 Navigation Header -->
   <header class="public-nav">
@@ -35,10 +35,9 @@
     </ul>
 
     <div class="nav-actions" id="nav-auth-actions">
-      <button class="btn btn-primary btn-sm" onclick="openLoginModal()" style="display:flex; align-items:center; gap:6px; padding:8px 18px; border-radius:8px; font-weight:700;">
+      <button class="btn-nav-student-login" onclick="openLoginModal()">
         <span>🔐</span> Student Login
       </button>
-      <a href="/osa/login.html" class="btn btn-secondary btn-sm" style="padding:8px 14px; border-radius:8px; font-weight:600;">OSA Portal</a>
     </div>
   </header>
 
@@ -55,7 +54,7 @@
 
         <div class="hero-btn-row">
           <button class="btn-hero-primary" onclick="openLoginModal()">
-            🔐 Student Login &rarr;
+            Student Login &rarr;
           </button>
           <a href="#about" class="btn-hero-secondary">
             Learn More
@@ -93,9 +92,9 @@
     <!-- 3 Bottom Feature Cards -->
     <div class="feature-strip-container">
       <div class="feature-strip-grid">
-        <div class="feature-strip-card" onclick="openLoginModal()">
+        <div class="feature-strip-card" onclick="handleStudentPortalClick()">
           <div class="feature-strip-icon-circle blue-light">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
           </div>
@@ -105,9 +104,9 @@
           </div>
         </div>
 
-        <div class="feature-strip-card" onclick="window.location.href='/student/'">
+        <div class="feature-strip-card" onclick="handleReportMissingClick()">
           <div class="feature-strip-icon-circle red-light">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.2">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"></circle>
               <line x1="12" y1="8" x2="12" y2="12"></line>
               <line x1="12" y1="16" x2="12.01" y2="16"></line>
@@ -121,7 +120,7 @@
 
         <div class="feature-strip-card" onclick="window.location.href='/scan'">
           <div class="feature-strip-icon-circle green-light">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.2">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="3" width="7" height="7"></rect>
               <rect x="14" y="3" width="7" height="7"></rect>
               <rect x="14" y="14" width="7" height="7"></rect>
@@ -289,9 +288,12 @@
           <li>After hours: Hand over to the Main Gate Security Guard Post.</li>
           <li>Our staff will log the intake into the central vault and auto-alert the registered owner.</li>
         </ul>
-        <a href="/osa/" class="btn btn-warning btn-sm" style="width: 100%; justify-content: center;">
-          🏢 OSA Staff Administrator Portal
-        </a>
+        <div style="background: #ffffff; border: 1.5px solid #bfdbfe; border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.2rem;">🏢</span>
+          <div style="font-size: 0.8rem; color: #1e3a8a; font-weight: 600;">
+            Visit Room 1109 for claim verification & sticker claiming
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -316,8 +318,8 @@
       <div class="footer-links-col">
         <h4 style="font-size: 0.85rem; font-weight: 700; color: #0f172a; margin-bottom: 10px;">Portals</h4>
         <a href="/">🌐 Public Website</a>
-        <a href="/student/">📱 Student Portal</a>
-        <a href="/osa/login.html">🏢 OSA Staff Portal</a>
+        <a href="javascript:void(0)" onclick="handleStudentPortalClick()">📱 Student Portal</a>
+        <a href="/scan">🔍 QR Verification Scanner</a>
       </div>
 
       <div class="footer-links-col">
@@ -329,11 +331,11 @@
     </div>
 
     <div class="footer-bottom-line">
-      &copy; 2026 GadgetGuard • Office of Student Affairs • Helping our community keep their gadgets safe.
+      &copy; 2026 GadgetGuard • National College of Science and Technology • Helping our community keep their gadgets safe.
     </div>
   </footer>
 
-  <!-- Modal: Student & Staff Login (Direct Access & SIS Ready) -->
+  <!-- Modal: Student Login (Direct Access & SIS Ready) -->
   <div id="login-modal" class="modal-overlay">
     <div class="modal-box" style="max-width: 480px; padding: 0; overflow: hidden; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25); border: 1px solid #e2e8f0;">
       <!-- Elegant Header with Gradient & App Identity -->
@@ -345,20 +347,20 @@
           <img src="/assets/ncst_logo.png" alt="NCST Logo" style="width: 32px; height: 32px; object-fit: contain;">
         </div>
         <h3 style="font-weight: 800; font-size: 1.3rem; margin: 0; letter-spacing: -0.01em;">NCST <span style="color: #ffc72c;">GadgetGuard</span></h3>
-        <p style="font-size: 0.775rem; color: #bfdbfe; margin: 4px 0 0; font-weight: 500;">Unified Student & Campus Asset Portal</p>
+        <p style="font-size: 0.775rem; color: #bfdbfe; margin: 4px 0 0; font-weight: 500;">Unified Student Portal</p>
       </div>
 
       <!-- Form Body -->
       <div style="padding: 24px 26px; background: #ffffff;">
         <div style="margin-bottom: 16px;">
-          <h4 style="font-weight: 800; font-size: 1.15rem; color: #0f172a; margin: 0;">Student & Staff Sign In</h4>
+          <h4 style="font-weight: 800; font-size: 1.15rem; color: #0f172a; margin: 0;">Student Sign In</h4>
           <p style="font-size: 0.8rem; color: #64748b; margin: 3px 0 0;">Enter your NCST Student ID or Email Address to proceed</p>
         </div>
 
         <!-- Quick Demo Switcher Section -->
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span style="font-size: 0.725rem; font-weight: 700; color: #1e40af; text-transform: uppercase; letter-spacing: 0.04em;">⚡ Demo / Testing Accounts (1-Click Fill)</span>
+            <span style="font-size: 0.725rem; font-weight: 700; color: #1e40af; text-transform: uppercase; letter-spacing: 0.04em;">⚡ Demo Student Accounts (1-Click Fill)</span>
             <span style="font-size: 0.675rem; background: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-weight: 700;">TEST READY</span>
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
@@ -386,7 +388,7 @@
           <div class="form-group" style="margin-bottom: 8px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
               <label class="form-label" style="font-size: 0.775rem; font-weight: 600; color: #334155; margin: 0;">Password</label>
-              <a href="javascript:void(0)" onclick="SwalHelper.info('Password Assistance', 'Please visit the Office of Student Affairs (Room 1109) or contact your campus department coordinator.')" style="font-size: 0.75rem; color: #2563eb; font-weight: 600; text-decoration: none;">Forgot password?</a>
+              <a href="javascript:void(0)" onclick="SwalHelper.info('Password Assistance', 'Please visit the Office of Student Affairs (Room 1109) or contact your department coordinator.')" style="font-size: 0.75rem; color: #2563eb; font-weight: 600; text-decoration: none;">Forgot password?</a>
             </div>
             <input type="password" id="login-password" class="form-control" placeholder="••••••••" required style="height: 42px; border-radius: 10px; font-size: 0.875rem;">
           </div>
@@ -396,19 +398,15 @@
           </button>
 
           <!-- SIS Integration Notice -->
-          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 10px 12px; font-size: 0.725rem; color: #1e40af; line-height: 1.4; display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px;">
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 10px 12px; font-size: 0.725rem; color: #1e40af; line-height: 1.4; display: flex; align-items: flex-start; gap: 8px;">
             <span style="font-size: 0.9rem;">ℹ️</span>
             <div><strong>NCST Student Database Ready:</strong> Student accounts are synchronized directly with the official NCST Student Information System. Self-registration is disabled.</div>
-          </div>
-
-          <div style="text-align: center; font-size: 0.775rem; color: #64748b; padding-top: 10px; border-top: 1px dashed #e2e8f0;">
-            NCST Employee or Security Officer? <a href="/osa/login.html" style="color: #142a6d; font-weight: 700; text-decoration: none;">OSA Staff Portal &rarr;</a>
           </div>
         </form>
       </div>
     </div>
   </div>
 
-  <script src="/js/public.js?v=3.0"></script>
+  <script src="/js/public.js?v=3.1"></script>
 </body>
 </html>

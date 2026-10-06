@@ -33,19 +33,36 @@ function updateAuthUI() {
         <span style="font-size:0.875rem; color:#334155; font-weight:500;">
           Hi, <strong style="color:#142a6d;">${escapeHtml(user.name.split(' ')[0])}</strong>
         </span>
-        <a href="${isOsa ? '/osa/' : '/student/'}" class="btn btn-primary btn-sm" style="display:flex; align-items:center; gap:6px; padding:7px 14px; border-radius:8px; font-weight:700;">
-          ${isOsa ? '🏢 OSA Console' : '📱 Student Portal'}
+        <a href="${isOsa ? '/osa/' : '/student/'}" class="btn-nav-student-login" style="padding:7px 16px; text-decoration:none;">
+          ${isOsa ? '🏢 Admin Console' : '📱 Student Portal'}
         </a>
         <button class="btn btn-secondary btn-sm" onclick="logoutCurrentSession()" style="padding:7px 12px; border-radius:8px;">Sign Out</button>
       </div>
     `;
   } else {
     navContainer.innerHTML = `
-      <button class="btn btn-primary btn-sm" onclick="openLoginModal()" style="display:flex; align-items:center; gap:6px; padding:8px 18px; border-radius:8px; font-weight:700;">
+      <button class="btn-nav-student-login" onclick="openLoginModal()">
         <span>🔐</span> Student Login
       </button>
-      <a href="/osa/login.html" class="btn btn-secondary btn-sm" style="padding:8px 14px; border-radius:8px; font-weight:600;">OSA Portal</a>
     `;
+  }
+}
+
+function handleStudentPortalClick() {
+  const user = api.getCurrentUser();
+  if (user) {
+    window.location.href = user.role === 'osa_admin' ? '/osa/' : '/student/';
+  } else {
+    openLoginModal();
+  }
+}
+
+function handleReportMissingClick() {
+  const user = api.getCurrentUser();
+  if (user) {
+    window.location.href = '/student/#missing';
+  } else {
+    openLoginModal();
   }
 }
 
@@ -106,7 +123,7 @@ async function loadMissingBoard() {
           <div style="font-size: 0.8rem; color: #dc2626; font-weight: 600; margin-bottom: 8px;">
             📍 Last Seen: ${escapeHtml(report.lastSeenLocation)}
           </div>
-          <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 12px;">
+          <p style="font-size: 0.8rem; color: var(--text-muted); line-line: 1.4; margin-bottom: 12px;">
             "${escapeHtml(report.details || 'No special notes provided.')}"
           </p>
           <div style="display: flex; gap: 8px;">
@@ -146,7 +163,6 @@ function openLoginModal() {
 }
 
 function openRegisterModal() {
-  // Direct to login modal as student self-registration is replaced by SIS pre-provisioning
   openLoginModal();
 }
 
