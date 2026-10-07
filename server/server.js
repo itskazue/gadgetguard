@@ -48,8 +48,27 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Static file servers
+// Static file servers with persistent database fallback
 app.use('/uploads', express.static(uploadsDir));
+app.get('/uploads/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(uploadsDir, filename);
+  if (fs.existsSync(filePath)) {
+    return res.sendFile(filePath);
+  }
+  // Fallback to persistent database storage
+  const fileDoc = db.findOne('uploaded_files', f => f.filename === filename || f.id === filename);
+  if (fileDoc && fileDoc.dataUrl) {
+    const matches = fileDoc.dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (matches && matches.length === 3) {
+      const buffer = Buffer.from(matches[2], 'base64');
+      res.setHeader('Content-Type', matches[1]);
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
+      return res.send(buffer);
+    }
+  }
+  return res.status(404).send('Image not found');
+});
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // SSE (Server-Sent Events) live notification & sync hub
@@ -96,17 +115,31 @@ app.use((req, res, next) => {
   next();
 });
 
-// Photo upload API (Supports multipart form files & base64 camera data URLs)
+// Photo upload API (Supports multipart form files & base64 camera data URLs + Persistent Storage)
 app.post('/api/upload', (req, res, next) => {
   if (req.is('application/json') && (req.body.imageBase64 || req.body.dataUrl || req.body.photo)) {
     try {
       const rawData = req.body.imageBase64 || req.body.dataUrl || req.body.photo;
       const matches = rawData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
       if (matches && matches.length === 3) {
-        const ext = matches[1].includes('png') ? '.png' : (matches[1].includes('webp') ? '.webp' : '.jpg');
+        const mimeType = matches[1];
+        const ext = mimeType.includes('png') ? '.png' : (mimeType.includes('webp') ? '.webp' : '.jpg');
         const filename = 'handover_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7) + ext;
         const filePath = path.join(uploadsDir, filename);
-        fs.writeFileSync(filePath, Buffer.from(matches[2], 'base64'));
+        try {
+          fs.writeFileSync(filePath, Buffer.from(matches[2], 'base64'));
+        } catch (e) {
+          console.warn('Could not write upload to disk, saving to db:', e.message);
+        }
+
+        // Store in persistent database
+        db.insert('uploaded_files', {
+          id: filename,
+          filename,
+          mimeType,
+          dataUrl: rawData
+        });
+
         return res.json({ success: true, photoUrl: `/uploads/${filename}`, url: `/uploads/${filename}`, filename });
       }
     } catch (e) {
@@ -120,6 +153,21 @@ app.post('/api/upload', (req, res, next) => {
       return res.status(400).json({ success: false, error: 'No image file provided.' });
     }
     const photoUrl = `/uploads/${req.file.filename}`;
+
+    // Store in persistent database
+    try {
+      const fileBuffer = fs.readFileSync(req.file.path);
+      const mime = req.file.mimetype || 'image/jpeg';
+      db.insert('uploaded_files', {
+        id: req.file.filename,
+        filename: req.file.filename,
+        mimeType: mime,
+        dataUrl: `data:${mime};base64,${fileBuffer.toString('base64')}`
+      });
+    } catch (e) {
+      console.warn('Could not persist file into db:', e.message);
+    }
+
     return res.json({ success: true, photoUrl, url: photoUrl, filename: req.file.filename });
   });
 });
@@ -224,8 +272,9 @@ app.get(/^\/(?!api|uploads).*/, (req, res) => {
   res.sendFile('index.html', { root: PUBLIC_DIR });
 });
 
-// Start Server and initialize seed data
+// Start Server and initialize persistent database and baseline accounts
 async function startServer() {
+  await db.initDB();
   await seedDatabase();
   server.listen(PORT, () => {
     console.log(`

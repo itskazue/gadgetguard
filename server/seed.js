@@ -19,14 +19,8 @@ async function generateSampleQRCode(token) {
   }
 }
 
-async function seedDatabase(force = false) {
-  const existingUsers = db.get('users');
-  if (existingUsers && existingUsers.length > 0 && !force) {
-    console.log('Database already contains records. Skipping initial seed.');
-    return;
-  }
-
-  console.log('🌱 Initializing NCST GadgetGuard database with official pre-provisioned demo accounts...');
+async function seedDatabase() {
+  console.log('🌱 Verifying persistent NCST GadgetGuard accounts and baseline records...');
 
   const token1 = 'gg_dev_9a4f210d';
   const qr1 = await generateSampleQRCode(token1);
@@ -196,36 +190,40 @@ async function seedDatabase(force = false) {
     }
   ];
 
-  const cleanMissing = [];
-  const cleanFound = [];
-  const cleanClaims = [];
-  const cleanReturns = [];
-  const cleanScans = [];
-  const cleanNotifs = [];
+  // 1. Ensure required test accounts exist without overwriting or deleting user data
+  for (const user of cleanUsers) {
+    const existing = db.findOne('users', u => 
+      u.id === user.id || 
+      (u.email && u.email.toLowerCase() === user.email.toLowerCase()) || 
+      (u.idNumber && u.idNumber === user.idNumber)
+    );
+    if (!existing) {
+      db.insert('users', user);
+      console.log(`  + Seeded test account: ${user.name} (${user.idNumber})`);
+    }
+  }
 
-  const seedData = {
-    users: cleanUsers,
-    gadgets: cleanGadgets,
-    missing_reports: cleanMissing,
-    found_reports: cleanFound,
-    claims: cleanClaims,
-    returns: cleanReturns,
-    qr_scans: cleanScans,
-    notifications: cleanNotifs,
-    audit_logs: [
-      {
-        id: 'log_init_' + Date.now().toString(36),
-        timestamp: new Date().toISOString(),
-        userId: 'usr_admin_01',
-        userRole: 'osa_admin',
-        action: 'SYSTEM_INITIALIZATION',
-        targetType: 'system',
-        targetId: 'all',
-        details: 'System initialized with pre-provisioned NCST Student & OSA Admin demo accounts ready for testing and SIS integration.',
-        ipAddress: '127.0.0.1'
+  // 2. Ensure initial baseline gadgets exist if no gadgets in database
+  const currentGadgets = db.get('gadgets') || [];
+  if (currentGadgets.length === 0) {
+    for (const gadget of cleanGadgets) {
+      db.insert('gadgets', gadget);
+      console.log(`  + Seeded baseline gadget: ${gadget.brand} ${gadget.model}`);
+    }
+  } else {
+    // If gadgets exist, verify baseline test gadgets are present by ID if not already there
+    for (const gadget of cleanGadgets) {
+      const existing = db.findById('gadgets', gadget.id);
+      if (!existing && !currentGadgets.some(g => g.serialNumber === gadget.serialNumber)) {
+        db.insert('gadgets', gadget);
       }
-    ],
-    settings: {
+    }
+  }
+
+  // 3. Ensure system settings exist
+  const existingSettings = db.getSettings();
+  if (!existingSettings || !existingSettings.schoolName) {
+    db.updateSettings({
       schoolName: "National College of Science and Technology",
       osaOfficeLocation: "Room 1109, Student Affairs Building",
       osaContactPhone: "+63 917 555 4234",
@@ -233,11 +231,24 @@ async function seedDatabase(force = false) {
       operatingHours: "Mon - Fri: 8:00 AM - 5:00 PM",
       autoStickerCodePrefix: "NCST-GG-2026",
       requireOsaApproval: true
-    }
-  };
+    });
+  }
 
-  db.reset(seedData);
-  console.log('✅ GadgetGuard database successfully seeded with demo accounts!');
+  // 4. Ensure initialization audit log exists
+  const existingLogs = db.get('audit_logs') || [];
+  if (existingLogs.length === 0) {
+    db.addAuditLog({
+      userId: 'usr_admin_01',
+      userRole: 'osa_admin',
+      action: 'SYSTEM_INITIALIZATION',
+      targetType: 'system',
+      targetId: 'all',
+      details: 'System initialized with persistent storage for NCST Student & OSA operations.',
+      ipAddress: '127.0.0.1'
+    });
+  }
+
+  console.log('✅ Safe database initialization complete. All existing records preserved.');
 }
 
 module.exports = { seedDatabase };

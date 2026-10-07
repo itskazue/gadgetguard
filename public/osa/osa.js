@@ -88,7 +88,7 @@ function navigateOsa(screenName) {
     scans: 'Administrative QR Scan Telemetry Logs',
     reports: 'Campus Asset Security Reports',
     audit: 'Complete System Security Audit Logs',
-    settings: 'Campus Configuration & Live Demo Reset'
+    settings: 'Campus System Configuration'
   };
 
   const titleEl = document.getElementById('osa-page-title');

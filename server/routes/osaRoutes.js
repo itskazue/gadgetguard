@@ -282,22 +282,22 @@ router.put('/settings', authMiddleware, requireRole('osa_admin'), (req, res) => 
   }
 });
 
-// POST /api/osa/reset-demo (Reset demo data for live testing)
+// POST /api/osa/reset-demo (Safely verify persistent test accounts without deleting records)
 router.post('/reset-demo', authMiddleware, requireRole('osa_admin'), async (req, res) => {
   try {
-    await seedDatabase(true);
+    await seedDatabase();
     db.addAuditLog({
       userId: req.user.id,
       userRole: req.user.role,
-      action: 'RESET_DEMO_DATABASE',
+      action: 'VERIFY_TEST_ACCOUNTS',
       targetType: 'system',
       targetId: 'all',
-      details: 'OSA Administrator triggered database reset to default demo state',
+      details: 'OSA Administrator verified test accounts and database integrity',
       ipAddress: req.ip
     });
-    return res.json({ success: true, message: 'Database reset to default demo dataset successfully!' });
+    return res.json({ success: true, message: 'Database verified. All records preserved.' });
   } catch (err) {
-    return res.status(500).json({ success: false, error: 'Error resetting database.' });
+    return res.status(500).json({ success: false, error: 'Error verifying database.' });
   }
 });
 
