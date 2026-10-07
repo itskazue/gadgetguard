@@ -81,7 +81,8 @@ function navigateOsa(screenName) {
     registered: 'Registered Gadgets Vault Directory',
     missing: 'Active Missing Incidents Monitor',
     found: 'Custody Vault & Finder Intake',
-    claims: 'Ownership Claims Review Desk',
+    claims: 'Claims — Ready for Claim',
+    history: 'Official Returned Gadgets History',
     scanner: 'Official OSA QR Scanner',
     users: 'Registered Campus Users',
     notifications: 'Incident Notifications Feed',
@@ -118,6 +119,8 @@ async function loadCurrentOsaScreenData() {
     loadFoundCustodyVault();
   } else if (currentActiveOsaScreen === 'claims') {
     loadClaimsDesk();
+  } else if (currentActiveOsaScreen === 'history') {
+    loadReturnedHistory();
   } else if (currentActiveOsaScreen === 'scanner') {
     initOsaScannerWidget();
   } else if (currentActiveOsaScreen === 'users') {
@@ -159,7 +162,8 @@ async function loadOsaDashboardStats() {
     // Sidebar badge counters
     updateSidebarBadge('badge-pending-count', s.pendingGadgets);
     updateSidebarBadge('badge-missing-count', s.missingGadgets);
-    updateSidebarBadge('badge-claims-count', s.pendingClaims);
+    updateSidebarBadge('badge-claims-count', s.inCustodyGadgets || s.pendingClaims);
+    updateSidebarBadge('badge-history-count', s.returnedGadgets);
   } catch (err) {
     console.warn('Error loading stats:', err);
   }
@@ -1346,20 +1350,64 @@ async function handleReceiveCustodySubmit(e) {
   }
 }
 
-// 6. Claims Review Desk
-// 6. Ownership Claims & Return Records Desk (Section A & D)
+// =========================================================================
+// 6. CLAIMS DESK — ACTIVE GADGETS IN OSA CUSTODY (READY FOR CLAIM)
+// =========================================================================
 async function loadClaimsDesk() {
   const container = document.getElementById('claims-review-table');
   if (!container) return;
 
   try {
     const res = await api.getAllClaims();
-    const claims = res.claims || [];
-    window._claimsList = claims;
-    renderClaimsTable(claims);
+    const allClaims = res.claims || [];
+    window._allClaimsData = allClaims;
+
+    // Filter to active gadgets currently: IN OSA CUSTODY / READY FOR CLAIM
+    const active = allClaims.filter(c => {
+      const isReturned = (c.status === 'RETURNED' || c.status === 'CLAIMED' || Boolean(c.returnRecord) || c.gadget?.status === 'RETURNED');
+      if (isReturned) return false;
+      return (c.status === 'IN_CUSTODY' || c.isInCustody || c.gadget?.status === 'FOUND_IN_CUSTODY' || c.status === 'APPROVED' || c.status === 'PENDING');
+    });
+
+    // Default arrangement: Prioritize the gadgets that have been waiting in OSA custody the longest (oldest dateReceivedByOsa first)
+    active.sort((a, b) => {
+      const dateA = new Date(a.dateReceivedByOsa || a.createdAt || 0).getTime();
+      const dateB = new Date(b.dateReceivedByOsa || b.createdAt || 0).getTime();
+      return dateA - dateB;
+    });
+
+    window._claimsList = active;
+    updateSidebarBadge('badge-claims-count', active.length);
+    filterClaimsTable();
   } catch (e) {
     console.error('Error loading claims:', e);
+    container.innerHTML = `<div style="padding: 36px; text-align: center; color: #ef4444;">Error loading claims: ${escapeHtml(e.message || 'Server error')}</div>`;
   }
+}
+
+function filterClaimsTable() {
+  const query = (document.getElementById('claims-search-input')?.value || '').toLowerCase().trim();
+  if (!window._claimsList) return;
+
+  if (!query) {
+    renderClaimsTable(window._claimsList);
+    return;
+  }
+
+  const filtered = window._claimsList.filter(c => {
+    const ownerName = (c.user?.name || c.gadget?.owner?.name || '').toLowerCase();
+    const studentId = (c.user?.idNumber || c.gadget?.owner?.idNumber || c.verificationIdNumber || '').toLowerCase();
+    const brand = (c.gadget?.brand || '').toLowerCase();
+    const model = (c.gadget?.model || '').toLowerCase();
+    const gadgetId = (c.gadgetId || c.gadget?.id || '').toLowerCase();
+    const serial = (c.gadget?.serialNumber || '').toLowerCase();
+
+    return ownerName.includes(query) || studentId.includes(query) ||
+           gadgetId.includes(query) || brand.includes(query) ||
+           model.includes(query) || serial.includes(query);
+  });
+
+  renderClaimsTable(filtered);
 }
 
 function renderClaimsTable(claims) {
@@ -1367,58 +1415,59 @@ function renderClaimsTable(claims) {
   if (!container) return;
 
   if (!claims || claims.length === 0) {
-    container.innerHTML = `<div style="padding: 36px; text-align: center; color: var(--text-muted); font-size: 0.9rem;">No ownership claims or return records found matching criteria.</div>`;
+    container.innerHTML = `
+      <div style="padding: 48px 24px; text-align: center; color: var(--text-muted);">
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">📦</div>
+        <div style="font-weight: 700; font-size: 1rem; color: #334155;">No gadgets currently ready for claim.</div>
+        <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">Items physically received and confirmed by OSA will automatically appear here.</div>
+      </div>
+    `;
     return;
   }
 
   container.innerHTML = `
-    <table class="clean-table">
+    <table class="clean-table" style="min-width: 900px;">
       <thead>
         <tr>
-          <th>Owner</th>
-          <th>Gadget</th>
-          <th>Device Identification</th>
-          <th>Claim / Return Proof</th>
-          <th>Return Details</th>
-          <th>Status</th>
-          <th class="text-right">Actions</th>
+          <th style="min-width: 170px;">Owner</th>
+          <th style="min-width: 190px;">Gadget</th>
+          <th style="min-width: 170px;">Device Identification</th>
+          <th style="min-width: 180px;">Received Details</th>
+          <th style="min-width: 140px;">Status</th>
+          <th class="text-right" style="min-width: 160px;">Actions</th>
         </tr>
       </thead>
       <tbody>
         ${claims.map(c => {
-          const ownerName = c.user?.name || c.returnRecord?.receivedByPersonName || 'Student Member';
-          const studentId = c.user?.idNumber || c.verificationIdNumber || c.returnRecord?.receivedByPersonId || 'No ID';
+          const ownerName = c.user?.name || c.gadget?.owner?.name || 'Unclaimed / Awaiting Owner';
+          const studentId = c.user?.idNumber || c.gadget?.owner?.idNumber || c.verificationIdNumber || 'Unassigned';
+          const department = c.user?.department || c.gadget?.owner?.department || '';
           const brandModel = `${c.gadget?.brand || 'Gadget'} ${c.gadget?.model || ''}`.trim();
           const gadgetId = c.gadgetId || c.gadget?.id || '-';
           const serialNo = c.gadget?.serialNumber || '-';
           const color = c.gadget?.color || 'Standard';
           const category = c.gadget?.category || '';
           const gadgetPhoto = c.gadget?.photoUrl || '/assets/default-gadget.png';
-          const handoverPhoto = c.handoverPhotoUrl || c.returnRecord?.handoverPhotoUrl || null;
-          const returnDate = c.returnDate || c.returnedAt || c.processedAt || c.createdAt;
-          const processedStaff = c.processedByName || 'OSA Staff';
-          const isReturned = (c.status === 'RETURNED' || c.status === 'CLAIMED');
-          const isInCustody = (c.status === 'IN_CUSTODY' || c.isInCustody || c.gadget?.status === 'FOUND_IN_CUSTODY') && !isReturned;
-          const isApproved = (c.status === 'APPROVED') && !isInCustody && !isReturned;
-          const isPending = (c.status === 'PENDING') && !isInCustody && !isReturned;
-          const vaultLocation = c.custodyLocation || c.gadget?.custodyLocation || '';
+          const vaultLocation = c.custodyLocation || c.gadget?.custodyLocation || 'OSA Vault Locker (Room 1109)';
           const dateReceived = c.dateReceivedByOsa || c.createdAt;
+          const receivedBy = c.receivedByName || c.processedByName || 'OSA Front Desk Staff';
+          const foundLocation = c.foundLocation || '';
 
           return `
             <tr>
-              <!-- Group 1: Owner (Owner Name + Student ID) -->
+              <!-- 1. OWNER -->
               <td>
                 <div class="table-primary-title" style="font-weight: 700; color: #0f172a;">${escapeHtml(ownerName)}</div>
-                <div class="font-mono" style="font-size: 0.775rem; color: #142a6d; font-weight: 700; margin-top: 1px;">
+                <div class="font-mono" style="font-size: 0.775rem; color: #142a6d; font-weight: 700; margin-top: 2px;">
                   ${escapeHtml(studentId)}
                 </div>
-                ${c.user?.department ? `<div style="font-size: 0.72rem; color: #64748b; margin-top: 2px;">${escapeHtml(c.user.department)}</div>` : ''}
+                ${department ? `<div style="font-size: 0.72rem; color: #64748b; margin-top: 2px;">${escapeHtml(department)}</div>` : ''}
               </td>
 
-              <!-- Group 2: Gadget (Gadget Photo + Brand/Model + Color) -->
+              <!-- 2. GADGET -->
               <td>
                 <div style="display: flex; align-items: center; gap: 10px;">
-                  <div style="position: relative; flex-shrink: 0; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(gadgetPhoto)}', '${escapeHtml(brandModel)} Photo')" title="Click to view larger photo">
+                  <div style="position: relative; flex-shrink: 0; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(gadgetPhoto)}', '${escapeHtml(brandModel)} Photo')" title="Click to enlarge">
                     <img src="${escapeHtml(gadgetPhoto)}" alt="${escapeHtml(brandModel)}" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
                     <span style="position: absolute; bottom: -3px; right: -3px; background: #ffffff; border-radius: 50%; font-size: 9px; padding: 1px 3px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">🔍</span>
                   </div>
@@ -1428,161 +1477,59 @@ function renderClaimsTable(claims) {
                       <span style="background: #f1f5f9; color: #334155; font-size: 0.72rem; padding: 1px 6px; border-radius: 4px; font-weight: 600; border: 1px solid #e2e8f0;">
                         🎨 ${escapeHtml(color)}
                       </span>
-                      ${category ? `<span style="font-size: 0.72rem; color: #64748b;">${escapeHtml(category)}</span>` : ''}
+                      ${category ? `<span style="font-size: 0.72rem; color: #64748b; background: #f8fafc; padding: 1px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">${escapeHtml(category)}</span>` : ''}
                     </div>
                   </div>
                 </div>
               </td>
 
-              <!-- Group 3: Device Identification (Gadget ID + Serial Number/IMEI + Vault Location) -->
+              <!-- 3. DEVICE IDENTIFICATION -->
               <td>
-                <div class="font-mono" style="font-size: 0.78rem; font-weight: 700; color: #0f172a;">
+                <div class="font-mono" style="font-size: 0.78rem; font-weight: 700; color: #0f172a; word-break: break-all;">
                   ID: <span style="color: #142a6d;">${escapeHtml(gadgetId)}</span>
                 </div>
-                <div class="font-mono" style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
+                <div class="font-mono" style="font-size: 0.75rem; color: #64748b; margin-top: 2px; word-break: break-all;">
                   ${serialNo !== '-' ? `S/N: ${escapeHtml(serialNo)}` : '<span style="font-style:italic; color:#94a3b8;">No S/N recorded</span>'}
                 </div>
                 ${vaultLocation ? `
                   <div style="font-size: 0.73rem; color: #0284c7; font-weight: 700; margin-top: 3px; display: flex; align-items: center; gap: 4px;">
-                    <span style="font-size: 0.8rem;">📦</span> <span>Vault: ${escapeHtml(vaultLocation)}</span>
+                    <span>📦</span> <span>Vault: ${escapeHtml(vaultLocation)}</span>
                   </div>
                 ` : ''}
               </td>
 
-              <!-- Group 4: Claim / Return Photo Proof -->
+              <!-- 4. RECEIVED DETAILS -->
               <td>
-                ${isReturned && handoverPhoto ? `
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <div style="position: relative; flex-shrink: 0; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(handoverPhoto)}', 'Handover Photo Proof — ${escapeHtml(brandModel)}')" title="Click to view larger handover photo">
-                      <img src="${escapeHtml(handoverPhoto)}" alt="Handover Proof" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid #10b981; box-shadow: 0 1px 4px rgba(16,185,129,0.2); transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
-                      <span style="position: absolute; bottom: -3px; right: -3px; background: #ecfdf5; color: #047857; border-radius: 50%; font-size: 9px; padding: 1px 3px; border: 1px solid #10b981; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">✓</span>
-                    </div>
-                    <div>
-                      <span style="background: #ecfdf5; color: #047857; font-size: 0.72rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; border: 1px solid #a7f3d0; display: inline-block;">
-                        📸 Handover Proof
-                      </span>
-                      <div style="font-size: 0.7rem; color: #059669; margin-top: 2px; font-weight: 600;">Verified In-person</div>
-                    </div>
+                <div style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">
+                  📅 ${formatDate(dateReceived)}
+                </div>
+                <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
+                  Received By: <strong style="color: #142a6d;">${escapeHtml(receivedBy)}</strong>
+                </div>
+                ${foundLocation ? `
+                  <div style="font-size: 0.73rem; color: #475569; margin-top: 2px; display: flex; align-items: center; gap: 3px;">
+                    <span>📍</span> <span>Found: ${escapeHtml(foundLocation)}</span>
                   </div>
-                ` : isInCustody ? `
-                  <div style="display: flex; align-items: center; gap: 6px; color: #94a3b8; font-size: 0.76rem;">
-                    <span style="font-size: 1.05rem; opacity: 0.7;">📷</span>
-                    <span style="font-style: italic;">Not yet available until returned</span>
-                  </div>
-                ` : c.proofDocumentUrl ? `
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <div style="position: relative; flex-shrink: 0; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(c.proofDocumentUrl)}', 'Proof of Ownership Document')" title="Click to view ownership document">
-                      <img src="${escapeHtml(c.proofDocumentUrl)}" alt="Ownership Proof" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid #cbd5e1;">
-                    </div>
-                    <div>
-                      <span style="background: #eff6ff; color: #1e40af; font-size: 0.72rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; border: 1px solid #bfdbfe;">
-                        📄 Ownership Doc
-                      </span>
-                      <div style="font-size: 0.7rem; color: #64748b; margin-top: 2px;">Receipt / Proof</div>
-                    </div>
-                  </div>
-                ` : `
-                  <div>
-                    <span style="background: #f8fafc; color: #64748b; font-size: 0.72rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0; display: inline-block;">
-                      ID &amp; Statement
-                    </span>
-                    <div style="font-size: 0.72rem; color: #64748b; margin-top: 2px; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(c.claimProofDetails || '')}">
-                      "${escapeHtml(c.claimProofDetails || 'In-person ID check')}"
-                    </div>
-                  </div>
-                `}
+                ` : ''}
               </td>
 
-              <!-- Group 5: Return Details (Date/Time + Processed By) -->
+              <!-- 5. STATUS -->
               <td>
-                ${isReturned ? `
-                  <div style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">
-                    📅 ${formatDate(returnDate)}
-                  </div>
-                  <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
-                    Staff: <span style="color: #142a6d; font-weight: 700;">${escapeHtml(processedStaff)}</span>
-                  </div>
-                  ${c.returnRecord?.id ? `<div class="font-mono" style="font-size: 0.7rem; color: #059669; margin-top: 2px;">Ref: ${escapeHtml(c.returnRecord.id)}</div>` : ''}
-                ` : isInCustody ? `
-                  <div style="display: flex; flex-direction: column; gap: 3px;">
-                    <span style="background: #fef3c7; color: #92400e; font-size: 0.72rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; border: 1px solid #fde68a; display: inline-block; width: fit-content;">
-                      ⏳ Pending until returned
-                    </span>
-                    <div style="font-size: 0.72rem; color: #64748b; margin-top: 2px;">
-                      📥 Received: <strong style="color: #334155;">${formatDate(dateReceived)}</strong>
-                    </div>
-                  </div>
-                ` : `
-                  <div style="font-size: 0.82rem; font-weight: 600; color: #1e293b;">
-                    📅 ${formatDate(c.createdAt)}
-                  </div>
-                  <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
-                    Staff: <span style="color: #142a6d; font-weight: 700;">${escapeHtml(processedStaff)}</span>
-                  </div>
-                `}
+                <span class="status-badge" style="background: #e0f2fe; color: #0369a1; font-weight: 800; font-size: 0.74rem; padding: 4px 10px; border: 1.5px solid #7dd3fc; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
+                  🏢 IN OSA CUSTODY
+                </span>
+                <div style="font-size: 0.71rem; color: #0284c7; font-weight: 800; margin-top: 3px; letter-spacing: 0.02em;">Ready for Claim</div>
               </td>
 
-              <!-- Group 6: Status -->
-              <td>
-                ${isReturned ? `
-                  <span class="status-badge" style="background: #ecfdf5; color: #047857; font-weight: 800; font-size: 0.74rem; padding: 4px 10px; border: 1px solid #a7f3d0; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
-                    ✓ RETURNED
-                  </span>
-                  <div style="font-size: 0.7rem; color: #059669; font-weight: 600; margin-top: 2px;">Handover Complete</div>
-                ` : isInCustody ? `
-                  <span class="status-badge" style="background: #e0f2fe; color: #0369a1; font-weight: 800; font-size: 0.74rem; padding: 4px 10px; border: 1.5px solid #7dd3fc; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
-                    🏢 IN OSA CUSTODY
-                  </span>
-                  <div style="font-size: 0.71rem; color: #0284c7; font-weight: 800; margin-top: 3px; letter-spacing: 0.02em;">READY FOR CLAIM</div>
-                ` : isApproved ? `
-                  <span class="status-badge" style="background: #eff6ff; color: #1e40af; font-weight: 800; font-size: 0.74rem; padding: 4px 10px; border: 1px solid #bfdbfe;">
-                    ✓ APPROVED
-                  </span>
-                  <div style="font-size: 0.7rem; color: #2563eb; font-weight: 600; margin-top: 2px;">Awaiting Handover</div>
-                ` : isPending ? `
-                  <span class="status-badge" style="background: #fef3c7; color: #92400e; font-weight: 800; font-size: 0.74rem; padding: 4px 10px; border: 1px solid #fde68a;">
-                    ⏳ PENDING REVIEW
-                  </span>
-                  <div style="font-size: 0.7rem; color: #b45309; font-weight: 600; margin-top: 2px;">Awaiting Verification</div>
-                ` : `
-                  <span class="status-badge" style="background: #fef2f2; color: #991b1b; font-weight: 800; font-size: 0.74rem; padding: 4px 10px; border: 1px solid #fecaca;">
-                    ✕ REJECTED
-                  </span>
-                `}
-              </td>
-
-              <!-- Group 7: Actions -->
+              <!-- 6. ACTIONS -->
               <td class="text-right">
                 <div class="table-action-btns" style="justify-content: flex-end; gap: 6px; flex-wrap: wrap;">
-                  ${isInCustody ? `
-                    <button class="btn btn-primary btn-sm" onclick="openDispatchReturnForGadget('${c.gadgetId}', '${escapeHtml(ownerName)}', '${escapeHtml(studentId)}', '${c.id.startsWith('custody_') ? '' : c.id}')" style="background: #10b981; border-color: #059669; font-weight: 700; font-size: 0.78rem; padding: 5px 11px; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(16,185,129,0.25);" title="Process Handover & Return to Owner">
-                      🤝 Process Return
-                    </button>
-                    <button class="btn btn-secondary btn-sm" onclick="openClaimDetailsModal('${c.id}')" title="View Full Details" style="font-size: 0.78rem; padding: 5px 9px;">
-                      👁️ View Details
-                    </button>
-                  ` : isReturned ? `
-                    <button class="btn btn-secondary btn-sm" onclick="openClaimDetailsModal('${c.id}')" title="View Full Details" style="font-size: 0.78rem; padding: 5px 10px;">
-                      👁️ View Details
-                    </button>
-                  ` : `
-                    <button class="btn btn-secondary btn-sm" onclick="openClaimDetailsModal('${c.id}')" title="View Full Details" style="font-size: 0.78rem; padding: 5px 10px;">
-                      👁️ View Details
-                    </button>
-                    ${isPending ? `
-                      <button class="btn btn-success btn-sm" onclick="handleApproveClaim('${c.id}')" title="Approve Claim" style="font-size: 0.78rem; padding: 5px 9px;">
-                        ✓ Approve
-                      </button>
-                      <button class="btn btn-danger btn-sm" onclick="handleReviewClaim('${c.id}', 'REJECT')" title="Reject Claim" style="font-size: 0.78rem; padding: 5px 9px;">
-                        ✕
-                      </button>
-                    ` : ''}
-                    ${isApproved ? `
-                      <button class="btn btn-primary btn-sm" onclick="openDispatchReturnForGadget('${c.gadgetId}', '${escapeHtml(ownerName)}', '${escapeHtml(studentId)}', '${c.id}')" style="background: #6d28d9; border-color: #6d28d9; font-size: 0.78rem; padding: 5px 10px; font-weight: 700;" title="Complete Face-to-Face Handover">
-                        🤝 Handover
-                      </button>
-                    ` : ''}
-                  `}
+                  <button class="btn btn-primary btn-sm" onclick="openDispatchReturnForGadget('${c.gadgetId}', '${escapeHtml(c.user?.name || '')}', '${escapeHtml(c.user?.idNumber || '')}', '${c.id.startsWith('custody_') ? '' : c.id}')" style="background: #10b981; border-color: #059669; font-weight: 700; font-size: 0.78rem; padding: 5px 11px; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(16,185,129,0.25);" title="Process Handover & Return to Owner">
+                    🤝 Process Return
+                  </button>
+                  <button class="btn btn-secondary btn-sm" onclick="openClaimDetailsModal('${c.id}')" title="View Full Details" style="font-size: 0.78rem; padding: 5px 9px;">
+                    👁️ View Details
+                  </button>
                 </div>
               </td>
             </tr>
@@ -1593,43 +1540,243 @@ function renderClaimsTable(claims) {
   `;
 }
 
-function filterClaimsTable() {
-  const query = (document.getElementById('claims-search-input')?.value || '').toLowerCase().trim();
-  const statusFilter = document.getElementById('claims-status-filter')?.value || 'ALL';
-  if (!window._claimsList) return;
+// =========================================================================
+// 6B. RETURNED HISTORY — GADGETS SUCCESSFULLY RETURNED TO VERIFIED OWNERS
+// =========================================================================
+function matchesHistoryDateFilter(dateStr, filterValue) {
+  if (filterValue === 'ALL' || !filterValue) return true;
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return false;
+  const now = new Date();
 
-  const filtered = window._claimsList.filter(c => {
-    const isReturned = (c.status === 'RETURNED' || c.status === 'CLAIMED');
-    const isInCustody = (c.status === 'IN_CUSTODY' || c.isInCustody || c.gadget?.status === 'FOUND_IN_CUSTODY') && !isReturned;
+  if (filterValue === 'TODAY') {
+    return d.getFullYear() === now.getFullYear() &&
+           d.getMonth() === now.getMonth() &&
+           d.getDate() === now.getDate();
+  }
+  if (filterValue === 'WEEK') {
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    return d >= sevenDaysAgo && d <= now;
+  }
+  if (filterValue === 'MONTH') {
+    return d.getFullYear() === now.getFullYear() &&
+           d.getMonth() === now.getMonth();
+  }
+  return true;
+}
 
-    // Status filter
-    if (statusFilter !== 'ALL') {
-      if (statusFilter === 'IN_CUSTODY' && !isInCustody) return false;
-      if (statusFilter === 'RETURNED' && !isReturned) return false;
-      if (statusFilter === 'APPROVED' && (isInCustody || isReturned || c.status !== 'APPROVED')) return false;
-      if (statusFilter === 'PENDING' && (isInCustody || isReturned || c.status !== 'PENDING')) return false;
-      if (statusFilter === 'REJECTED' && c.status !== 'REJECTED') return false;
+async function loadReturnedHistory() {
+  const container = document.getElementById('returned-history-table');
+  if (!container) return;
+
+  try {
+    const res = await api.getAllClaims();
+    const allClaims = res.claims || [];
+    window._allClaimsData = allClaims;
+
+    // Filter to gadgets whose return process has already been successfully completed
+    const returned = allClaims.filter(c => {
+      return (c.status === 'RETURNED' || c.status === 'CLAIMED' || Boolean(c.returnRecord) || c.gadget?.status === 'RETURNED');
+    });
+
+    // Default arrangement: Newest returned records first
+    returned.sort((a, b) => {
+      const dateA = new Date(a.returnDate || a.returnedAt || a.processedAt || a.createdAt || 0).getTime();
+      const dateB = new Date(b.returnDate || b.returnedAt || b.processedAt || b.createdAt || 0).getTime();
+      return dateB - dateA;
+    });
+
+    window._historyList = returned;
+    updateSidebarBadge('badge-history-count', returned.length);
+    filterReturnedHistoryTable();
+  } catch (e) {
+    console.error('Error loading returned history:', e);
+    container.innerHTML = `<div style="padding: 36px; text-align: center; color: #ef4444;">Error loading returned history: ${escapeHtml(e.message || 'Server error')}</div>`;
+  }
+}
+
+function filterReturnedHistoryTable() {
+  const query = (document.getElementById('history-search-input')?.value || '').toLowerCase().trim();
+  const dateFilter = document.getElementById('history-date-filter')?.value || 'ALL';
+  if (!window._historyList) return;
+
+  const filtered = window._historyList.filter(c => {
+    // 1. Date filter
+    const returnDate = c.returnDate || c.returnedAt || c.processedAt || c.createdAt;
+    if (!matchesHistoryDateFilter(returnDate, dateFilter)) {
+      return false;
     }
 
-    // Text search
+    // 2. Text search
     if (!query) return true;
     const ownerName = (c.user?.name || c.returnRecord?.receivedByPersonName || '').toLowerCase();
     const studentId = (c.user?.idNumber || c.verificationIdNumber || c.returnRecord?.receivedByPersonId || '').toLowerCase();
     const brand = (c.gadget?.brand || '').toLowerCase();
     const model = (c.gadget?.model || '').toLowerCase();
+    const brandModel = `${brand} ${model}`;
     const gadgetId = (c.gadgetId || c.gadget?.id || '').toLowerCase();
     const serial = (c.gadget?.serialNumber || '').toLowerCase();
-    const color = (c.gadget?.color || '').toLowerCase();
-    const staff = (c.processedByName || '').toLowerCase();
-    const vault = (c.custodyLocation || c.gadget?.custodyLocation || '').toLowerCase();
-    const statusText = isInCustody ? 'in osa custody ready for claim custody' : (isReturned ? 'returned claimed' : (c.status || '').toLowerCase());
+    const returnRef = (c.returnReference || c.returnRecord?.id || c.returnId || c.id || '').toLowerCase();
 
-    return ownerName.includes(query) || studentId.includes(query) || brand.includes(query) ||
-      model.includes(query) || gadgetId.includes(query) || serial.includes(query) ||
-      color.includes(query) || staff.includes(query) || vault.includes(query) || statusText.includes(query);
+    return ownerName.includes(query) || studentId.includes(query) ||
+           gadgetId.includes(query) || brand.includes(query) ||
+           model.includes(query) || brandModel.includes(query) ||
+           serial.includes(query) || returnRef.includes(query);
   });
 
-  renderClaimsTable(filtered);
+  renderReturnedHistoryTable(filtered);
+}
+
+function renderReturnedHistoryTable(records) {
+  const container = document.getElementById('returned-history-table');
+  if (!container) return;
+
+  if (!records || records.length === 0) {
+    container.innerHTML = `
+      <div style="padding: 48px 24px; text-align: center; color: var(--text-muted);">
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">📜</div>
+        <div style="font-weight: 700; font-size: 1rem; color: #334155;">No returned gadget records yet.</div>
+        <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">Completed handover transactions and signed turnover photo proofs will appear here.</div>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <table class="clean-table" style="min-width: 950px;">
+      <thead>
+        <tr>
+          <th style="min-width: 170px;">Owner</th>
+          <th style="min-width: 190px;">Gadget</th>
+          <th style="min-width: 170px;">Device Identification</th>
+          <th style="min-width: 160px;">Handover Proof</th>
+          <th style="min-width: 180px;">Return Details</th>
+          <th style="min-width: 140px;">Status</th>
+          <th class="text-right" style="min-width: 110px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${records.map(c => {
+          const ownerName = c.user?.name || c.returnRecord?.receivedByPersonName || 'Student Member';
+          const studentId = c.user?.idNumber || c.verificationIdNumber || c.returnRecord?.receivedByPersonId || 'No ID';
+          const department = c.user?.department || c.gadget?.owner?.department || '';
+          const brandModel = `${c.gadget?.brand || 'Gadget'} ${c.gadget?.model || ''}`.trim();
+          const gadgetId = c.gadgetId || c.gadget?.id || '-';
+          const serialNo = c.gadget?.serialNumber || '-';
+          const color = c.gadget?.color || 'Standard';
+          const category = c.gadget?.category || '';
+          const gadgetPhoto = c.gadget?.photoUrl || '/assets/default-gadget.png';
+          const prevVaultLocation = c.previousVaultLocation || c.custodyLocation || c.gadget?.custodyLocation || 'OSA Vault Locker (Room 1109)';
+          const handoverPhoto = c.handoverPhotoUrl || c.returnRecord?.handoverPhotoUrl || null;
+          const returnDate = c.returnDate || c.returnedAt || c.processedAt || c.createdAt;
+          const processedStaff = c.processedByName || c.returnRecord?.returnedByOsaAdminName || 'OSA Staff';
+          const returnRef = c.returnReference || c.returnRecord?.id || c.returnId || c.id;
+
+          return `
+            <tr>
+              <!-- 1. OWNER -->
+              <td>
+                <div class="table-primary-title" style="font-weight: 700; color: #0f172a;">${escapeHtml(ownerName)}</div>
+                <div class="font-mono" style="font-size: 0.775rem; color: #142a6d; font-weight: 700; margin-top: 2px;">
+                  ${escapeHtml(studentId)}
+                </div>
+                ${department ? `<div style="font-size: 0.72rem; color: #64748b; margin-top: 2px;">${escapeHtml(department)}</div>` : ''}
+              </td>
+
+              <!-- 2. GADGET -->
+              <td>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div style="position: relative; flex-shrink: 0; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(gadgetPhoto)}', '${escapeHtml(brandModel)} Photo')" title="Click to enlarge">
+                    <img src="${escapeHtml(gadgetPhoto)}" alt="${escapeHtml(brandModel)}" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
+                    <span style="position: absolute; bottom: -3px; right: -3px; background: #ffffff; border-radius: 50%; font-size: 9px; padding: 1px 3px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">🔍</span>
+                  </div>
+                  <div>
+                    <div class="table-primary-title" style="font-weight: 700; font-size: 0.88rem;">${escapeHtml(brandModel)}</div>
+                    <div style="display: flex; gap: 4px; align-items: center; margin-top: 3px; flex-wrap: wrap;">
+                      <span style="background: #f1f5f9; color: #334155; font-size: 0.72rem; padding: 1px 6px; border-radius: 4px; font-weight: 600; border: 1px solid #e2e8f0;">
+                        🎨 ${escapeHtml(color)}
+                      </span>
+                      ${category ? `<span style="font-size: 0.72rem; color: #64748b; background: #f8fafc; padding: 1px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">${escapeHtml(category)}</span>` : ''}
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- 3. DEVICE IDENTIFICATION -->
+              <td>
+                <div class="font-mono" style="font-size: 0.78rem; font-weight: 700; color: #0f172a; word-break: break-all;">
+                  ID: <span style="color: #142a6d;">${escapeHtml(gadgetId)}</span>
+                </div>
+                <div class="font-mono" style="font-size: 0.75rem; color: #64748b; margin-top: 2px; word-break: break-all;">
+                  ${serialNo !== '-' ? `S/N: ${escapeHtml(serialNo)}` : '<span style="font-style:italic; color:#94a3b8;">No S/N recorded</span>'}
+                </div>
+                ${prevVaultLocation ? `
+                  <div style="font-size: 0.73rem; color: #475569; margin-top: 3px; display: flex; align-items: center; gap: 4px;">
+                    <span>📦</span> <span>Prev Locker: ${escapeHtml(prevVaultLocation)}</span>
+                  </div>
+                ` : ''}
+              </td>
+
+              <!-- 4. HANDOVER PROOF -->
+              <td>
+                ${handoverPhoto ? `
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="position: relative; flex-shrink: 0; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(handoverPhoto)}', 'Handover Photo Proof — ${escapeHtml(brandModel)}')" title="Click to view larger handover photo">
+                      <img src="${escapeHtml(handoverPhoto)}" alt="Handover Proof" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid #10b981; box-shadow: 0 1px 4px rgba(16,185,129,0.2); transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
+                      <span style="position: absolute; bottom: -3px; right: -3px; background: #ecfdf5; color: #047857; border-radius: 50%; font-size: 9px; padding: 1px 3px; border: 1px solid #10b981; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">✓</span>
+                    </div>
+                    <div>
+                      <span style="background: #ecfdf5; color: #047857; font-size: 0.72rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; border: 1px solid #a7f3d0; display: inline-block; white-space: nowrap;">
+                        📸 Handover Proof
+                      </span>
+                      <div style="font-size: 0.7rem; color: #059669; margin-top: 2px; font-weight: 600; white-space: nowrap;">Verified In-Person</div>
+                    </div>
+                  </div>
+                ` : `
+                  <div style="font-size: 0.75rem; color: #94a3b8; font-style: italic;">
+                    No photo attached
+                  </div>
+                `}
+              </td>
+
+              <!-- 5. RETURN DETAILS -->
+              <td>
+                <div style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">
+                  📅 ${formatDate(returnDate)}
+                </div>
+                <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
+                  Staff: <strong style="color: #142a6d;">${escapeHtml(processedStaff)}</strong>
+                </div>
+                ${returnRef ? `
+                  <div class="font-mono" style="font-size: 0.72rem; color: #059669; font-weight: 700; margin-top: 2px; word-break: break-all;">
+                    Ref: ${escapeHtml(returnRef)}
+                  </div>
+                ` : ''}
+              </td>
+
+              <!-- 6. STATUS -->
+              <td>
+                <span class="status-badge" style="background: #ecfdf5; color: #047857; font-weight: 800; font-size: 0.74rem; padding: 4px 10px; border: 1px solid #a7f3d0; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
+                  ✓ RETURNED
+                </span>
+                <div style="font-size: 0.7rem; color: #059669; font-weight: 600; margin-top: 2px;">Handover Complete</div>
+              </td>
+
+              <!-- 7. ACTIONS -->
+              <td class="text-right">
+                <div class="table-action-btns" style="justify-content: flex-end;">
+                  <button class="btn btn-secondary btn-sm" onclick="openClaimDetailsModal('${c.id}')" title="View Full Details" style="font-size: 0.78rem; padding: 5px 10px;">
+                    👁️ View Details
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
 }
 
 // Lightbox Photo Viewer
@@ -1651,15 +1798,20 @@ function viewLargePhoto(photoUrl, caption = 'Photo Preview') {
 
 // View Full Claim & Return Details Modal
 function openClaimDetailsModal(claimId) {
-  if (!window._claimsList) return;
-  const c = window._claimsList.find(item => item.id === claimId);
+  const allList = window._allClaimsData || [...(window._claimsList || []), ...(window._historyList || [])];
+  const c = allList.find(item => item.id === claimId);
   if (!c) return;
 
   const content = document.getElementById('claim-details-content');
   if (!content) return;
 
-  const ownerName = c.user?.name || c.returnRecord?.receivedByPersonName || 'Student Member';
-  const studentId = c.user?.idNumber || c.verificationIdNumber || c.returnRecord?.receivedByPersonId || 'No ID';
+  const isReturned = (c.status === 'RETURNED' || c.status === 'CLAIMED' || Boolean(c.returnRecord) || c.gadget?.status === 'RETURNED');
+  const isInCustody = !isReturned && (c.status === 'IN_CUSTODY' || c.isInCustody || c.gadget?.status === 'FOUND_IN_CUSTODY');
+  const isApproved = !isReturned && !isInCustody && (c.status === 'APPROVED');
+
+  const ownerName = c.user?.name || c.returnRecord?.receivedByPersonName || c.gadget?.owner?.name || 'Student Member';
+  const studentId = c.user?.idNumber || c.verificationIdNumber || c.returnRecord?.receivedByPersonId || c.gadget?.owner?.idNumber || 'No ID';
+  const department = c.user?.department || c.gadget?.owner?.department || '';
   const brandModel = `${c.gadget?.brand || 'Gadget'} ${c.gadget?.model || ''}`.trim();
   const gadgetId = c.gadgetId || c.gadget?.id || '-';
   const serialNo = c.gadget?.serialNumber || '-';
@@ -1668,25 +1820,26 @@ function openClaimDetailsModal(claimId) {
   const gadgetPhoto = c.gadget?.photoUrl || '/assets/default-gadget.png';
   const handoverPhoto = c.handoverPhotoUrl || c.returnRecord?.handoverPhotoUrl || null;
   const returnDate = c.returnDate || c.returnedAt || c.processedAt || c.createdAt;
-  const processedStaff = c.processedByName || 'OSA Staff';
-  const isReturned = (c.status === 'RETURNED' || c.status === 'CLAIMED');
-  const isInCustody = (c.status === 'IN_CUSTODY' || c.isInCustody || c.gadget?.status === 'FOUND_IN_CUSTODY') && !isReturned;
-  const vaultLocation = c.custodyLocation || c.gadget?.custodyLocation || 'OSA Vault Locker (Room 1109)';
+  const processedStaff = c.processedByName || c.returnRecord?.returnedByOsaAdminName || 'OSA Staff';
+  const vaultLocation = c.custodyLocation || c.previousVaultLocation || c.gadget?.custodyLocation || 'OSA Vault Locker (Room 1109)';
   const dateReceived = c.dateReceivedByOsa || c.createdAt;
+  const returnRef = c.returnReference || c.returnRecord?.id || c.returnId || (isReturned ? c.id : '');
+  const receivedBy = c.receivedByName || processedStaff;
+  const foundLocation = c.foundLocation || '';
 
   content.innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; flex-wrap: wrap; gap: 8px;">
       <div>
-        <span class="status-badge" style="${isReturned ? 'background:#ecfdf5; color:#047857;' : (isInCustody ? 'background:#e0f2fe; color:#0369a1; border:1px solid #7dd3fc;' : (c.status === 'APPROVED' ? 'background:#eff6ff; color:#1e40af;' : 'background:#fef3c7; color:#92400e;'))} font-size:0.8rem; font-weight:800; padding:4px 12px;">
-          ${isReturned ? '✓ RETURNED' : (isInCustody ? '🏢 IN OSA CUSTODY / READY FOR CLAIM' : (c.status === 'APPROVED' ? '✓ APPROVED' : c.status))}
+        <span class="status-badge" style="${isReturned ? 'background:#ecfdf5; color:#047857; border:1px solid #a7f3d0;' : (isInCustody ? 'background:#e0f2fe; color:#0369a1; border:1px solid #7dd3fc;' : (isApproved ? 'background:#eff6ff; color:#1e40af;' : 'background:#fef3c7; color:#92400e;'))} font-size:0.8rem; font-weight:800; padding:4px 12px; border-radius: 6px;">
+          ${isReturned ? '✓ RETURNED / HANDOVER COMPLETE' : (isInCustody ? '🏢 IN OSA CUSTODY / READY FOR CLAIM' : (isApproved ? '✓ APPROVED' : c.status))}
         </span>
-        <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">Record Ref: <code class="font-mono">${escapeHtml(c.id)}</code></div>
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">Record Ref: <code class="font-mono">${escapeHtml(returnRef || c.id)}</code></div>
       </div>
       ${isInCustody ? `
-        <button class="btn btn-primary btn-sm" onclick="closeModal('claim-details-modal'); openDispatchReturnForGadget('${c.gadgetId}', '${escapeHtml(ownerName)}', '${escapeHtml(studentId)}', '${c.id.startsWith('custody_') ? '' : c.id}')" style="background: #10b981; border-color: #059669; font-weight:700;">
+        <button class="btn btn-primary btn-sm" onclick="closeModal('claim-details-modal'); openDispatchReturnForGadget('${c.gadgetId}', '${escapeHtml(c.user?.name || '')}', '${escapeHtml(c.user?.idNumber || '')}', '${c.id.startsWith('custody_') ? '' : c.id}')" style="background: #10b981; border-color: #059669; font-weight:700;">
           🤝 Process Return
         </button>
-      ` : c.status === 'APPROVED' ? `
+      ` : isApproved ? `
         <button class="btn btn-primary btn-sm" onclick="closeModal('claim-details-modal'); openDispatchReturnForGadget('${c.gadgetId}', '${escapeHtml(ownerName)}', '${escapeHtml(studentId)}', '${c.id}')" style="background: #6d28d9; border-color: #6d28d9; font-weight:700;">
           🤝 Proceed to Handover
         </button>
@@ -1734,7 +1887,7 @@ function openClaimDetailsModal(claimId) {
           <div><span style="color:#64748b;">Student ID:</span> <strong class="font-mono" style="color:#142a6d;">${escapeHtml(studentId)}</strong></div>
           ${c.user?.email ? `<div><span style="color:#64748b;">Email:</span> ${escapeHtml(c.user.email)}</div>` : ''}
           ${c.user?.contactNumber ? `<div><span style="color:#64748b;">Contact:</span> ${escapeHtml(c.user.contactNumber)}</div>` : ''}
-          ${c.user?.department ? `<div><span style="color:#64748b;">Department:</span> ${escapeHtml(c.user.department)}</div>` : ''}
+          ${department ? `<div><span style="color:#64748b;">Department:</span> ${escapeHtml(department)}</div>` : ''}
         </div>
       </div>
 
@@ -1748,7 +1901,7 @@ function openClaimDetailsModal(claimId) {
           <div><span style="color:#64748b;">Gadget ID:</span> <span class="font-mono">${escapeHtml(gadgetId)}</span></div>
           <div><span style="color:#64748b;">Serial / IMEI:</span> <span class="font-mono">${escapeHtml(serialNo)}</span></div>
           <div><span style="color:#64748b;">Category:</span> ${escapeHtml(category)}</div>
-          ${vaultLocation ? `<div><span style="color:#64748b;">Vault Locker:</span> <strong style="color:#0284c7;">${escapeHtml(vaultLocation)}</strong></div>` : ''}
+          ${vaultLocation ? `<div><span style="color:#64748b;">${isReturned ? 'Previous Vault Locker:' : 'Vault Locker:'}</span> <strong style="color:#0284c7;">${escapeHtml(vaultLocation)}</strong></div>` : ''}
         </div>
       </div>
 
@@ -1757,17 +1910,18 @@ function openClaimDetailsModal(claimId) {
           📜 Verification &amp; Return Handover Audit
         </div>
         <div style="display: grid; gap: 6px;">
-          ${isInCustody ? `
+          ${isReturned ? `
+            <div><span style="color:#64748b;">Date &amp; Time Returned:</span> <strong>${formatDate(returnDate)}</strong></div>
+            <div><span style="color:#64748b;">Processed By OSA Staff:</span> <strong style="color:#142a6d;">${escapeHtml(processedStaff)}</strong></div>
+            ${returnRef ? `<div><span style="color:#64748b;">Official Receipt ID:</span> <code class="font-mono" style="color:#6d28d9; font-weight:700;">${escapeHtml(returnRef)}</code></div>` : ''}
+            ${c.returnRecord?.notes ? `<div><span style="color:#64748b;">Handover Notes:</span> "${escapeHtml(c.returnRecord.notes)}"</div>` : ''}
+          ` : `
             <div><span style="color:#64748b;">Date Received by OSA:</span> <strong>${formatDate(dateReceived)}</strong></div>
             <div><span style="color:#64748b;">Vault Custody Location:</span> <strong style="color:#0284c7;">${escapeHtml(vaultLocation)}</strong></div>
-            <div><span style="color:#64748b;">Intake Staff / Status:</span> <strong style="color:#142a6d;">${escapeHtml(processedStaff)} (Ready for Claim)</strong></div>
-          ` : `
-            <div><span style="color:#64748b;">Date &amp; Time:</span> <strong>${formatDate(returnDate)}</strong></div>
-            <div><span style="color:#64748b;">Processed By OSA Staff:</span> <strong style="color:#142a6d;">${escapeHtml(processedStaff)}</strong></div>
+            <div><span style="color:#64748b;">Intake Staff / Status:</span> <strong style="color:#142a6d;">${escapeHtml(receivedBy)} (Ready for Claim)</strong></div>
+            ${foundLocation ? `<div><span style="color:#64748b;">Found / Surrender Location:</span> <strong>${escapeHtml(foundLocation)}</strong></div>` : ''}
+            <div><span style="color:#64748b;">Proof / Statement:</span> "${escapeHtml(c.claimProofDetails || 'Item in OSA physical custody ready for handover.')}"</div>
           `}
-          <div><span style="color:#64748b;">Proof / Statement:</span> "${escapeHtml(c.claimProofDetails || (isInCustody ? 'Item in OSA physical custody ready for handover.' : 'Face-to-face handover at OSA Room 1109.'))}"</div>
-          ${c.returnRecord?.notes ? `<div><span style="color:#64748b;">Handover Notes:</span> "${escapeHtml(c.returnRecord.notes)}"</div>` : ''}
-          ${c.returnRecord?.id ? `<div><span style="color:#64748b;">Official Receipt ID:</span> <code class="font-mono" style="color:#6d28d9; font-weight:700;">${escapeHtml(c.returnRecord.id)}</code></div>` : ''}
         </div>
       </div>
     </div>
@@ -2046,6 +2200,7 @@ async function handleDispatchReturnSubmit(e) {
     });
 
     loadClaimsDesk();
+    loadReturnedHistory();
     loadFoundCustodyVault();
     loadMissingGadgets();
     loadRegisteredGadgets();

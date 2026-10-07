@@ -122,6 +122,9 @@ router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
       const foundReport = gadget ? db.findOne('found_reports', f => f.gadgetId === gadget.id) : null;
       const dateReceived = gadget?.receivedAtOsaDate || gadget?.custodyReceivedAt || foundReport?.receivedAtOsaDate || foundReport?.foundDate || gadget?.updatedAt || c.createdAt;
       const vaultLocation = gadget?.custodyLocation || foundReport?.custodyLocation || 'OSA Vault Locker (Room 1109)';
+      const staffReceived = gadget?.receivedByOsaStaffName || foundReport?.receivedByOsaStaffName || 'OSA Front Desk Staff';
+      const foundLocation = foundReport?.foundLocation || '';
+      const returnRef = returnRec?.id || c.returnId || (isReturned ? c.id : '');
 
       enrichedClaims.push({
         ...c,
@@ -130,6 +133,10 @@ router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
         isInCustody: isInCustody,
         dateReceivedByOsa: dateReceived,
         custodyLocation: vaultLocation,
+        previousVaultLocation: vaultLocation,
+        receivedByName: staffReceived,
+        foundLocation: foundLocation,
+        returnReference: returnRef,
         handoverPhotoUrl: isReturned ? (c.handoverPhotoUrl || returnRec?.handoverPhotoUrl || null) : null,
         returnDate: isReturned ? (returnRec?.returnDate || c.returnedAt || c.processedAt || c.createdAt) : null,
         processedByName: adminName,
@@ -170,7 +177,8 @@ router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
         const foundReport = db.findOne('found_reports', f => f.gadgetId === g.id);
         const dateReceived = g.receivedAtOsaDate || g.custodyReceivedAt || foundReport?.receivedAtOsaDate || foundReport?.foundDate || g.updatedAt || g.createdAt;
         const vaultLocation = g.custodyLocation || foundReport?.custodyLocation || 'OSA Vault Locker (Room 1109)';
-        const staffName = g.receivedByOsaStaffName || foundReport?.receivedByOsaStaffName || 'OSA Staff';
+        const staffName = g.receivedByOsaStaffName || foundReport?.receivedByOsaStaffName || 'OSA Front Desk Staff';
+        const foundLocation = foundReport?.foundLocation || '';
 
         enrichedClaims.push({
           id: 'custody_' + g.id,
@@ -184,6 +192,10 @@ router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
           createdAt: dateReceived,
           dateReceivedByOsa: dateReceived,
           custodyLocation: vaultLocation,
+          previousVaultLocation: vaultLocation,
+          receivedByName: staffName,
+          foundLocation: foundLocation,
+          returnReference: '',
           handoverPhotoUrl: null,
           returnDate: null,
           returnRecord: null,
@@ -219,6 +231,8 @@ router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
         const gadget = db.findById('gadgets', r.gadgetId);
         const user = db.findById('users', r.userId);
         const admin = db.findById('users', r.returnedByOsaAdminId);
+        const foundReport = gadget ? db.findOne('found_reports', f => f.gadgetId === gadget.id) : null;
+        const vaultLoc = gadget?.custodyLocation || foundReport?.custodyLocation || 'OSA Vault Locker (Room 1109)';
         enrichedClaims.push({
           id: 'clm_' + r.id,
           gadgetId: r.gadgetId,
@@ -231,6 +245,12 @@ router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
           createdAt: r.returnDate,
           processedAt: r.returnDate,
           returnDate: r.returnDate,
+          dateReceivedByOsa: gadget?.receivedAtOsaDate || gadget?.custodyReceivedAt || r.returnDate,
+          custodyLocation: vaultLoc,
+          previousVaultLocation: vaultLoc,
+          receivedByName: gadget?.receivedByOsaStaffName || 'OSA Staff',
+          foundLocation: foundReport?.foundLocation || '',
+          returnReference: r.id,
           processedByName: admin ? admin.name : (r.returnedByOsaAdminName || 'OSA Staff'),
           handoverPhotoUrl: r.handoverPhotoUrl || null,
           returnRecord: r,
@@ -243,7 +263,7 @@ router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
             serialNumber: gadget.serialNumber,
             status: gadget.status,
             photoUrl: gadget.photoUrl,
-            custodyLocation: gadget.custodyLocation
+            custodyLocation: vaultLoc
           } : null,
           user: user ? {
             id: user.id,
