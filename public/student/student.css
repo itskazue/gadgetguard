@@ -146,13 +146,8 @@
 }
 
 .student-nav-item.active .student-nav-item-content svg {
-  stroke: #0c1c4f;
-  color: #0c1c4f;
-}
-
-.student-nav-item.active .student-nav-item-content svg {
-  color: var(--gold);
-  stroke: var(--gold);
+  stroke: #0c1c4f !important;
+  color: #0c1c4f !important;
 }
 
 .sidebar-badge {

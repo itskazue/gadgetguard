@@ -1069,6 +1069,8 @@ async function loadLostStatusScreen() {
               </div>
             </div>
           `;
+        }
+
         let surrenderCardHtml = '';
         if (g.surrenderInfo) {
           surrenderCardHtml = `
