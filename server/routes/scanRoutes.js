@@ -33,8 +33,9 @@ router.get('/device/:token', async (req, res) => {
   try {
     const { token } = req.params;
     const { locationNote, latitude, longitude, approxLocation } = req.query;
+    const finderToken = req.headers['x-finder-token'] || req.query.finderToken || null;
 
-    const gadget = db.findOne('gadgets', g => g.secureToken === token);
+    const gadget = db.findOne('gadgets', g => g.secureToken === token || g.id === token);
     if (!gadget) {
       return res.status(404).json({
         success: false,
@@ -49,7 +50,16 @@ router.get('/device/:token', async (req, res) => {
     const scannerDeviceFormatted = parseScannerDeviceInfo(userAgent);
     const scannerIp = locationService.extractClientIp(req);
 
-    const scanStatus = (gadget.status === 'MISSING') ? 'MISSING_DEVICE_SCANNED' : 'REGISTERED_DEVICE_SCANNED';
+    // Check for returning finder recovery session using secure browser session token
+    let activeRecoveryChat = null;
+    if (finderToken) {
+      activeRecoveryChat = db.findOne('recovery_chats', c => c.gadgetId === gadget.id && c.finderSessionToken === finderToken);
+    }
+    const isReturningFinder = Boolean(activeRecoveryChat);
+
+    const scanStatus = (gadget.status === 'MISSING') 
+      ? (isReturningFinder ? 'RETURNING_FINDER_SCANNED' : 'MISSING_DEVICE_SCANNED') 
+      : 'REGISTERED_DEVICE_SCANNED';
 
     // Priority 1: GPS Geolocation (reverse geocoded) -> "Approximate Location: [Landmark], [City], [Province]"
     // Priority 2: IP-based Geolocation fallback -> "Estimated Location: [City], [Province]" (Never invent landmark)
@@ -96,11 +106,13 @@ router.get('/device/:token', async (req, res) => {
       longitude: locResult.longitude,
       scannerAccountId,
       scanStatus,
+      isReturningFinder,
       scannedAt: new Date().toISOString()
     });
 
-    // If gadget is MISSING, notify owner in real-time through their Student Account
-    if (gadget.status === 'MISSING') {
+    // If gadget is MISSING and NOT a returning finder holding an active session:
+    // Do NOT send duplicate scan notification simply because the verified finder scanned again or reopened page
+    if (gadget.status === 'MISSING' && !isReturningFinder) {
       const now = new Date();
       const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
       const phDate = new Date(utcMs + (8 * 3600000));
@@ -124,6 +136,18 @@ router.get('/device/:token', async (req, res) => {
 
     const missingReport = (gadget.status === 'MISSING') ? 
       db.findOne('missing_reports', m => m.gadgetId === gadget.id && m.status === 'ACTIVE') : null;
+
+    // Build active finder recovery session descriptor
+    const activeFinderSession = activeRecoveryChat ? {
+      hasSession: true,
+      chatId: activeRecoveryChat.id,
+      finderSessionToken: activeRecoveryChat.finderSessionToken,
+      finderName: activeRecoveryChat.finderName || 'Finder',
+      foundLocation: activeRecoveryChat.foundLocation,
+      missingReportId: activeRecoveryChat.missingReportId,
+      status: activeRecoveryChat.status,
+      isClosed: Boolean(activeRecoveryChat.status === 'CLOSED' || gadget.status !== 'MISSING')
+    } : null;
 
     // =========================================================================
     // 1. OSA STAFF SCANNER VIEW (Full Authorized Information & Actions)
@@ -178,7 +202,8 @@ router.get('/device/:token', async (req, res) => {
           email: settings.osaEmail,
           hours: settings.operatingHours
         },
-        scanId: scanLog.id
+        scanId: scanLog.id,
+        activeFinderSession
       });
     }
 
@@ -197,6 +222,8 @@ router.get('/device/:token', async (req, res) => {
         ? 'This gadget has been reported as missing. If you found this gadget, please keep it safe and surrender it to the Office of Student Affairs (OSA).'
         : 'This gadget is registered with GadgetGuard. This gadget is not currently reported as missing. If you found this gadget unattended, please keep it safe and surrender it to the Office of Student Affairs (OSA).',
       gadget: {
+        id: gadget.id,
+        secureToken: gadget.secureToken,
         category: gadget.category,
         brand: gadget.brand,
         model: gadget.model,
@@ -217,7 +244,8 @@ router.get('/device/:token', async (req, res) => {
         email: settings.osaEmail,
         hours: settings.operatingHours
       },
-      scanId: scanLog.id
+      scanId: scanLog.id,
+      activeFinderSession
     });
   } catch (err) {
     console.error('Scan lookup error:', err);
@@ -228,15 +256,22 @@ router.get('/device/:token', async (req, res) => {
 // POST /api/scan/log (Explicit client log with geolocation or update with GPS coordinates)
 router.post('/log', async (req, res) => {
   try {
-    const { token, locationNote, deviceInfo, latitude, longitude, scanId } = req.body;
+    const { token, locationNote, deviceInfo, latitude, longitude, scanId, finderToken } = req.body;
+    const clientFinderToken = req.headers['x-finder-token'] || finderToken || null;
     if (!token) {
       return res.status(400).json({ success: false, error: 'Token is required.' });
     }
 
-    const gadget = db.findOne('gadgets', g => g.secureToken === token);
+    const gadget = db.findOne('gadgets', g => g.secureToken === token || g.id === token);
     if (!gadget) {
       return res.status(404).json({ success: false, error: 'Invalid token.' });
     }
+
+    let activeRecoveryChat = null;
+    if (clientFinderToken) {
+      activeRecoveryChat = db.findOne('recovery_chats', c => c.gadgetId === gadget.id && c.finderSessionToken === clientFinderToken);
+    }
+    const isReturningFinder = Boolean(activeRecoveryChat);
 
     const scannerIp = locationService.extractClientIp(req);
     const locResult = await locationService.resolveScanLocation({
@@ -258,7 +293,8 @@ router.post('/log', async (req, res) => {
           city: locResult.city,
           province: locResult.province,
           latitude: locResult.latitude,
-          longitude: locResult.longitude
+          longitude: locResult.longitude,
+          isReturningFinder
         });
         return res.json({ success: true, scan: updatedScan, isUpdated: true });
       }
@@ -278,11 +314,15 @@ router.post('/log', async (req, res) => {
       latitude: locResult.latitude,
       longitude: locResult.longitude,
       deviceInfo: deviceInfo || 'Web Scanner',
-      scanStatus: (gadget.status === 'MISSING') ? 'MISSING_DEVICE_SCANNED' : 'REGISTERED_DEVICE_SCANNED',
+      scanStatus: (gadget.status === 'MISSING') 
+        ? (isReturningFinder ? 'RETURNING_FINDER_SCANNED' : 'MISSING_DEVICE_SCANNED') 
+        : 'REGISTERED_DEVICE_SCANNED',
+      isReturningFinder,
       scannedAt: new Date().toISOString()
     });
 
-    if (gadget.status === 'MISSING') {
+    // Do NOT send duplicate scan notification if scanner is returning finder holding session
+    if (gadget.status === 'MISSING' && !isReturningFinder) {
       db.addNotification({
         userId: gadget.userId,
         title: 'QR Scan Location Tagged 📍',

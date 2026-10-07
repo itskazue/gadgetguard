@@ -327,6 +327,13 @@
       border: 3px solid #e2e8f0;
       border-top-color: #142a6d;
       border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
     .btn-qr-emerald {
       background: #059669;
       color: #ffffff;
@@ -336,6 +343,103 @@
     .btn-qr-emerald:hover {
       background: #047857;
       transform: translateY(-1px);
+    }
+
+    .badge-keeping-safe {
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+    }
+
+    .badge-case-closed {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+    }
+
+    .finder-active-session-card {
+      background: #ffffff;
+      border: 1.5px solid #a7f3d0;
+      border-radius: 16px;
+      padding: 16px 16px;
+      margin-bottom: 14px;
+      text-align: left;
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.08);
+    }
+
+    .finder-active-session-card.closed {
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 12px rgba(100, 116, 139, 0.06);
+    }
+
+    .finder-session-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .finder-session-details {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 12px;
+      font-size: 0.85rem;
+    }
+
+    .finder-detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 3px 0;
+    }
+
+    .finder-detail-label {
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .finder-detail-val {
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .finder-active-notice {
+      background: #ecfdf5;
+      border: 1px solid #d1fae5;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 0.78rem;
+      color: #065f46;
+      line-height: 1.45;
+      margin-top: 6px;
+    }
+
+    .finder-closed-notice {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 0.78rem;
+      color: #475569;
+      line-height: 1.45;
+      margin-top: 6px;
+    }
+
+    .btn-qr-subtle {
+      background: transparent;
+      color: #64748b;
+      border: 1px dashed #cbd5e1;
+      padding: 9px 14px;
+      font-size: 0.82rem;
+    }
+
+    .btn-qr-subtle:hover {
+      background: #f8fafc;
+      color: #334155;
+      border-color: #94a3b8;
     }
 
     /* Safe Recovery Chat Styles */
@@ -743,6 +847,41 @@
       });
     }
 
+    // Persistent Finder Recovery Session Helpers
+    function getFinderSession(token, gadgetId) {
+      if (token) {
+        const raw = localStorage.getItem('gg_finder_session_token_' + token) || localStorage.getItem('gg_finder_session_' + token);
+        if (raw) {
+          try {
+            const p = JSON.parse(raw);
+            if (p && p.chatId && p.finderSessionToken) return p;
+          } catch (e) {}
+        }
+      }
+      if (gadgetId) {
+        const raw = localStorage.getItem('gg_finder_session_gadget_' + gadgetId);
+        if (raw) {
+          try {
+            const p = JSON.parse(raw);
+            if (p && p.chatId && p.finderSessionToken) return p;
+          } catch (e) {}
+        }
+      }
+      return null;
+    }
+
+    function saveFinderSession(session) {
+      if (!session || !session.chatId || !session.finderSessionToken) return;
+      const jsonStr = JSON.stringify(session);
+      if (session.gadgetToken) {
+        localStorage.setItem('gg_finder_session_token_' + session.gadgetToken, jsonStr);
+        localStorage.setItem('gg_finder_session_' + session.gadgetToken, jsonStr);
+      }
+      if (session.gadgetId) {
+        localStorage.setItem('gg_finder_session_gadget_' + session.gadgetId, jsonStr);
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const queryToken = urlParams.get('token') || urlParams.get('t');
@@ -755,9 +894,15 @@
 
     async function executeScanLookup(token) {
       try {
-        // Priority 1: Attempt quick browser GPS coords if permission already granted or fast
-        const gpsCoords = await getQuickGpsCoords(2500);
+        // Priority 1: Check if there is an existing local session for this token
+        const existingSession = getFinderSession(token, null);
         const lookupParams = {};
+        if (existingSession && existingSession.finderSessionToken) {
+          lookupParams.finderToken = existingSession.finderSessionToken;
+        }
+
+        // Priority 2: Attempt quick browser GPS coords if permission already granted or fast
+        const gpsCoords = await getQuickGpsCoords(2500);
         if (gpsCoords && typeof gpsCoords.latitude === 'number') {
           lookupParams.latitude = gpsCoords.latitude;
           lookupParams.longitude = gpsCoords.longitude;
@@ -769,17 +914,43 @@
           scannedToken = res.gadget.secureToken;
         }
 
+        // Persist and synchronize verified active recovery session
+        if (res.activeFinderSession && res.activeFinderSession.hasSession) {
+          window.__activeFinderSession = res.activeFinderSession;
+          saveFinderSession({
+            chatId: res.activeFinderSession.chatId,
+            finderSessionToken: res.activeFinderSession.finderSessionToken,
+            finderName: res.activeFinderSession.finderName,
+            foundLocation: res.activeFinderSession.foundLocation,
+            missingReportId: res.activeFinderSession.missingReportId,
+            gadgetId: res.gadget?.id,
+            gadgetToken: res.gadget?.secureToken || token,
+            isClosed: Boolean(res.activeFinderSession.isClosed),
+            status: res.activeFinderSession.status
+          });
+        } else {
+          // Check if local session exists by gadgetId
+          const sessionByGadget = getFinderSession(token, res.gadget?.id);
+          if (sessionByGadget) {
+            window.__activeFinderSession = sessionByGadget;
+          }
+        }
+
         // If GPS wasn't available during initial fast lookup, but browser geolocation is supported:
         // Request in background without blocking UI; if user approves later, upgrade the scan record
         if (!gpsCoords && navigator.geolocation && res.scanId) {
           navigator.geolocation.getCurrentPosition(async (pos) => {
             try {
-              await api.logScan({
+              const logPayload = {
                 token,
                 scanId: res.scanId,
                 latitude: pos.coords.latitude,
                 longitude: pos.coords.longitude
-              });
+              };
+              if (window.__activeFinderSession?.finderSessionToken) {
+                logPayload.finderToken = window.__activeFinderSession.finderSessionToken;
+              }
+              await api.logScan(logPayload);
             } catch (e) {}
           }, () => {}, { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 });
         }
@@ -851,11 +1022,46 @@
           badgeEl.textContent = '● REGISTERED & PROTECTED';
 
           osaBox.style.display = 'none';
-          
-          // No surrender action or location card needed if not missing
           if (locCardBox) locCardBox.style.display = 'none';
-          actionWrap.style.display = 'none';
-          actionWrap.innerHTML = '';
+
+          // Check if this scanner previously had an active recovery session that is now completed/closed
+          const pastSession = (window.__activeFinderSession && window.__activeFinderSession.hasSession ? window.__activeFinderSession : null) || 
+            getFinderSession(scannedToken, res.gadget?.id);
+
+          if (pastSession && pastSession.chatId) {
+            actionWrap.style.display = 'block';
+            actionWrap.innerHTML = `
+              <div class="finder-active-session-card closed" style="margin-top: 14px;">
+                <div class="finder-session-header">
+                  <span class="badge-status badge-case-closed">
+                    🔒 CASE COMPLETED / RECOVERED
+                  </span>
+                  <span style="font-size: 0.72rem; color: #64748b; font-weight: 600;">
+                    Read-Only
+                  </span>
+                </div>
+                <div class="finder-session-details">
+                  <div class="finder-detail-row">
+                    <span class="finder-detail-label">Finder Name:</span>
+                    <span class="finder-detail-val">${escapeHtml(pastSession.finderName || 'Finder')}</span>
+                  </div>
+                  <div class="finder-detail-row">
+                    <span class="finder-detail-label">Found Location:</span>
+                    <span class="finder-detail-val">${escapeHtml(pastSession.foundLocation || 'Campus')}</span>
+                  </div>
+                </div>
+                <div class="finder-closed-notice">
+                  ✓ This gadget has been successfully recovered and returned. Your previous recovery conversation is closed and archived.
+                </div>
+                <button type="button" class="btn-qr-action btn-qr-outline" style="margin-top: 12px; margin-bottom: 0;" onclick="resumeSavedFinderChat(true)">
+                  💬 View Closed Conversation (Read-Only)
+                </button>
+              </div>
+            `;
+          } else {
+            actionWrap.style.display = 'none';
+            actionWrap.innerHTML = '';
+          }
         } 
         // ==========================================
         // CASE C: PUBLIC USER — MISSING GADGET
@@ -865,7 +1071,6 @@
           iconEl.innerHTML = '⚠️';
           titleEl.className = 'qr-scan-title title-missing';
           titleEl.textContent = 'This gadget has been reported as missing.';
-          descEl.innerHTML = 'If you found this gadget, please select an option below to assist in its safe return:';
 
           badgeEl.className = 'badge-status badge-missing';
           badgeEl.textContent = '● MISSING';
@@ -902,38 +1107,82 @@
       }
     }
 
-    // Render the two options for Missing Gadgets or active chat resume button
-    function renderMissingGadgetActions() {
+    // Render Missing Gadget Actions:
+    // If active finder session exists -> Show "Continue Conversation" directly
+    // If no active session -> Show "I Will Keep the Gadget Safe" & "I Will Surrender It to OSA"
+    function renderMissingGadgetActions(explicitSession = null) {
       const actionWrap = document.getElementById('qr-action-wrap');
+      const descEl = document.getElementById('qr-status-desc');
       if (!actionWrap) return;
 
-      const rawSession = localStorage.getItem('gg_finder_session_' + scannedToken);
-      let session = null;
-      if (rawSession) {
-        try { session = JSON.parse(rawSession); } catch(e) {}
-      }
+      const session = explicitSession || 
+        (window.__activeFinderSession && window.__activeFinderSession.hasSession ? window.__activeFinderSession : null) || 
+        getFinderSession(scannedToken, currentGadgetData?.id);
 
       actionWrap.style.display = 'block';
 
       if (session && session.chatId && session.finderSessionToken) {
+        const isClosed = Boolean(session.isClosed || (currentGadgetData && currentGadgetData.status !== 'MISSING'));
+        
+        if (descEl) {
+          descEl.innerHTML = isClosed
+            ? 'This recovery case has been completed. The gadget was marked as recovered or returned.'
+            : 'You have an active recovery session for this gadget. Continue coordinating directly with the owner below:';
+        }
+
+        // RETURNING FINDER VIEW:
+        // - Do NOT show Keep Safe / Surrender setup again
+        // - Do NOT ask for Finder Name or Found Location again
+        // - Do NOT create duplicate records
+        // - Display "Continue Conversation"
         actionWrap.innerHTML = `
-          <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 12px; padding: 14px; margin-bottom: 12px; text-align: left;">
-            <div style="font-weight: 800; color: #047857; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
-              <span>🛡️</span> You are keeping this gadget safe
+          <div class="finder-active-session-card ${isClosed ? 'closed' : ''}">
+            <div class="finder-session-header">
+              <span class="badge-status ${isClosed ? 'badge-case-closed' : 'badge-keeping-safe'}">
+                ${isClosed ? '🔒 CASE CLOSED / RECOVERED' : '🛡️ KEEPING GADGET SAFE'}
+              </span>
+              <span style="font-size: 0.72rem; color: #64748b; font-weight: 600;">
+                Active Session
+              </span>
             </div>
-            <div style="font-size: 0.8rem; color: #065f46; margin-top: 3px;">
-              Found location: <strong>${escapeHtml(session.foundLocation || 'Campus')}</strong>
+
+            <div class="finder-session-details">
+              <div class="finder-detail-row">
+                <span class="finder-detail-label">Finder Name:</span>
+                <span class="finder-detail-val">${escapeHtml(session.finderName || 'Finder')}</span>
+              </div>
+              <div class="finder-detail-row">
+                <span class="finder-detail-label">Found Location:</span>
+                <span class="finder-detail-val">${escapeHtml(session.foundLocation || 'Campus')}</span>
+              </div>
             </div>
-            <button type="button" class="btn-qr-action btn-qr-emerald" style="margin-top: 10px; margin-bottom: 0;" onclick="resumeSavedFinderChat()">
-              💬 Open Chat with Gadget Owner
-            </button>
+
+            ${isClosed ? `
+              <div class="finder-closed-notice">
+                ✓ This gadget has been marked recovered or returned. Your conversation is closed and saved as read-only.
+              </div>
+              <button type="button" class="btn-qr-action btn-qr-outline" style="margin-top: 12px; margin-bottom: 0;" onclick="resumeSavedFinderChat(true)">
+                💬 View Closed Conversation (Read-Only)
+              </button>
+            ` : `
+              <div class="finder-active-notice">
+                Your private chat session is securely connected with the owner.
+              </div>
+              <button type="button" class="btn-qr-action btn-qr-emerald" style="margin-top: 12px; margin-bottom: 8px;" onclick="resumeSavedFinderChat(false)">
+                💬 Continue Conversation
+              </button>
+              <button type="button" class="btn-qr-action btn-qr-subtle" style="margin-bottom: 0;" onclick="openSurrenderOsaModal()">
+                🏢 I Will Surrender It to OSA Instead
+              </button>
+            `}
           </div>
-          <button type="button" class="btn-qr-action btn-qr-outline" onclick="openSurrenderOsaModal()">
-            🏢 I Will Surrender It to OSA Instead
-          </button>
         `;
       } else {
-        // Section A: Show 2 Options
+        if (descEl) {
+          descEl.innerHTML = 'If you found this gadget, please select an option below to assist in its safe return:';
+        }
+
+        // New Finder View: Show 2 Options
         actionWrap.innerHTML = `
           <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
             <button type="button" class="btn-qr-action btn-qr-emerald" onclick="openKeepSafeModal()">
@@ -992,23 +1241,29 @@
         closeModal('keep-safe-modal');
 
         if (res.chat) {
-          // Save temporary session associated only with this recovery case
-          localStorage.setItem('gg_finder_session_' + scannedToken, JSON.stringify({
+          const sessionObj = {
             chatId: res.chat.id,
             finderSessionToken: res.chat.finderSessionToken,
             finderName: res.chat.finderName,
-            foundLocation: res.chat.foundLocation
-          }));
+            foundLocation: res.chat.foundLocation,
+            missingReportId: res.chat.missingReportId,
+            gadgetId: currentGadgetData?.id,
+            gadgetToken: currentGadgetData?.secureToken || scannedToken,
+            isClosed: Boolean(res.chat.isClosed),
+            status: res.chat.status || 'ACTIVE'
+          };
+          window.__activeFinderSession = sessionObj;
+          saveFinderSession(sessionObj);
 
-          renderMissingGadgetActions();
+          renderMissingGadgetActions(sessionObj);
 
           await SwalHelper.success(
             'Connected to Safe Chat! 🛡️',
             'You are now connected with the gadget owner. You can coordinate the return safely.',
-            2500
+            2200
           );
 
-          openFinderChatModal(res.chat.id, res.chat.finderSessionToken, res.chat.foundLocation);
+          openFinderChatModal(res.chat.id, res.chat.finderSessionToken, res.chat.foundLocation, false);
         } else {
           renderMissingGadgetActions();
           await SwalHelper.success('Report Logged', 'Thank you for keeping this gadget safe!');
@@ -1083,22 +1338,25 @@
     let activeFinderChatId = null;
     let activeFinderToken = null;
     let activeFinderChatInterval = null;
+    let activeFinderIsClosed = false;
 
-    function resumeSavedFinderChat() {
-      const rawSession = localStorage.getItem('gg_finder_session_' + scannedToken);
-      if (!rawSession) return;
-      try {
-        const session = JSON.parse(rawSession);
-        openFinderChatModal(session.chatId, session.finderSessionToken, session.foundLocation);
-      } catch (e) {}
+    function resumeSavedFinderChat(forceReadOnly = false) {
+      const session = (window.__activeFinderSession && window.__activeFinderSession.hasSession ? window.__activeFinderSession : null) || 
+        getFinderSession(scannedToken, currentGadgetData?.id);
+      if (!session || !session.chatId || !session.finderSessionToken) return;
+      const isClosed = forceReadOnly || Boolean(session.isClosed || (currentGadgetData && currentGadgetData.status !== 'MISSING'));
+      openFinderChatModal(session.chatId, session.finderSessionToken, session.foundLocation, isClosed);
     }
 
-    function openFinderChatModal(chatId, token, location) {
+    function openFinderChatModal(chatId, token, location, isClosed = false) {
       activeFinderChatId = chatId;
       activeFinderToken = token;
+      activeFinderIsClosed = Boolean(isClosed);
 
       const deviceNameEl = document.getElementById('finder-chat-device-name');
       const locEl = document.getElementById('finder-chat-location-name');
+      const closedBanner = document.getElementById('finder-chat-closed-banner');
+      const chatForm = document.getElementById('finder-chat-form');
 
       if (deviceNameEl && currentGadgetData) {
         deviceNameEl.textContent = `${currentGadgetData.brand} ${currentGadgetData.model}`;
@@ -1107,12 +1365,22 @@
         locEl.textContent = location || 'Campus';
       }
 
+      if (activeFinderIsClosed) {
+        if (closedBanner) closedBanner.style.display = 'block';
+        if (chatForm) chatForm.style.display = 'none';
+      } else {
+        if (closedBanner) closedBanner.style.display = 'none';
+        if (chatForm) chatForm.style.display = 'flex';
+      }
+
       document.getElementById('finder-chat-modal').classList.add('active');
 
       loadFinderChatMessages();
 
       if (activeFinderChatInterval) clearInterval(activeFinderChatInterval);
-      activeFinderChatInterval = setInterval(loadFinderChatMessages, 3500);
+      if (!activeFinderIsClosed) {
+        activeFinderChatInterval = setInterval(loadFinderChatMessages, 3500);
+      }
     }
 
     function closeFinderChatModal() {
@@ -1135,10 +1403,22 @@
 
         if (!msgContainer) return;
 
-        if (chat.isClosed) {
+        if (chat.isClosed || (currentGadgetData && currentGadgetData.status !== 'MISSING')) {
+          activeFinderIsClosed = true;
           if (closedBanner) closedBanner.style.display = 'block';
           if (chatForm) chatForm.style.display = 'none';
+          if (activeFinderChatInterval) {
+            clearInterval(activeFinderChatInterval);
+            activeFinderChatInterval = null;
+          }
+          if (window.__activeFinderSession) window.__activeFinderSession.isClosed = true;
+          const s = getFinderSession(scannedToken, currentGadgetData?.id);
+          if (s) {
+            s.isClosed = true;
+            saveFinderSession(s);
+          }
         } else {
+          activeFinderIsClosed = false;
           if (closedBanner) closedBanner.style.display = 'none';
           if (chatForm) chatForm.style.display = 'flex';
         }
@@ -1174,6 +1454,11 @@
 
     async function handleSendFinderMessage(e) {
       e.preventDefault();
+      if (activeFinderIsClosed) {
+        await SwalHelper.warning('Conversation Closed', 'This recovery chat is closed because the device has been recovered.');
+        return;
+      }
+
       const input = document.getElementById('finder-chat-input');
       const text = input ? input.value.trim() : '';
 

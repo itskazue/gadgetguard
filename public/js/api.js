@@ -340,19 +340,30 @@ const api = {
 
   // Scan & Device QR
   async lookupDeviceQR(token, extraParams = {}) {
-    const query = new URLSearchParams(extraParams).toString();
-    return await this.request(`/scan/device/${token}?${query}`);
+    const params = { ...extraParams };
+    const finderToken = params.finderToken;
+    const query = new URLSearchParams(params).toString();
+    const headers = {};
+    if (finderToken) {
+      headers['x-finder-token'] = finderToken;
+    }
+    return await this.request(`/scan/device/${token}${query ? '?' + query : ''}`, { headers });
   },
 
   async logScan(tokenOrPayload, locationNote, deviceInfo) {
     let payload = {};
     if (typeof tokenOrPayload === 'object' && tokenOrPayload !== null) {
-      payload = tokenOrPayload;
+      payload = { ...tokenOrPayload };
     } else {
       payload = { token: tokenOrPayload, locationNote, deviceInfo };
     }
+    const headers = {};
+    if (payload.finderToken) {
+      headers['x-finder-token'] = payload.finderToken;
+    }
     return await this.request('/scan/log', {
       method: 'POST',
+      headers,
       body: JSON.stringify(payload)
     });
   },
@@ -377,8 +388,14 @@ const api = {
   },
 
   async submitFoundReport(reportData) {
+    const headers = {};
+    const finderToken = reportData.finderSessionToken || reportData.finderToken;
+    if (finderToken) {
+      headers['x-finder-token'] = finderToken;
+    }
     return await this.request('/finder/report', {
       method: 'POST',
+      headers,
       body: JSON.stringify(reportData)
     });
   },

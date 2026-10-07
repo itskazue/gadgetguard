@@ -27,6 +27,34 @@ router.post('/report', (req, res) => {
       return res.status(404).json({ success: false, error: 'Target gadget not found.' });
     }
 
+    // Check if finder already has an existing active recovery session for this gadget
+    const clientFinderToken = req.headers['x-finder-token'] || req.body.finderSessionToken || req.body.finderToken;
+    if (clientFinderToken) {
+      const existingChat = db.findOne('recovery_chats', c => c.gadgetId === targetGadget.id && c.finderSessionToken === clientFinderToken);
+      if (existingChat) {
+        const isClosed = (existingChat.status === 'CLOSED' || targetGadget.status !== 'MISSING');
+        return res.status(200).json({
+          success: true,
+          message: 'Active finder recovery session already exists. Reconnecting to your existing chat.',
+          isExistingSession: true,
+          chat: {
+            id: existingChat.id,
+            finderSessionToken: existingChat.finderSessionToken,
+            finderName: existingChat.finderName || 'Finder',
+            foundLocation: existingChat.foundLocation,
+            missingReportId: existingChat.missingReportId,
+            status: existingChat.status,
+            isClosed,
+            gadget: {
+              id: targetGadget.id,
+              brand: targetGadget.brand,
+              model: targetGadget.model
+            }
+          }
+        });
+      }
+    }
+
     // Found Location is REQUIRED (manually entered by the finder)
     if (!foundLocation || !foundLocation.trim()) {
       return res.status(400).json({ success: false, error: 'Found location is required.' });
@@ -130,7 +158,11 @@ router.post('/report', (req, res) => {
           finderSessionToken: recoveryChat.finderSessionToken,
           finderName: effectiveFinderName,
           foundLocation: cleanFoundLocation,
+          missingReportId: recoveryChat.missingReportId,
+          status: recoveryChat.status,
+          isClosed: false,
           gadget: {
+            id: targetGadget.id,
             brand: targetGadget.brand,
             model: targetGadget.model
           }
