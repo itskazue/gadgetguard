@@ -147,7 +147,9 @@ router.post('/return', authMiddleware, requireRole('osa_admin'), (req, res) => {
     });
 
     // Update or link claim record with status RETURNED and photo proof
-    let targetClaim = claimId ? db.findById('claims', claimId) : db.findOne('claims', c => c.gadgetId === gadgetId);
+    let targetClaim = (claimId && !claimId.startsWith('custody_')) 
+      ? db.findById('claims', claimId) 
+      : db.findOne('claims', c => c.gadgetId === gadgetId);
     if (targetClaim) {
       db.update('claims', targetClaim.id, { 
         status: 'RETURNED',

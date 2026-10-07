@@ -96,15 +96,19 @@ router.get('/my', authMiddleware, (req, res) => {
   }
 });
 
-// GET /api/claims (OSA Admin views all claims)
+// GET /api/claims (OSA Admin views all claims + in-custody gadgets ready for claim)
 router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
   try {
     const claims = db.get('claims') || [];
     const returns = db.get('returns') || [];
+    const allGadgets = db.get('gadgets') || [];
+    const inCustodyGadgets = allGadgets.filter(g => g.status === 'FOUND_IN_CUSTODY');
 
-    const claimGadgetIds = new Set(claims.map(c => c.gadgetId));
+    const processedGadgetIds = new Set();
+    const enrichedClaims = [];
 
-    const enrichedClaims = claims.map(c => {
+    // 1. Process explicit claim submissions
+    for (const c of claims) {
       const gadget = db.findById('gadgets', c.gadgetId);
       const user = db.findById('users', c.userId);
       const returnRec = c.returnId ? db.findById('returns', c.returnId) : db.findOne('returns', r => r.gadgetId === c.gadgetId);
@@ -113,13 +117,21 @@ router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
       const adminName = c.processedByName || admin?.name || returnAdmin?.name || returnRec?.returnedByOsaAdminName || 'OSA Staff';
       
       const isReturned = (c.status === 'RETURNED' || c.status === 'CLAIMED' || Boolean(returnRec));
+      const isInCustody = (!isReturned && gadget && gadget.status === 'FOUND_IN_CUSTODY');
 
-      return {
+      const foundReport = gadget ? db.findOne('found_reports', f => f.gadgetId === gadget.id) : null;
+      const dateReceived = gadget?.receivedAtOsaDate || gadget?.custodyReceivedAt || foundReport?.receivedAtOsaDate || foundReport?.foundDate || gadget?.updatedAt || c.createdAt;
+      const vaultLocation = gadget?.custodyLocation || foundReport?.custodyLocation || 'OSA Vault Locker (Room 1109)';
+
+      enrichedClaims.push({
         ...c,
         id: c.id,
-        status: isReturned ? 'RETURNED' : c.status,
-        handoverPhotoUrl: c.handoverPhotoUrl || returnRec?.handoverPhotoUrl || null,
-        returnDate: returnRec?.returnDate || c.returnedAt || c.processedAt || c.createdAt,
+        status: isReturned ? 'RETURNED' : (isInCustody ? 'IN_CUSTODY' : c.status),
+        isInCustody: isInCustody,
+        dateReceivedByOsa: dateReceived,
+        custodyLocation: vaultLocation,
+        handoverPhotoUrl: isReturned ? (c.handoverPhotoUrl || returnRec?.handoverPhotoUrl || null) : null,
+        returnDate: isReturned ? (returnRec?.returnDate || c.returnedAt || c.processedAt || c.createdAt) : null,
         processedByName: adminName,
         returnRecord: returnRec || null,
         gadget: gadget ? {
@@ -131,7 +143,7 @@ router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
           serialNumber: gadget.serialNumber,
           status: gadget.status,
           photoUrl: gadget.photoUrl,
-          custodyLocation: gadget.custodyLocation
+          custodyLocation: vaultLocation
         } : null,
         user: user ? {
           id: user.id,
@@ -144,12 +156,66 @@ router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
           name: returnRec.receivedByPersonName,
           idNumber: returnRec.receivedByPersonId
         } : null)
-      };
-    });
+      });
 
-    // Also include any standalone completed returns from history
+      if (c.gadgetId) {
+        processedGadgetIds.add(c.gadgetId);
+      }
+    }
+
+    // 2. Add all gadgets currently held in OSA custody that do not yet have an active claim entry
+    for (const g of inCustodyGadgets) {
+      if (!processedGadgetIds.has(g.id)) {
+        const owner = db.findById('users', g.userId);
+        const foundReport = db.findOne('found_reports', f => f.gadgetId === g.id);
+        const dateReceived = g.receivedAtOsaDate || g.custodyReceivedAt || foundReport?.receivedAtOsaDate || foundReport?.foundDate || g.updatedAt || g.createdAt;
+        const vaultLocation = g.custodyLocation || foundReport?.custodyLocation || 'OSA Vault Locker (Room 1109)';
+        const staffName = g.receivedByOsaStaffName || foundReport?.receivedByOsaStaffName || 'OSA Staff';
+
+        enrichedClaims.push({
+          id: 'custody_' + g.id,
+          gadgetId: g.id,
+          userId: g.userId,
+          status: 'IN_CUSTODY',
+          isInCustody: true,
+          claimProofDetails: 'Gadget in physical custody at OSA Vault.',
+          verificationIdType: 'Student ID',
+          verificationIdNumber: owner?.idNumber || 'Enrolled Student',
+          createdAt: dateReceived,
+          dateReceivedByOsa: dateReceived,
+          custodyLocation: vaultLocation,
+          handoverPhotoUrl: null,
+          returnDate: null,
+          returnRecord: null,
+          processedByName: staffName,
+          gadget: {
+            id: g.id,
+            brand: g.brand,
+            model: g.model,
+            color: g.color || 'Standard',
+            category: g.category,
+            serialNumber: g.serialNumber,
+            status: g.status,
+            photoUrl: g.photoUrl,
+            custodyLocation: vaultLocation
+          },
+          user: owner ? {
+            id: owner.id,
+            name: owner.name,
+            email: owner.email,
+            idNumber: owner.idNumber,
+            department: owner.department,
+            contactNumber: owner.contactNumber
+          } : null
+        });
+
+        processedGadgetIds.add(g.id);
+      }
+    }
+
+    // 3. Include any standalone completed returns from history
     returns.forEach(r => {
-      if (!claimGadgetIds.has(r.gadgetId) && !claims.some(c => c.returnId === r.id)) {
+      if (!processedGadgetIds.has(r.gadgetId) && !claims.some(c => c.returnId === r.id)) {
         const gadget = db.findById('gadgets', r.gadgetId);
         const user = db.findById('users', r.userId);
         const admin = db.findById('users', r.returnedByOsaAdminId);
@@ -158,6 +224,7 @@ router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
           gadgetId: r.gadgetId,
           userId: r.userId,
           status: 'RETURNED',
+          isInCustody: false,
           claimProofDetails: r.notes || 'In-person verification and handover at OSA Room 1109.',
           verificationIdType: 'School ID',
           verificationIdNumber: r.receivedByPersonId || user?.idNumber || 'Verified',
@@ -190,10 +257,21 @@ router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
             idNumber: r.receivedByPersonId
           }
         });
+        processedGadgetIds.add(r.gadgetId);
       }
     });
 
-    enrichedClaims.sort((a, b) => new Date(b.returnDate || b.createdAt) - new Date(a.returnDate || a.createdAt));
+    // 4. Sort: Prioritize IN_CUSTODY items at the top, then newest date
+    enrichedClaims.sort((a, b) => {
+      const aInCustody = (a.status === 'IN_CUSTODY' || a.isInCustody);
+      const bInCustody = (b.status === 'IN_CUSTODY' || b.isInCustody);
+      if (aInCustody && !bInCustody) return -1;
+      if (!aInCustody && bInCustody) return 1;
+
+      const dateA = new Date(a.returnDate || a.dateReceivedByOsa || a.createdAt || 0);
+      const dateB = new Date(b.returnDate || b.dateReceivedByOsa || b.createdAt || 0);
+      return dateB - dateA;
+    });
 
     return res.json({ success: true, claims: enrichedClaims });
   } catch (err) {

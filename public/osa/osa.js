@@ -1378,7 +1378,7 @@ function renderClaimsTable(claims) {
           <th>Owner</th>
           <th>Gadget</th>
           <th>Device Identification</th>
-          <th>Claim Proof</th>
+          <th>Claim / Return Proof</th>
           <th>Return Details</th>
           <th>Status</th>
           <th class="text-right">Actions</th>
@@ -1392,13 +1392,17 @@ function renderClaimsTable(claims) {
           const gadgetId = c.gadgetId || c.gadget?.id || '-';
           const serialNo = c.gadget?.serialNumber || '-';
           const color = c.gadget?.color || 'Standard';
+          const category = c.gadget?.category || '';
           const gadgetPhoto = c.gadget?.photoUrl || '/assets/default-gadget.png';
           const handoverPhoto = c.handoverPhotoUrl || c.returnRecord?.handoverPhotoUrl || null;
           const returnDate = c.returnDate || c.returnedAt || c.processedAt || c.createdAt;
           const processedStaff = c.processedByName || 'OSA Staff';
           const isReturned = (c.status === 'RETURNED' || c.status === 'CLAIMED');
-          const isApproved = (c.status === 'APPROVED');
-          const isPending = (c.status === 'PENDING');
+          const isInCustody = (c.status === 'IN_CUSTODY' || c.isInCustody || c.gadget?.status === 'FOUND_IN_CUSTODY') && !isReturned;
+          const isApproved = (c.status === 'APPROVED') && !isInCustody && !isReturned;
+          const isPending = (c.status === 'PENDING') && !isInCustody && !isReturned;
+          const vaultLocation = c.custodyLocation || c.gadget?.custodyLocation || '';
+          const dateReceived = c.dateReceivedByOsa || c.createdAt;
 
           return `
             <tr>
@@ -1424,13 +1428,13 @@ function renderClaimsTable(claims) {
                       <span style="background: #f1f5f9; color: #334155; font-size: 0.72rem; padding: 1px 6px; border-radius: 4px; font-weight: 600; border: 1px solid #e2e8f0;">
                         🎨 ${escapeHtml(color)}
                       </span>
-                      ${c.gadget?.category ? `<span style="font-size: 0.72rem; color: #64748b;">${escapeHtml(c.gadget.category)}</span>` : ''}
+                      ${category ? `<span style="font-size: 0.72rem; color: #64748b;">${escapeHtml(category)}</span>` : ''}
                     </div>
                   </div>
                 </div>
               </td>
 
-              <!-- Group 3: Device Identification (Gadget ID + Serial Number/IMEI) -->
+              <!-- Group 3: Device Identification (Gadget ID + Serial Number/IMEI + Vault Location) -->
               <td>
                 <div class="font-mono" style="font-size: 0.78rem; font-weight: 700; color: #0f172a;">
                   ID: <span style="color: #142a6d;">${escapeHtml(gadgetId)}</span>
@@ -1438,12 +1442,16 @@ function renderClaimsTable(claims) {
                 <div class="font-mono" style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
                   ${serialNo !== '-' ? `S/N: ${escapeHtml(serialNo)}` : '<span style="font-style:italic; color:#94a3b8;">No S/N recorded</span>'}
                 </div>
-                ${c.gadget?.custodyLocation ? `<div style="font-size: 0.72rem; color: #059669; font-weight: 600; margin-top: 2px;">📦 Locker: ${escapeHtml(c.gadget.custodyLocation)}</div>` : ''}
+                ${vaultLocation ? `
+                  <div style="font-size: 0.73rem; color: #0284c7; font-weight: 700; margin-top: 3px; display: flex; align-items: center; gap: 4px;">
+                    <span style="font-size: 0.8rem;">📦</span> <span>Vault: ${escapeHtml(vaultLocation)}</span>
+                  </div>
+                ` : ''}
               </td>
 
-              <!-- Group 4: Claim Proof (Claim/Return Photo thumbnail) -->
+              <!-- Group 4: Claim / Return Photo Proof -->
               <td>
-                ${handoverPhoto ? `
+                ${isReturned && handoverPhoto ? `
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="position: relative; flex-shrink: 0; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(handoverPhoto)}', 'Handover Photo Proof — ${escapeHtml(brandModel)}')" title="Click to view larger handover photo">
                       <img src="${escapeHtml(handoverPhoto)}" alt="Handover Proof" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid #10b981; box-shadow: 0 1px 4px rgba(16,185,129,0.2); transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
@@ -1455,6 +1463,11 @@ function renderClaimsTable(claims) {
                       </span>
                       <div style="font-size: 0.7rem; color: #059669; margin-top: 2px; font-weight: 600;">Verified In-person</div>
                     </div>
+                  </div>
+                ` : isInCustody ? `
+                  <div style="display: flex; align-items: center; gap: 6px; color: #94a3b8; font-size: 0.76rem;">
+                    <span style="font-size: 1.05rem; opacity: 0.7;">📷</span>
+                    <span style="font-style: italic;">Not yet available until returned</span>
                   </div>
                 ` : c.proofDocumentUrl ? `
                   <div style="display: flex; align-items: center; gap: 8px;">
@@ -1482,21 +1495,45 @@ function renderClaimsTable(claims) {
 
               <!-- Group 5: Return Details (Date/Time + Processed By) -->
               <td>
-                <div style="font-size: 0.82rem; font-weight: 600; color: #1e293b;">
-                  📅 ${formatDate(returnDate)}
-                </div>
-                <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
-                  Staff: <span style="color: #142a6d; font-weight: 700;">${escapeHtml(processedStaff)}</span>
-                </div>
+                ${isReturned ? `
+                  <div style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">
+                    📅 ${formatDate(returnDate)}
+                  </div>
+                  <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
+                    Staff: <span style="color: #142a6d; font-weight: 700;">${escapeHtml(processedStaff)}</span>
+                  </div>
+                  ${c.returnRecord?.id ? `<div class="font-mono" style="font-size: 0.7rem; color: #059669; margin-top: 2px;">Ref: ${escapeHtml(c.returnRecord.id)}</div>` : ''}
+                ` : isInCustody ? `
+                  <div style="display: flex; flex-direction: column; gap: 3px;">
+                    <span style="background: #fef3c7; color: #92400e; font-size: 0.72rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; border: 1px solid #fde68a; display: inline-block; width: fit-content;">
+                      ⏳ Pending until returned
+                    </span>
+                    <div style="font-size: 0.72rem; color: #64748b; margin-top: 2px;">
+                      📥 Received: <strong style="color: #334155;">${formatDate(dateReceived)}</strong>
+                    </div>
+                  </div>
+                ` : `
+                  <div style="font-size: 0.82rem; font-weight: 600; color: #1e293b;">
+                    📅 ${formatDate(c.createdAt)}
+                  </div>
+                  <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
+                    Staff: <span style="color: #142a6d; font-weight: 700;">${escapeHtml(processedStaff)}</span>
+                  </div>
+                `}
               </td>
 
               <!-- Group 6: Status -->
               <td>
                 ${isReturned ? `
-                  <span class="status-badge" style="background: #ecfdf5; color: #047857; font-weight: 800; font-size: 0.74rem; padding: 4px 10px; border: 1px solid #a7f3d0;">
+                  <span class="status-badge" style="background: #ecfdf5; color: #047857; font-weight: 800; font-size: 0.74rem; padding: 4px 10px; border: 1px solid #a7f3d0; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
                     ✓ RETURNED
                   </span>
                   <div style="font-size: 0.7rem; color: #059669; font-weight: 600; margin-top: 2px;">Handover Complete</div>
+                ` : isInCustody ? `
+                  <span class="status-badge" style="background: #e0f2fe; color: #0369a1; font-weight: 800; font-size: 0.74rem; padding: 4px 10px; border: 1.5px solid #7dd3fc; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                    🏢 IN OSA CUSTODY
+                  </span>
+                  <div style="font-size: 0.71rem; color: #0284c7; font-weight: 800; margin-top: 3px; letter-spacing: 0.02em;">READY FOR CLAIM</div>
                 ` : isApproved ? `
                   <span class="status-badge" style="background: #eff6ff; color: #1e40af; font-weight: 800; font-size: 0.74rem; padding: 4px 10px; border: 1px solid #bfdbfe;">
                     ✓ APPROVED
@@ -1514,25 +1551,38 @@ function renderClaimsTable(claims) {
                 `}
               </td>
 
-              <!-- Group 7: Actions / View Details -->
+              <!-- Group 7: Actions -->
               <td class="text-right">
-                <div class="table-action-btns" style="justify-content: flex-end; gap: 5px;">
-                  <button class="btn btn-secondary btn-sm" onclick="openClaimDetailsModal('${c.id}')" title="View Full Details" style="font-size: 0.78rem; padding: 5px 10px;">
-                    👁️ View Details
-                  </button>
-                  ${isPending ? `
-                    <button class="btn btn-success btn-sm" onclick="handleApproveClaim('${c.id}')" title="Approve Claim" style="font-size: 0.78rem; padding: 5px 9px;">
-                      ✓ Approve
+                <div class="table-action-btns" style="justify-content: flex-end; gap: 6px; flex-wrap: wrap;">
+                  ${isInCustody ? `
+                    <button class="btn btn-primary btn-sm" onclick="openDispatchReturnForGadget('${c.gadgetId}', '${escapeHtml(ownerName)}', '${escapeHtml(studentId)}', '${c.id.startsWith('custody_') ? '' : c.id}')" style="background: #10b981; border-color: #059669; font-weight: 700; font-size: 0.78rem; padding: 5px 11px; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(16,185,129,0.25);" title="Process Handover & Return to Owner">
+                      🤝 Process Return
                     </button>
-                    <button class="btn btn-danger btn-sm" onclick="handleReviewClaim('${c.id}', 'REJECT')" title="Reject Claim" style="font-size: 0.78rem; padding: 5px 9px;">
-                      ✕
+                    <button class="btn btn-secondary btn-sm" onclick="openClaimDetailsModal('${c.id}')" title="View Full Details" style="font-size: 0.78rem; padding: 5px 9px;">
+                      👁️ View Details
                     </button>
-                  ` : ''}
-                  ${isApproved ? `
-                    <button class="btn btn-primary btn-sm" onclick="openDispatchReturnForGadget('${c.gadgetId}', '${escapeHtml(ownerName)}', '${escapeHtml(studentId)}', '${c.id}')" style="background: #6d28d9; border-color: #6d28d9; font-size: 0.78rem; padding: 5px 10px; font-weight: 700;" title="Complete Face-to-Face Handover">
-                      🤝 Handover
+                  ` : isReturned ? `
+                    <button class="btn btn-secondary btn-sm" onclick="openClaimDetailsModal('${c.id}')" title="View Full Details" style="font-size: 0.78rem; padding: 5px 10px;">
+                      👁️ View Details
                     </button>
-                  ` : ''}
+                  ` : `
+                    <button class="btn btn-secondary btn-sm" onclick="openClaimDetailsModal('${c.id}')" title="View Full Details" style="font-size: 0.78rem; padding: 5px 10px;">
+                      👁️ View Details
+                    </button>
+                    ${isPending ? `
+                      <button class="btn btn-success btn-sm" onclick="handleApproveClaim('${c.id}')" title="Approve Claim" style="font-size: 0.78rem; padding: 5px 9px;">
+                        ✓ Approve
+                      </button>
+                      <button class="btn btn-danger btn-sm" onclick="handleReviewClaim('${c.id}', 'REJECT')" title="Reject Claim" style="font-size: 0.78rem; padding: 5px 9px;">
+                        ✕
+                      </button>
+                    ` : ''}
+                    ${isApproved ? `
+                      <button class="btn btn-primary btn-sm" onclick="openDispatchReturnForGadget('${c.gadgetId}', '${escapeHtml(ownerName)}', '${escapeHtml(studentId)}', '${c.id}')" style="background: #6d28d9; border-color: #6d28d9; font-size: 0.78rem; padding: 5px 10px; font-weight: 700;" title="Complete Face-to-Face Handover">
+                        🤝 Handover
+                      </button>
+                    ` : ''}
+                  `}
                 </div>
               </td>
             </tr>
@@ -1549,11 +1599,15 @@ function filterClaimsTable() {
   if (!window._claimsList) return;
 
   const filtered = window._claimsList.filter(c => {
+    const isReturned = (c.status === 'RETURNED' || c.status === 'CLAIMED');
+    const isInCustody = (c.status === 'IN_CUSTODY' || c.isInCustody || c.gadget?.status === 'FOUND_IN_CUSTODY') && !isReturned;
+
     // Status filter
     if (statusFilter !== 'ALL') {
-      if (statusFilter === 'RETURNED' && !(c.status === 'RETURNED' || c.status === 'CLAIMED')) return false;
-      if (statusFilter === 'APPROVED' && c.status !== 'APPROVED') return false;
-      if (statusFilter === 'PENDING' && c.status !== 'PENDING') return false;
+      if (statusFilter === 'IN_CUSTODY' && !isInCustody) return false;
+      if (statusFilter === 'RETURNED' && !isReturned) return false;
+      if (statusFilter === 'APPROVED' && (isInCustody || isReturned || c.status !== 'APPROVED')) return false;
+      if (statusFilter === 'PENDING' && (isInCustody || isReturned || c.status !== 'PENDING')) return false;
       if (statusFilter === 'REJECTED' && c.status !== 'REJECTED') return false;
     }
 
@@ -1567,10 +1621,12 @@ function filterClaimsTable() {
     const serial = (c.gadget?.serialNumber || '').toLowerCase();
     const color = (c.gadget?.color || '').toLowerCase();
     const staff = (c.processedByName || '').toLowerCase();
+    const vault = (c.custodyLocation || c.gadget?.custodyLocation || '').toLowerCase();
+    const statusText = isInCustody ? 'in osa custody ready for claim custody' : (isReturned ? 'returned claimed' : (c.status || '').toLowerCase());
 
     return ownerName.includes(query) || studentId.includes(query) || brand.includes(query) ||
       model.includes(query) || gadgetId.includes(query) || serial.includes(query) ||
-      color.includes(query) || staff.includes(query);
+      color.includes(query) || staff.includes(query) || vault.includes(query) || statusText.includes(query);
   });
 
   renderClaimsTable(filtered);
@@ -1614,16 +1670,23 @@ function openClaimDetailsModal(claimId) {
   const returnDate = c.returnDate || c.returnedAt || c.processedAt || c.createdAt;
   const processedStaff = c.processedByName || 'OSA Staff';
   const isReturned = (c.status === 'RETURNED' || c.status === 'CLAIMED');
+  const isInCustody = (c.status === 'IN_CUSTODY' || c.isInCustody || c.gadget?.status === 'FOUND_IN_CUSTODY') && !isReturned;
+  const vaultLocation = c.custodyLocation || c.gadget?.custodyLocation || 'OSA Vault Locker (Room 1109)';
+  const dateReceived = c.dateReceivedByOsa || c.createdAt;
 
   content.innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; flex-wrap: wrap; gap: 8px;">
       <div>
-        <span class="status-badge" style="${isReturned ? 'background:#ecfdf5; color:#047857;' : (c.status === 'APPROVED' ? 'background:#eff6ff; color:#1e40af;' : 'background:#fef3c7; color:#92400e;')} font-size:0.8rem; font-weight:800; padding:4px 12px;">
-          ${isReturned ? '✓ RETURNED' : (c.status === 'APPROVED' ? '✓ APPROVED' : c.status)}
+        <span class="status-badge" style="${isReturned ? 'background:#ecfdf5; color:#047857;' : (isInCustody ? 'background:#e0f2fe; color:#0369a1; border:1px solid #7dd3fc;' : (c.status === 'APPROVED' ? 'background:#eff6ff; color:#1e40af;' : 'background:#fef3c7; color:#92400e;'))} font-size:0.8rem; font-weight:800; padding:4px 12px;">
+          ${isReturned ? '✓ RETURNED' : (isInCustody ? '🏢 IN OSA CUSTODY / READY FOR CLAIM' : (c.status === 'APPROVED' ? '✓ APPROVED' : c.status))}
         </span>
         <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">Record Ref: <code class="font-mono">${escapeHtml(c.id)}</code></div>
       </div>
-      ${c.status === 'APPROVED' ? `
+      ${isInCustody ? `
+        <button class="btn btn-primary btn-sm" onclick="closeModal('claim-details-modal'); openDispatchReturnForGadget('${c.gadgetId}', '${escapeHtml(ownerName)}', '${escapeHtml(studentId)}', '${c.id.startsWith('custody_') ? '' : c.id}')" style="background: #10b981; border-color: #059669; font-weight:700;">
+          🤝 Process Return
+        </button>
+      ` : c.status === 'APPROVED' ? `
         <button class="btn btn-primary btn-sm" onclick="closeModal('claim-details-modal'); openDispatchReturnForGadget('${c.gadgetId}', '${escapeHtml(ownerName)}', '${escapeHtml(studentId)}', '${c.id}')" style="background: #6d28d9; border-color: #6d28d9; font-weight:700;">
           🤝 Proceed to Handover
         </button>
@@ -1645,6 +1708,12 @@ function openClaimDetailsModal(claimId) {
         ${handoverPhoto ? `
           <img src="${escapeHtml(handoverPhoto)}" alt="Handover Proof" style="width: 100%; height: 160px; object-fit: cover; border-radius: 8px; border: 1.5px solid #16a34a; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(handoverPhoto)}', 'Handover Proof — ${escapeHtml(brandModel)}')">
           <div style="font-size: 0.72rem; color: #15803d; margin-top: 6px; font-weight: 600;">✓ Verified Handover Photo Attached</div>
+        ` : isInCustody ? `
+          <div style="height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ffffff; border-radius: 8px; border: 1.5px dashed #cbd5e1; color: #64748b; font-size: 0.82rem; padding: 12px; text-align: center;">
+            <span style="font-size: 1.5rem; margin-bottom: 4px;">📷</span>
+            <strong style="color: #334155;">Not yet available until returned</strong>
+            <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 4px;">Photo proof will be captured during physical return turnover.</div>
+          </div>
         ` : `
           <div style="height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ffffff; border-radius: 8px; border: 1.5px dashed #cbd5e1; color: #94a3b8; font-size: 0.82rem; padding: 10px;">
             <span>📷</span>
@@ -1679,7 +1748,7 @@ function openClaimDetailsModal(claimId) {
           <div><span style="color:#64748b;">Gadget ID:</span> <span class="font-mono">${escapeHtml(gadgetId)}</span></div>
           <div><span style="color:#64748b;">Serial / IMEI:</span> <span class="font-mono">${escapeHtml(serialNo)}</span></div>
           <div><span style="color:#64748b;">Category:</span> ${escapeHtml(category)}</div>
-          ${c.gadget?.custodyLocation ? `<div><span style="color:#64748b;">Vault Locker:</span> <strong style="color:#059669;">${escapeHtml(c.gadget.custodyLocation)}</strong></div>` : ''}
+          ${vaultLocation ? `<div><span style="color:#64748b;">Vault Locker:</span> <strong style="color:#0284c7;">${escapeHtml(vaultLocation)}</strong></div>` : ''}
         </div>
       </div>
 
@@ -1688,9 +1757,15 @@ function openClaimDetailsModal(claimId) {
           📜 Verification &amp; Return Handover Audit
         </div>
         <div style="display: grid; gap: 6px;">
-          <div><span style="color:#64748b;">Date &amp; Time:</span> <strong>${formatDate(returnDate)}</strong></div>
-          <div><span style="color:#64748b;">Processed By OSA Staff:</span> <strong style="color:#142a6d;">${escapeHtml(processedStaff)}</strong></div>
-          <div><span style="color:#64748b;">Proof / Statement:</span> "${escapeHtml(c.claimProofDetails || 'Face-to-face handover at OSA Room 1109.')}"</div>
+          ${isInCustody ? `
+            <div><span style="color:#64748b;">Date Received by OSA:</span> <strong>${formatDate(dateReceived)}</strong></div>
+            <div><span style="color:#64748b;">Vault Custody Location:</span> <strong style="color:#0284c7;">${escapeHtml(vaultLocation)}</strong></div>
+            <div><span style="color:#64748b;">Intake Staff / Status:</span> <strong style="color:#142a6d;">${escapeHtml(processedStaff)} (Ready for Claim)</strong></div>
+          ` : `
+            <div><span style="color:#64748b;">Date &amp; Time:</span> <strong>${formatDate(returnDate)}</strong></div>
+            <div><span style="color:#64748b;">Processed By OSA Staff:</span> <strong style="color:#142a6d;">${escapeHtml(processedStaff)}</strong></div>
+          `}
+          <div><span style="color:#64748b;">Proof / Statement:</span> "${escapeHtml(c.claimProofDetails || (isInCustody ? 'Item in OSA physical custody ready for handover.' : 'Face-to-face handover at OSA Room 1109.'))}"</div>
           ${c.returnRecord?.notes ? `<div><span style="color:#64748b;">Handover Notes:</span> "${escapeHtml(c.returnRecord.notes)}"</div>` : ''}
           ${c.returnRecord?.id ? `<div><span style="color:#64748b;">Official Receipt ID:</span> <code class="font-mono" style="color:#6d28d9; font-weight:700;">${escapeHtml(c.returnRecord.id)}</code></div>` : ''}
         </div>
@@ -1789,8 +1864,16 @@ async function openDispatchReturnModal(preselectedGadgetId = null, preselectedOw
   }
 
   if (preselectedGadgetId) {
-    document.getElementById('return-recipient-name').value = preselectedOwnerName || '';
-    document.getElementById('return-recipient-id').value = preselectedOwnerId || '';
+    select.value = preselectedGadgetId;
+    if (preselectedOwnerName) {
+      document.getElementById('return-recipient-name').value = preselectedOwnerName;
+    }
+    if (preselectedOwnerId) {
+      document.getElementById('return-recipient-id').value = preselectedOwnerId;
+    }
+    if (!preselectedOwnerName || !preselectedOwnerId) {
+      handleReturnSelectChange(preselectedGadgetId);
+    }
   } else if (eligible.length > 0) {
     handleReturnSelectChange(select.value);
   }

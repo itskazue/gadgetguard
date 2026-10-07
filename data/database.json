@@ -90,7 +90,17 @@
       "approvedAt": "2026-09-07T09:10:00.000Z",
       "approvedBy": "usr_admin_01",
       "createdAt": "2026-09-06T14:20:00.000Z",
-      "updatedAt": "2026-09-07T09:10:00.000Z"
+      "updatedAt": "2026-10-07T11:33:13.129Z",
+      "custodyStatus": "RETURNED_TO_OWNER",
+      "claimStatus": "RETURNED",
+      "custodyLocation": null,
+      "receivedAtOsaDate": "2026-10-07T11:33:03.460Z",
+      "receivedByOsaStaffName": "Director Maria Santos",
+      "lastReturnId": "ret_muy13q5tvbo",
+      "lastHandoverPhotoUrl": "https://images.unsplash.com/photo-handover-test.jpg",
+      "lastReturnedAt": "2026-10-07T11:33:03.665Z",
+      "lastReturnedByAdminId": "usr_admin_01",
+      "lastReturnedByAdminName": "Carlos Mendoza"
     },
     {
       "id": "gdt_02",
@@ -154,11 +164,23 @@
     }
   ],
   "missing_reports": [],
+  "qr_scans": [],
   "found_reports": [],
   "claims": [],
   "returns": [],
-  "qr_scans": [],
-  "notifications": [],
+  "notifications": [
+    {
+      "id": "notif_1791372783670_cn5wy",
+      "userId": "usr_student_01",
+      "title": "Gadget Successfully Returned! 🎉",
+      "message": "Your Samsung Galaxy S23 Ultra has been officially returned and recorded. Thank you for using GadgetGuard!",
+      "type": "RETURNED_SUCCESS",
+      "read": false,
+      "linkUrl": "/student/#returns",
+      "createdAt": "2026-10-07T11:33:03.670Z",
+      "updatedAt": "2026-10-07T11:33:03.670Z"
+    }
+  ],
   "audit_logs": [
     {
       "id": "log_init_muxh1wqr",
@@ -170,8 +192,33 @@
       "targetId": "all",
       "details": "System initialized with pre-provisioned NCST Student & OSA Admin demo accounts ready for testing and SIS integration.",
       "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "log_1791372783669_n1c2z",
+      "userId": "usr_admin_01",
+      "userRole": "osa_admin",
+      "action": "RETURN_GADGET",
+      "targetType": "gadget",
+      "targetId": "gdt_01",
+      "details": "Official gadget handover with photo proof: Samsung Galaxy S23 Ultra returned to Denzel Kalingking (Ref: ret_muy13q5tvbo)",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-10-07T11:33:03.669Z",
+      "createdAt": "2026-10-07T11:33:03.669Z",
+      "updatedAt": "2026-10-07T11:33:03.669Z"
     }
   ],
+  "recovery_chats": [],
+  "uploaded_files": [],
+  "system_settings": {
+    "schoolName": "National College of Science and Technology (NCST)",
+    "campusName": "Main Campus - Emilio Aguinaldo Hwy, Dasmariñas, Cavite",
+    "osaOfficeLocation": "Office of Student Affairs (OSA) — Room 1109, NCST Main Campus",
+    "osaContactPhone": "(046) 416-0166 / +63 917 555 6278",
+    "osaEmail": "osa@ncst.edu.ph",
+    "operatingHours": "Monday - Friday: 8:00 AM - 5:00 PM",
+    "enableAutoApproveUsers": true,
+    "requireQrSecurityPasscode": false
+  },
   "settings": {
     "schoolName": "National College of Science and Technology",
     "osaOfficeLocation": "Room 1109, Student Affairs Building",
