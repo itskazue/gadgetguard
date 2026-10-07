@@ -229,7 +229,9 @@ router.get('/device/:token', async (req, res) => {
         model: gadget.model,
         color: gadget.color,
         photoUrl: gadget.photoUrl,
-        status: gadget.status
+        status: gadget.status,
+        custodyStatus: gadget.custodyStatus || 'MISSING',
+        studentIdNumber: isMissing && owner ? (owner.idNumber || 'Registered Student') : undefined
       },
       owner: null, // Strictly protected
       missingReport: isMissing && missingReport ? {

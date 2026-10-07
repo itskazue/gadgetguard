@@ -1125,8 +1125,8 @@ function renderMissingTable(reports, hasFilter = false) {
             <td class="text-right">
               <div class="table-action-btns" style="display:inline-flex; align-items:center; gap:6px; justify-content:flex-end;">
                 ${(r.gadget?.status === 'MISSING' || r.status === 'ACTIVE') ? `
-                  <button class="btn btn-primary btn-sm" onclick="openReceiveCustodyModal('${r.gadgetId || r.gadget?.id}', '${escapeHtml(r.gadget?.brand || '')} ${escapeHtml(r.gadget?.model || '')}', '${escapeHtml(r.owner?.name || 'Student')}')" style="display:inline-flex; align-items:center; gap:5px;" title="Receive gadget into custody vault (surrendered f2f)">
-                    📦 Receive into Vault
+                  <button class="btn btn-primary btn-sm" onclick="openReceiveCustodyModal('${r.gadgetId || r.gadget?.id}', '${escapeHtml(r.gadget?.brand || '')} ${escapeHtml(r.gadget?.model || '')}', '${escapeHtml(r.owner?.name || 'Student')}', '${escapeHtml(r.owner?.idNumber || 'N/A')}', '', '${escapeHtml(r.gadgetId || r.gadget?.id || '')}')" style="display:inline-flex; align-items:center; gap:5px;" title="Confirm physical receipt into OSA custody">
+                    🏢 Confirm OSA Receipt
                   </button>
                 ` : ''}
                 ${r.gadget?.status === 'FOUND_IN_CUSTODY' ? `
@@ -1149,7 +1149,7 @@ function renderMissingTable(reports, hasFilter = false) {
   `;
 }
 
-// 5. Custody & Found Intake
+// 5. Custody & Found Intake (Section F: Confirm Physical Receipt)
 async function loadFoundCustodyVault() {
   const container = document.getElementById('found-custody-table');
   if (!container) return;
@@ -1158,94 +1158,172 @@ async function loadFoundCustodyVault() {
     const res = await api.getAllFoundReports();
     let reports = res.reports || [];
 
-    // Filter out reports where the item is already safe, resolved, or returned back to the student
+    // Filter out reports where the item is already returned back to the student
     reports = reports.filter(r => {
       if (r.status === 'RESOLVED' || r.status === 'CANCELLED' || r.status === 'RETURNED' || r.status === 'RECOVERED_BY_OWNER') {
         return false;
       }
-      // If the gadget itself is already registered/safe and not currently missing or in custody
       if (r.gadget && r.gadget.status === 'REGISTERED') {
         return false;
       }
       return true;
     });
 
-    if (reports.length === 0) {
-      container.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted);">No active finder reports awaiting intake. All found devices are currently reconciled.</div>`;
-      return;
-    }
+    window._foundReportsList = reports;
+    renderFoundCustodyTable(reports);
+  } catch (e) {
+    console.error('Error loading custody vault:', e);
+  }
+}
 
-    container.innerHTML = `
-      <table class="clean-table">
-        <thead>
-          <tr>
-            <th>Gadget</th>
-            <th>Finder Information</th>
-            <th>Found Location</th>
-            <th>Turn-in Method</th>
-            <th>Status</th>
-            <th class="text-right">Intake Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${reports.map(r => `
+function renderFoundCustodyTable(reports) {
+  const container = document.getElementById('found-custody-table');
+  if (!container) return;
+
+  if (!reports || reports.length === 0) {
+    container.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted);">No active surrendered or found devices matching criteria.</div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <table class="clean-table">
+      <thead>
+        <tr>
+          <th>Surrender Ref / Case ID</th>
+          <th>Gadget & Owner</th>
+          <th>Finder Information</th>
+          <th>Found Location</th>
+          <th>Turnover Status</th>
+          <th class="text-right">Custody Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${reports.map(r => {
+          const isInCustody = (r.status === 'IN_OSA_CUSTODY' || r.gadget?.custodyStatus === 'IN_OSA_CUSTODY' || r.gadget?.status === 'FOUND_IN_CUSTODY');
+          const isPendingTurnover = (r.turnInMethod === 'SUBMITTED_TO_OSA' || r.finderDecision === 'WILL_SURRENDER_TO_OSA' || r.status === 'PENDING_OSA_TURNOVER');
+          const surrenderRef = r.surrenderReference || ('SRF-' + (r.id ? r.id.substring(4, 10).toUpperCase() : 'PENDING'));
+
+          return `
             <tr>
               <td>
+                <div class="font-mono" style="font-weight: 800; color: #142a6d; font-size: 0.88rem; letter-spacing: 0.3px;">
+                  ${escapeHtml(surrenderRef)}
+                </div>
+                <div style="font-size: 0.72rem; color: #64748b; margin-top: 2px;">
+                  ${formatDate(r.foundDate || r.createdAt)}
+                </div>
+              </td>
+              <td>
                 <div class="table-primary-title">${escapeHtml(r.gadget?.brand)} ${escapeHtml(r.gadget?.model)}</div>
-                <div class="table-secondary-sub">Owner: ${escapeHtml(r.owner?.name || 'Student Member')}</div>
+                <div class="table-secondary-sub">
+                  👤 ${escapeHtml(r.owner?.name || 'Student Member')} 
+                  <span class="font-mono" style="font-weight: 700; color: #142a6d;">(${escapeHtml(r.owner?.idNumber || 'No ID')})</span>
+                </div>
+                <div class="font-mono" style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">
+                  ID: ${escapeHtml(r.gadgetId || r.gadget?.id || '')}
+                </div>
               </td>
               <td>
-                <div style="font-weight: 700; color: #0f172a; margin-bottom: 3px;">${escapeHtml(r.finderName)}</div>
-                <div class="font-mono" style="font-size: 0.775rem; color: #64748b;">${escapeHtml(r.finderContact)}</div>
+                <div style="font-weight: 700; color: #0f172a; margin-bottom: 2px;">
+                  👤 ${escapeHtml(r.finderName || 'Finder')}
+                </div>
+                <div class="font-mono" style="font-size: 0.775rem; color: #475569;">
+                  ${r.finderContact ? `📞 ${escapeHtml(r.finderContact)}` : '<span style="color:#94a3b8; font-style:italic;">None provided</span>'}
+                </div>
               </td>
               <td>
-                <div style="font-size: 0.875rem; font-weight: 600; color: #334155;">📍 ${escapeHtml(r.foundLocation)}</div>
+                <div style="font-size: 0.85rem; font-weight: 600; color: #334155;">📍 ${escapeHtml(r.foundLocation)}</div>
+                ${r.message ? `<div style="font-size: 0.75rem; color: #64748b; font-style: italic; margin-top: 2px; max-width: 220px;">"${escapeHtml(r.message)}"</div>` : ''}
               </td>
               <td>
-                <span class="status-badge" style="background:#f1f5f9; color:#334155; font-size:0.75rem; padding:4px 10px;">
-                  ${r.turnInMethod === 'SUBMITTED_TO_OSA' ? 'Surrendered to OSA' : 'Finder Holding'}
-                </span>
-              </td>
-              <td>
-                <span class="status-badge ${r.status === 'PROCESSED_BY_OSA' ? 'REGISTERED' : 'PENDING'}">
-                  ${r.status === 'PROCESSED_BY_OSA' ? 'In Vault Locker' : 'Awaiting Intake'}
-                </span>
+                ${isInCustody ? `
+                  <span class="status-badge" style="background: #ecfdf5; color: #047857; font-weight: 800; font-size: 0.74rem; padding: 4px 10px; border: 1px solid #a7f3d0;">
+                    IN OSA CUSTODY
+                  </span>
+                  <div style="font-size: 0.72rem; color: #059669; font-weight: 600; margin-top: 3px;">Ready for Claim</div>
+                ` : isPendingTurnover ? `
+                  <span class="status-badge" style="background: #fef3c7; color: #92400e; font-weight: 800; font-size: 0.74rem; padding: 4px 10px; border: 1px solid #fde68a;">
+                    PENDING OSA TURNOVER
+                  </span>
+                  <div style="font-size: 0.72rem; color: #b45309; font-weight: 600; margin-top: 3px;">Will Surrender to OSA</div>
+                ` : `
+                  <span class="status-badge" style="background: #f1f5f9; color: #334155; font-size: 0.74rem; padding: 4px 10px;">
+                    Finder Holding
+                  </span>
+                `}
               </td>
               <td class="text-right">
-                <div class="table-action-btns">
-                  ${r.status !== 'PROCESSED_BY_OSA' ? `
-                    <button class="btn btn-primary btn-sm" onclick="openReceiveCustodyModal('${r.id}', '${escapeHtml(r.gadget?.brand || '')} ${escapeHtml(r.gadget?.model || '')}', '${escapeHtml(r.owner?.name || 'Student')}')" style="display:inline-flex; align-items:center; gap:6px;">
-                      📦 Receive into Vault
+                <div class="table-action-btns" style="justify-content: flex-end;">
+                  ${isInCustody ? `
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:3px;">
+                      <span style="font-size:0.8rem; color:#047857; font-weight:700;">✓ In Vault Locker</span>
+                      <button class="btn btn-secondary btn-sm" onclick="navigateOsa('claims')" style="font-size:0.75rem; padding:3px 8px;">
+                        Review Claims
+                      </button>
+                    </div>
+                  ` : `
+                    <button class="btn btn-primary btn-sm" onclick="openReceiveCustodyModal('${r.id}', '${escapeHtml(r.gadget?.brand || '')} ${escapeHtml(r.gadget?.model || '')}', '${escapeHtml(r.owner?.name || 'Student')}', '${escapeHtml(r.owner?.idNumber || 'N/A')}', '${escapeHtml(surrenderRef)}', '${escapeHtml(r.gadgetId || r.gadget?.id || '')}')" style="display:inline-flex; align-items:center; gap:5px; font-weight:700;">
+                      🏢 Confirm OSA Receipt
                     </button>
-                  ` : '<span style="font-size:0.8rem; color:#047857; font-weight:700;">✓ In Vault Locker</span>'}
+                  `}
                 </div>
               </td>
             </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
-  } catch (e) {}
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
 }
 
-function openReceiveCustodyModal(reportIdOrGadgetId, deviceName = '', ownerName = '') {
+function filterFoundCustodyTable() {
+  const query = (document.getElementById('found-custody-search-input')?.value || '').toLowerCase().trim();
+  if (!window._foundReportsList) return;
+  if (!query) {
+    renderFoundCustodyTable(window._foundReportsList);
+    return;
+  }
+  const filtered = window._foundReportsList.filter(r => {
+    const ref = (r.surrenderReference || '').toLowerCase();
+    const gId = (r.gadgetId || r.gadget?.id || '').toLowerCase();
+    const token = (r.gadget?.secureToken || '').toLowerCase();
+    const gBrand = (r.gadget?.brand || '').toLowerCase();
+    const gModel = (r.gadget?.model || '').toLowerCase();
+    const ownerName = (r.owner?.name || '').toLowerCase();
+    const ownerId = (r.owner?.idNumber || '').toLowerCase();
+    const finder = (r.finderName || '').toLowerCase();
+    const fLoc = (r.foundLocation || '').toLowerCase();
+    return ref.includes(query) || gId.includes(query) || token.includes(query) ||
+      gBrand.includes(query) || gModel.includes(query) || ownerName.includes(query) ||
+      ownerId.includes(query) || finder.includes(query) || fLoc.includes(query);
+  });
+  renderFoundCustodyTable(filtered);
+}
+
+function openReceiveCustodyModal(reportIdOrGadgetId, deviceName = '', ownerName = '', studentIdNumber = '', surrenderRef = '', gadgetId = '') {
   document.getElementById('custody-report-id').value = reportIdOrGadgetId;
 
   const banner = document.getElementById('custody-device-info-banner');
   const dNameEl = document.getElementById('custody-device-name');
   const oNameEl = document.getElementById('custody-owner-name');
+  const sRefEl = document.getElementById('custody-surrender-ref');
+  const gIdEl = document.getElementById('custody-gadget-id');
 
-  if (deviceName && banner && dNameEl && oNameEl) {
-    dNameEl.textContent = `📱 ${deviceName}`;
-    oNameEl.textContent = `👤 Owner: ${ownerName || 'Student Owner'}`;
-    banner.style.display = 'block';
-  } else if (banner) {
-    banner.style.display = 'none';
+  if (banner) {
+    if (deviceName) {
+      if (dNameEl) dNameEl.textContent = `📱 ${deviceName}`;
+      if (oNameEl) oNameEl.textContent = `👤 Owner: ${ownerName} ${studentIdNumber ? `(${studentIdNumber})` : ''}`;
+      if (sRefEl) sRefEl.textContent = `REF: ${surrenderRef || 'Direct Turnover'}`;
+      if (gIdEl) gIdEl.textContent = `ID: ${gadgetId || reportIdOrGadgetId}`;
+      banner.style.display = 'block';
+    } else {
+      banner.style.display = 'none';
+    }
   }
 
   const notesInput = document.getElementById('custody-notes-input');
   if (notesInput) {
-    notesInput.value = 'Surrendered face-to-face at OSA front desk (Room 1109). Device verified in physical custody.';
+    notesInput.value = 'Physical turnover confirmed at OSA front desk (Room 1109). Device verified in physical custody.';
   }
 
   document.getElementById('receive-custody-modal').classList.add('active');
@@ -1259,9 +1337,10 @@ async function handleReceiveCustodySubmit(e) {
 
   try {
     await api.receiveIntoCustody(reportId, { custodyLocation, notes });
-    showToast('success', 'Item In Custody!', `Moved to ${custodyLocation}. Owner notified to file claim.`);
+    showToast('success', 'Item In OSA Custody!', `Moved to ${custodyLocation}. Owner notified to file claim.`);
     closeModal('receive-custody-modal');
-    loadCurrentOsaScreenData();
+    loadFoundCustodyVault();
+    loadMissingGadgets();
   } catch (err) {
     showToast('error', 'Intake Failed', err.message);
   }

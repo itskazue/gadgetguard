@@ -1069,6 +1069,33 @@ async function loadLostStatusScreen() {
               </div>
             </div>
           `;
+        let surrenderCardHtml = '';
+        if (g.surrenderInfo) {
+          surrenderCardHtml = `
+            <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 16px; margin-top: 10px; text-align: left;">
+              <div style="font-weight: 800; color: #1e40af; font-size: 0.92rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span>🏢</span> Finder Surrender in Progress
+                </div>
+                <span style="background: #dbeafe; color: #1e40af; font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; border: 1px solid #bfdbfe;">
+                  Pending Turnover to Campus Security &amp; OSA
+                </span>
+              </div>
+              <div style="font-size: 0.84rem; color: #1e3a8a; line-height: 1.6; background: #ffffff; border: 1px solid #dbeafe; border-radius: 10px; padding: 14px;">
+                <p style="margin: 0 0 6px; font-weight: 600;">
+                  A finder has indicated that they will surrender your missing gadget through Campus Security/OSA.
+                </p>
+                <div style="font-size: 0.8rem; color: #475569;">
+                  📍 <strong>Found At:</strong> ${escapeHtml(g.surrenderInfo.foundLocation || 'Campus')}<br>
+                  📋 <strong>Case Ref:</strong> <span class="font-mono" style="color: #1e40af; font-weight: 700;">${escapeHtml(g.surrenderInfo.surrenderReference || '')}</span><br>
+                  🏢 <strong>Turnover Destination:</strong> Campus Security Guard &rarr; Office of Student Affairs (OSA – Room 1109)
+                </div>
+                <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #cbd5e1; font-size: 0.78rem; color: #64748b;">
+                  <em>Note: The finder has declared their intent to surrender. You will receive an official notification once OSA physically receives and verifies possession of your gadget.</em>
+                </div>
+              </div>
+            </div>
+          `;
         }
 
         return `
@@ -1089,6 +1116,7 @@ async function loadLostStatusScreen() {
               </div>
             </div>
             ${finderCardHtml}
+            ${surrenderCardHtml}
             ${scansListHtml}
           </div>
         `;

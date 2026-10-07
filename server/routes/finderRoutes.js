@@ -10,6 +10,7 @@ router.post('/report', (req, res) => {
     const token = req.body.token || req.body.secureToken || req.body.gadgetToken;
     const gadgetId = req.body.gadgetId;
     const finderName = req.body.finderName;
+    const finderContact = req.body.finderContact || req.body.contactNumber || req.body.contact;
     const foundLocation = req.body.foundLocation || req.body.location;
     const foundDate = req.body.foundDate;
     const itemCondition = req.body.itemCondition || req.body.condition;
@@ -75,23 +76,35 @@ router.post('/report', (req, res) => {
       effectiveFinderName = trimmedName;
     }
 
+    // Contact Number is OPTIONAL (only accessible by authorized OSA staff, never exposed to owner or publicly)
+    let effectiveFinderContact = '';
+    if (finderContact && typeof finderContact === 'string') {
+      effectiveFinderContact = finderContact.trim().substring(0, 30);
+    }
+
     // Determine Turn-in Action
     const isKeeping = (turnInMethod === 'KEPT_SAFE' || turnInMethod === 'KEPT_SAFE_CONTACT_ME' || turnInMethod === 'FINDER_HOLDING');
     const effectiveTurnInMethod = isKeeping ? 'KEPT_SAFE' : 'SUBMITTED_TO_OSA';
 
+    const activeMissing = db.findOne('missing_reports', m => m.gadgetId === targetGadget.id && m.status === 'ACTIVE');
+    const surrenderRef = 'SRF-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+
     // Insert Found Report record
     const report = db.insert('found_reports', {
       id: 'fnd_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
+      surrenderReference: surrenderRef,
       gadgetId: targetGadget.id,
+      missingReportId: activeMissing ? activeMissing.id : null,
       finderName: effectiveFinderName,
-      finderContact: '', // Contact number is NOT asked for or stored
+      finderContact: effectiveFinderContact, // Strictly for authorized OSA use
       finderEmail: '',
       foundLocation: cleanFoundLocation,
       foundDate: foundDate || new Date().toISOString(),
       itemCondition: itemCondition || 'Good',
       turnInMethod: effectiveTurnInMethod,
       message: message ? message.trim() : '',
-      status: 'REPORTED'
+      status: isKeeping ? 'REPORTED' : 'PENDING_OSA_TURNOVER',
+      finderDecision: isKeeping ? 'KEPT_SAFE' : 'WILL_SURRENDER_TO_OSA'
     });
 
     db.addAuditLog({
@@ -100,7 +113,7 @@ router.post('/report', (req, res) => {
       action: 'SUBMIT_FOUND_REPORT',
       targetType: 'gadget',
       targetId: targetGadget.id,
-      details: `Finder (${effectiveFinderName}) reported finding ${targetGadget.brand} ${targetGadget.model} at ${cleanFoundLocation} (Action: ${isKeeping ? 'Keeping Gadget Safe' : 'Will Surrender to OSA'})`,
+      details: `Finder (${effectiveFinderName}) reported finding ${targetGadget.brand} ${targetGadget.model} at ${cleanFoundLocation} (Decision: ${isKeeping ? 'Keeping Gadget Safe' : 'Will Surrender to OSA, Ref: ' + surrenderRef})`,
       ipAddress: req.ip
     });
 
@@ -108,7 +121,6 @@ router.post('/report', (req, res) => {
 
     if (isKeeping) {
       // Create secure temporary recovery chat
-      const activeMissing = db.findOne('missing_reports', m => m.gadgetId === targetGadget.id && m.status === 'ACTIVE');
       const finderSessionToken = 'fnd_sec_' + crypto.randomBytes(16).toString('hex');
       const chatId = 'cht_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
 
@@ -170,32 +182,56 @@ router.post('/report', (req, res) => {
       });
     } else {
       // IF "I WILL SURRENDER IT TO OSA" IS SELECTED:
-      // No chat is created. Record action as "Will Surrender to OSA".
-      // Notify gadget owner that finder intends to surrender gadget to OSA.
+      // Record custody progression: MISSING -> WILL SURRENDER TO OSA -> PENDING OSA TURNOVER
+      // Do NOT mark as physically received by OSA yet (actual receipt requires OSA confirmation).
+      db.update('gadgets', targetGadget.id, {
+        custodyStatus: 'PENDING_OSA_TURNOVER',
+        surrenderStatus: 'WILL_SURRENDER_TO_OSA',
+        pendingSurrenderRef: surrenderRef
+      });
+
+      // Notify gadget owner that finder indicated intent to surrender via Campus Security / OSA
+      // (Strictly do not expose finder's optional contact number to owner)
       db.addNotification({
         userId: targetGadget.userId,
-        title: 'Someone Found Your Gadget 🏢',
-        message: `Good news! A finder found your ${targetGadget.brand} ${targetGadget.model} at ${cleanFoundLocation} and indicated: Will Surrender to OSA.\n\nAction: Will Surrender to OSA (Room 1109)\n\nYou will be notified once OSA verifies and receives the device into physical custody.`,
+        title: 'Finder Plans to Surrender Your Gadget 🏢',
+        message: `A finder has indicated that they will surrender your missing gadget through Campus Security/OSA.\n\n📍 Found At: ${cleanFoundLocation}\n📋 Status: Pending Turnover to Campus Security & OSA\nRef: ${surrenderRef}\n\nYou will be notified once OSA physically receives and confirms possession of your device.`,
         type: 'GADGET_FOUND',
         linkUrl: '/student/#lost-status'
       });
 
-      // Notify OSA Admins
+      // Notify OSA Admins (authorized OSA staff can access contact number if voluntarily provided)
       const osaAdmins = db.find('users', u => u.role === 'osa_admin');
       osaAdmins.forEach(admin => {
         db.addNotification({
           userId: admin.id,
           title: 'Found Gadget Surrender Pending 📦',
-          message: `Finder (${effectiveFinderName}) reported finding ${targetGadget.brand} ${targetGadget.model} at ${cleanFoundLocation} and intends to surrender it to OSA Room 1109.`,
+          message: `Finder (${effectiveFinderName}${effectiveFinderContact ? ', Tel: ' + effectiveFinderContact : ''}) reported finding ${targetGadget.brand} ${targetGadget.model} at ${cleanFoundLocation} and intends to surrender it via Campus Security Guard / OSA Room 1109. Ref: ${surrenderRef}`,
           type: 'GADGET_FOUND',
           linkUrl: '/osa/#found'
         });
       });
 
+      const owner = db.findById('users', targetGadget.userId);
+      const studentIdNumber = owner ? (owner.idNumber || 'N/A') : 'N/A';
+
       return res.status(201).json({
         success: true,
-        message: 'Thank you! Please surrender the device to OSA Room 1109 or to any on-duty Campus Security Guard.',
-        report,
+        message: 'Thank you for helping our school community! Please bring the device to the designated Campus Security Guard or OSA Room 1109.',
+        report: {
+          id: report.id,
+          surrenderReference: surrenderRef,
+          gadgetId: report.gadgetId,
+          finderName: report.finderName,
+          foundLocation: report.foundLocation,
+          foundDate: report.foundDate,
+          status: report.status
+        },
+        surrenderReference: surrenderRef,
+        gadgetName: `${targetGadget.brand} ${targetGadget.model}`,
+        gadgetId: targetGadget.id,
+        studentIdNumber,
+        status: 'Missing (Pending Turnover)',
         chat: null
       });
     }
@@ -209,13 +245,14 @@ router.post('/report', (req, res) => {
 router.get('/reports', authMiddleware, requireRole('osa_admin'), (req, res) => {
   try {
     const reports = db.get('found_reports');
-    reports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    reports.sort((a, b) => new Date(b.createdAt || b.foundDate) - new Date(a.createdAt || a.foundDate));
 
     const enriched = reports.map(r => {
       const gadget = db.findById('gadgets', r.gadgetId);
       const owner = gadget ? db.findById('users', gadget.userId) : null;
       return {
         ...r,
+        surrenderReference: r.surrenderReference || ('SRF-' + r.id.replace('fnd_', '').toUpperCase()),
         gadget: gadget ? {
           id: gadget.id,
           brand: gadget.brand,
@@ -223,6 +260,7 @@ router.get('/reports', authMiddleware, requireRole('osa_admin'), (req, res) => {
           category: gadget.category,
           serialNumber: gadget.serialNumber,
           status: gadget.status,
+          custodyStatus: gadget.custodyStatus,
           photoUrl: gadget.photoUrl
         } : null,
         owner: owner ? {
@@ -241,26 +279,29 @@ router.get('/reports', authMiddleware, requireRole('osa_admin'), (req, res) => {
   }
 });
 
-// POST /api/finder/:id/receive (OSA accepts item into physical custody)
+// POST /api/finder/:id/receive (OSA confirms physical receipt of surrendered item)
 router.post('/:id/receive', authMiddleware, requireRole('osa_admin'), (req, res) => {
   try {
     const { custodyLocation, notes } = req.body;
-    let report = db.findById('found_reports', req.params.id);
+    const searchId = req.params.id;
+
+    let report = db.findById('found_reports', searchId) || 
+      db.findOne('found_reports', f => f.surrenderReference === searchId);
     let gadget = null;
 
     if (report) {
       gadget = db.findById('gadgets', report.gadgetId);
     } else {
-      // Check if :id is directly a gadgetId or missing report ID
-      gadget = db.findById('gadgets', req.params.id);
+      // Check if :id is directly a gadgetId, token, or missing report ID
+      gadget = db.findById('gadgets', searchId) || db.findOne('gadgets', g => g.secureToken === searchId);
       if (!gadget) {
-        const missingRep = db.findById('missing_reports', req.params.id);
+        const missingRep = db.findById('missing_reports', searchId);
         if (missingRep) {
           gadget = db.findById('gadgets', missingRep.gadgetId);
         }
       }
       if (gadget) {
-        report = db.findOne('found_reports', f => f.gadgetId === gadget.id);
+        report = db.findOne('found_reports', f => f.gadgetId === gadget.id && f.status !== 'RETURNED');
       }
     }
 
@@ -268,37 +309,58 @@ router.post('/:id/receive', authMiddleware, requireRole('osa_admin'), (req, res)
       return res.status(404).json({ success: false, error: 'Gadget not found for custody intake.' });
     }
 
-    // Resolve any active missing report for this gadget
-    const activeMissing = db.find('missing_reports', m => m.gadgetId === gadget.id && m.status === 'ACTIVE');
-    activeMissing.forEach(m => db.update('missing_reports', m.id, { status: 'RESOLVED' }));
+    const receivedDateIso = new Date().toISOString();
+    const finalCustodyLoc = custodyLocation || 'OSA Lost & Found Locker (Room 1109)';
 
-    // If report exists, update status. If not (face-to-face walk-in surrender), insert new found record
+    // Update active missing reports for this gadget to reflect IN_OSA_CUSTODY
+    const activeMissing = db.find('missing_reports', m => m.gadgetId === gadget.id && m.status === 'ACTIVE');
+    activeMissing.forEach(m => db.update('missing_reports', m.id, { 
+      status: 'IN_OSA_CUSTODY',
+      custodyReceivedAt: receivedDateIso,
+      receivedByStaffId: req.user.id
+    }));
+
+    // If found report exists, update status to IN_OSA_CUSTODY. If face-to-face walk-in, insert record.
     if (report) {
       db.update('found_reports', report.id, {
-        status: 'PROCESSED_BY_OSA',
-        custodyNotes: notes || ''
+        status: 'IN_OSA_CUSTODY',
+        custodyLocation: finalCustodyLoc,
+        custodyNotes: notes || '',
+        receivedAtOsaDate: receivedDateIso,
+        receivedByOsaStaffId: req.user.id,
+        receivedByOsaStaffName: req.user.name
       });
     } else {
-      db.insert('found_reports', {
+      report = db.insert('found_reports', {
         id: 'fnd_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
+        surrenderReference: 'SRF-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase(),
         gadgetId: gadget.id,
         finderName: 'Face-to-Face Walk-in (Surrendered at OSA)',
         finderContact: 'N/A (In-person)',
         finderEmail: '',
         foundLocation: 'OSA Desk Room 1109',
-        foundDate: new Date().toISOString(),
+        foundDate: receivedDateIso,
         itemCondition: 'Good',
         turnInMethod: 'SUBMITTED_TO_OSA',
         message: notes || 'Surrendered directly to OSA front desk.',
-        status: 'PROCESSED_BY_OSA',
-        custodyNotes: notes || ''
+        status: 'IN_OSA_CUSTODY',
+        custodyLocation: finalCustodyLoc,
+        custodyNotes: notes || '',
+        receivedAtOsaDate: receivedDateIso,
+        receivedByOsaStaffId: req.user.id,
+        receivedByOsaStaffName: req.user.name
       });
     }
 
-    // Update gadget status to FOUND_IN_CUSTODY
+    // Update gadget status to FOUND_IN_CUSTODY & custody progression to IN_OSA_CUSTODY
     const updatedGadget = db.update('gadgets', gadget.id, {
       status: 'FOUND_IN_CUSTODY',
-      custodyLocation: custodyLocation || 'OSA Lost & Found Locker'
+      custodyStatus: 'IN_OSA_CUSTODY',
+      claimStatus: 'READY_FOR_CLAIM',
+      custodyLocation: finalCustodyLoc,
+      receivedAtOsaDate: receivedDateIso,
+      receivedByOsaStaffId: req.user.id,
+      receivedByOsaStaffName: req.user.name
     });
 
     // Close any active recovery chats for this gadget
@@ -315,15 +377,15 @@ router.post('/:id/receive', authMiddleware, requireRole('osa_admin'), (req, res)
       action: 'RECEIVE_INTO_CUSTODY',
       targetType: 'gadget',
       targetId: gadget.id,
-      details: `Received ${gadget.brand} ${gadget.model} into official OSA custody (${custodyLocation || 'Vault'}). Ready for owner claim.`,
+      details: `Confirmed physical turnover: ${gadget.brand} ${gadget.model} received into OSA custody (${finalCustodyLoc}). Ready for owner claim.`,
       ipAddress: req.ip
     });
 
-    // Notify Owner to submit claim
+    // Owner Notification: "Your missing gadget has been received by OSA and is now available for claim/verification."
     db.addNotification({
       userId: gadget.userId,
       title: 'Your Gadget is in OSA Custody! 🏢',
-      message: `Great news! Your ${gadget.brand} ${gadget.model} was surrendered and received into OSA Custody (${custodyLocation || 'OSA Room 1109'}). Please visit OSA or file an ownership claim to retrieve it!`,
+      message: `Your missing gadget has been received by OSA and is now available for claim/verification.\n\nDevice: ${gadget.brand} ${gadget.model}\nCustody Location: ${finalCustodyLoc}\n\nPlease visit the Office of Student Affairs (Room 1109) or submit an ownership claim to arrange turnover.`,
       type: 'GADGET_FOUND',
       linkUrl: '/student/#claims'
     });
@@ -331,7 +393,8 @@ router.post('/:id/receive', authMiddleware, requireRole('osa_admin'), (req, res)
     return res.json({
       success: true,
       message: 'Item received into OSA custody. Owner notified!',
-      gadget: updatedGadget
+      gadget: updatedGadget,
+      report
     });
   } catch (err) {
     console.error('Receive custody error:', err);

@@ -720,15 +720,28 @@
     <div class="modal-box">
       <div class="modal-header">
         <h3 class="modal-title" style="color: #142a6d; display: flex; align-items: center; gap: 8px;">
-          🏢 Surrender Found Gadget to OSA
+          🏢 Surrender Found Gadget
         </h3>
         <button type="button" class="btn btn-secondary btn-icon" onclick="closeModal('surrender-osa-modal')">&times;</button>
       </div>
       <form onsubmit="handleSurrenderOsaSubmit(event)">
         <div class="modal-body">
-          <p style="font-size: 0.85rem; color: #475569; margin-bottom: 14px; line-height: 1.45;">
-            Thank you for helping our school community! Please bring this gadget to the <strong>Office of Student Affairs (OSA – Room 1109)</strong> or hand it to an on-duty Campus Security Guard.
-          </p>
+          <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; color: #1e3a8a; line-height: 1.5; font-size: 0.88rem;">
+            <div style="font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+              <span>🙏</span> Thank you for helping our school community.
+            </div>
+            <p style="margin: 0; font-size: 0.84rem; color: #334155;">
+              Please bring the gadget to the designated <strong>Campus Security Guard</strong> for Lost-and-Found logbook recording. The gadget will then be formally turned over to the <strong>Office of Student Affairs (OSA – Room 1109)</strong>.
+            </p>
+          </div>
+
+          <!-- Official Destination Box (Section B) -->
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 0.82rem; color: #334155; line-height: 1.45;">
+            <div style="font-weight: 700; color: #142a6d; font-size: 0.84rem; margin-bottom: 2px;">🏢 Official Destination:</div>
+            <div>Office of Student Affairs (OSA)</div>
+            <div>Room 1109</div>
+            <div>NCST Main Campus</div>
+          </div>
 
           <div class="form-group">
             <label class="form-label">
@@ -739,18 +752,26 @@
 
           <div class="form-group">
             <label class="form-label">
+              Contact Number <span style="font-size: 0.78rem; color: #64748b; font-weight: normal;">(Optional)</span>
+            </label>
+            <input type="tel" id="osa-finder-contact" class="form-control" placeholder="e.g. 09123456789 (or leave blank)">
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px; line-height: 1.4;">
+              🔒 <strong>Privacy:</strong> Only authorized OSA staff can access this if needed regarding surrender/recovery. It is never shown to the gadget owner or displayed on the public QR page.
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
               Found Location <span style="color: #dc2626;">*</span>
             </label>
             <input type="text" id="osa-found-location" class="form-control" placeholder="Where did you find this? (e.g. Science Lab 3, Cafeteria)" required>
           </div>
 
           <div class="form-group">
-            <label class="form-label">Notes / Condition (Optional)</label>
+            <label class="form-label">
+              Notes / Condition <span style="font-size: 0.78rem; color: #64748b; font-weight: normal;">(Optional)</span>
+            </label>
             <textarea id="osa-finder-notes" class="form-control" rows="2" placeholder="e.g. Found on desk, undamaged..."></textarea>
-          </div>
-
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; font-size: 0.8rem; color: #475569; line-height: 1.45;">
-            🏢 <strong>Surrender Location:</strong> Room 1109, NCST Main Campus. The owner will be notified of your planned surrender to OSA.
           </div>
         </div>
 
@@ -879,6 +900,40 @@
       }
       if (session.gadgetId) {
         localStorage.setItem('gg_finder_session_gadget_' + session.gadgetId, jsonStr);
+      }
+    }
+
+    // Surrender Session Helpers
+    function getSurrenderSession(token, gadgetId) {
+      if (token) {
+        const raw = localStorage.getItem('gg_surrender_ref_' + token);
+        if (raw) {
+          try {
+            const p = JSON.parse(raw);
+            if (p && p.surrenderReference) return p;
+          } catch (e) {}
+        }
+      }
+      if (gadgetId) {
+        const raw = localStorage.getItem('gg_surrender_ref_gadget_' + gadgetId);
+        if (raw) {
+          try {
+            const p = JSON.parse(raw);
+            if (p && p.surrenderReference) return p;
+          } catch (e) {}
+        }
+      }
+      return null;
+    }
+
+    function saveSurrenderSession(data) {
+      if (!data || !data.surrenderReference) return;
+      const jsonStr = JSON.stringify(data);
+      if (scannedToken) {
+        localStorage.setItem('gg_surrender_ref_' + scannedToken, jsonStr);
+      }
+      if (data.gadgetId) {
+        localStorage.setItem('gg_surrender_ref_gadget_' + data.gadgetId, jsonStr);
       }
     }
 
@@ -1109,17 +1164,42 @@
 
     // Render Missing Gadget Actions:
     // If active finder session exists -> Show "Continue Conversation" directly
+    // If surrendered to OSA -> Show Surrender Reference Card
     // If no active session -> Show "I Will Keep the Gadget Safe" & "I Will Surrender It to OSA"
     function renderMissingGadgetActions(explicitSession = null) {
       const actionWrap = document.getElementById('qr-action-wrap');
       const descEl = document.getElementById('qr-status-desc');
       if (!actionWrap) return;
 
+      actionWrap.style.display = 'block';
+
+      // Check if item has already reached OSA physical custody
+      if (currentGadgetData && (currentGadgetData.status === 'FOUND_IN_CUSTODY' || currentGadgetData.custodyStatus === 'IN_OSA_CUSTODY')) {
+        if (descEl) {
+          descEl.innerHTML = 'This gadget has been physically received by OSA (Room 1109) and is currently in official school custody.';
+        }
+        actionWrap.innerHTML = `
+          <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 12px; padding: 18px; text-align: center; color: #065f46;">
+            <div style="font-size: 1.6rem; margin-bottom: 6px;">🏢 ✓</div>
+            <div style="font-weight: 800; font-size: 1.1rem; margin-bottom: 4px; color: #047857;">IN OSA CUSTODY</div>
+            <p style="font-size: 0.86rem; margin: 0; color: #065f46; line-height: 1.5;">
+              This gadget has been physically received by the <strong>Office of Student Affairs (OSA – Room 1109, NCST Main Campus)</strong> and is currently in secure custody ready for owner verification and claim.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      // Check if finder already submitted intent to surrender
+      const savedSurrender = getSurrenderSession(scannedToken, currentGadgetData?.id);
+      if (savedSurrender && (currentGadgetData?.status === 'MISSING' || currentGadgetData?.custodyStatus === 'PENDING_OSA_TURNOVER')) {
+        renderSurrenderReferenceCard(savedSurrender);
+        return;
+      }
+
       const session = explicitSession || 
         (window.__activeFinderSession && window.__activeFinderSession.hasSession ? window.__activeFinderSession : null) || 
         getFinderSession(scannedToken, currentGadgetData?.id);
-
-      actionWrap.style.display = 'block';
 
       if (session && session.chatId && session.finderSessionToken) {
         const isClosed = Boolean(session.isClosed || (currentGadgetData && currentGadgetData.status !== 'MISSING'));
@@ -1273,32 +1353,38 @@
       }
     }
 
-    // Handle "I Will Surrender It to OSA"
+    // Handle "I Will Surrender It to OSA" (Section A & C)
     async function handleSurrenderOsaSubmit(e) {
       e.preventDefault();
-      const finderName = document.getElementById('osa-finder-name').value.trim();
+      const finderNameInput = document.getElementById('osa-finder-name').value.trim();
+      const contactNumber = document.getElementById('osa-finder-contact') ? document.getElementById('osa-finder-contact').value.trim() : '';
       const foundLocation = document.getElementById('osa-found-location').value.trim();
       const notes = document.getElementById('osa-finder-notes').value.trim();
 
+      // Found Location is the ONLY required field
       if (!foundLocation) {
         await SwalHelper.warning('Found Location Required', 'Please specify where you found this gadget.');
         return;
       }
 
-      if (finderName) {
+      if (finderNameInput) {
         const nameRegex = /^[a-zA-ZñÑ\s\.\,\-]+$/;
-        if (!nameRegex.test(finderName)) {
+        if (!nameRegex.test(finderNameInput)) {
           await SwalHelper.warning('Invalid Name', 'Finder Name must only contain letters and spaces.');
           return;
         }
       }
 
+      const effectiveFinderName = finderNameInput || 'Finder';
+
       try {
-        await api.reportFoundGadget(scannedToken, {
+        const res = await api.reportFoundGadget(scannedToken, {
           token: scannedToken,
           secureToken: scannedToken,
           gadgetId: currentGadgetData?.id,
-          finderName,
+          finderName: effectiveFinderName,
+          finderContact: contactNumber,
+          contactNumber: contactNumber,
           foundLocation,
           turnInMethod: 'SUBMITTED_TO_OSA',
           notes,
@@ -1307,29 +1393,151 @@
 
         closeModal('surrender-osa-modal');
 
+        const surrenderRef = res.surrenderReference || res.report?.surrenderReference || ('SRF-' + Date.now().toString(36).toUpperCase());
+        const gadgetName = res.gadgetName || `${currentGadgetData?.brand || ''} ${currentGadgetData?.model || ''}`.trim() || 'Gadget';
+        const gadgetId = res.gadgetId || currentGadgetData?.id || '';
+        const studentIdNumber = res.studentIdNumber || currentGadgetData?.studentIdNumber || 'Registered Student';
+
+        const surrenderSession = {
+          surrenderReference: surrenderRef,
+          gadgetName,
+          gadgetId,
+          studentIdNumber,
+          foundLocation,
+          finderName: effectiveFinderName,
+          notes,
+          submittedAt: new Date().toISOString(),
+          status: 'Missing (Pending Turnover)'
+        };
+
+        saveSurrenderSession(surrenderSession);
+
         await Swal.fire({
           icon: 'success',
-          title: 'Thank You! 🏢',
+          title: 'Surrender Recorded! 🏢',
           html: `
-            <p>Your intent to surrender this gadget has been recorded and the owner has been notified.</p>
-            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-top:10px; font-size:0.85rem; text-align:left;">
-              <strong>📍 Office of Student Affairs (OSA)</strong><br>
-              Room 1109, NCST Main Campus<br>
-              Hours: Mon - Fri (8:00 AM - 5:00 PM)
+            <p style="font-size:0.92rem; color:#334155; margin-bottom:12px;">
+              Thank you for helping our school community.
+            </p>
+            <div style="background:#eff6ff; border:1.5px solid #bfdbfe; border-radius:10px; padding:12px 14px; text-align:left; font-size:0.84rem; line-height:1.5; margin-bottom:10px;">
+              <div style="font-weight:700; color:#1e40af; font-size:0.8rem; text-transform:uppercase;">Surrender Reference / Case ID:</div>
+              <div style="font-family:monospace; font-size:1.15rem; font-weight:800; color:#142a6d; letter-spacing:0.5px; margin:4px 0 8px;">${surrenderRef}</div>
+              <div style="color:#334155; font-size:0.82rem;">
+                Please bring the gadget to the designated <strong>Campus Security Guard</strong> for Lost-and-Found logbook recording. The gadget will then be formally turned over to the <strong>Office of Student Affairs (OSA – Room 1109)</strong>.
+              </div>
+            </div>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; font-size:0.8rem; text-align:left; color:#475569;">
+              🏢 <strong>Destination:</strong> Room 1109, NCST Main Campus
             </div>
           `,
+          confirmButtonText: 'View Surrender Reference',
           confirmButtonColor: '#142a6d'
         });
 
-        document.getElementById('qr-action-wrap').innerHTML = `
-          <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 16px; color: #1e40af; font-size: 0.9rem; text-align: center;">
-            <div style="font-weight: 800; font-size: 1.05rem; margin-bottom: 4px;">🏢 Surrender to OSA Scheduled</div>
-            Please bring the item to <strong>OSA Room 1109</strong> or hand it to an on-duty Campus Security Guard.
-          </div>
-        `;
+        renderSurrenderReferenceCard(surrenderSession);
       } catch (err) {
         await SwalHelper.error('Submission Failed', err.message || 'Could not submit surrender report.');
       }
+    }
+
+    // Render Surrender Reference Card (Section D & E)
+    function renderSurrenderReferenceCard(data) {
+      const actionWrap = document.getElementById('qr-action-wrap');
+      const descEl = document.getElementById('qr-status-desc');
+      if (!actionWrap) return;
+      actionWrap.style.display = 'block';
+
+      if (descEl) {
+        descEl.innerHTML = 'You have initiated surrender for this gadget. Please present the reference details below to Campus Security or OSA:';
+      }
+
+      const sRef = escapeHtml(data.surrenderReference || '');
+      const gName = escapeHtml(data.gadgetName || `${currentGadgetData?.brand || ''} ${currentGadgetData?.model || ''}`.trim() || 'Gadget');
+      const gId = escapeHtml(data.gadgetId || currentGadgetData?.id || '');
+      const sId = escapeHtml(data.studentIdNumber || currentGadgetData?.studentIdNumber || 'Registered Student');
+      const fLoc = escapeHtml(data.foundLocation || 'Campus Grounds');
+      const fName = escapeHtml(data.finderName || 'Finder');
+      const fNotes = data.notes ? escapeHtml(data.notes) : '';
+
+      actionWrap.innerHTML = `
+        <div class="finder-active-session-card" style="border: 1.5px solid #93c5fd; background: #ffffff; box-shadow: 0 4px 16px rgba(30,58,138,0.08); padding: 18px; border-radius: 14px; text-align: left;">
+          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 14px;">
+            <div>
+              <span style="background: #fef3c7; color: #92400e; font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.03em;">
+                📋 Pending OSA Turnover
+              </span>
+              <h3 style="margin: 8px 0 0; color: #142a6d; font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+                🏢 Surrender Reference
+              </h3>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="copySurrenderRef('${sRef}')" title="Copy Reference ID" style="font-size: 0.8rem; padding: 4px 10px;">
+              📋 Copy ID
+            </button>
+          </div>
+
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; font-size: 0.85rem; line-height: 1.5; color: #1e3a8a;">
+            <p style="margin: 0; font-size: 0.84rem;">
+              Please present this reference screen to the designated <strong>Campus Security Guard</strong> for Lost-and-Found logbook recording. The gadget will then be formally turned over to the <strong>Office of Student Affairs (OSA – Room 1109)</strong>.
+            </p>
+          </div>
+
+          <div style="display: grid; gap: 10px; font-size: 0.88rem; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 14px; margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+              <span style="color: #64748b; font-size: 0.8rem; font-weight: 600;">Surrender Reference / Case ID:</span>
+              <strong class="font-mono" style="color: #142a6d; font-size: 1.05rem; letter-spacing: 0.5px;">${sRef}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+              <span style="color: #64748b; font-size: 0.8rem; font-weight: 600;">Gadget / Device Name:</span>
+              <strong style="color: #0f172a;">${gName}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+              <span style="color: #64748b; font-size: 0.8rem; font-weight: 600;">Gadget ID:</span>
+              <span class="font-mono" style="color: #475569; font-size: 0.82rem;">${gId}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+              <span style="color: #64748b; font-size: 0.8rem; font-weight: 600;">Student / Owner ID Number:</span>
+              <strong class="font-mono" style="color: #142a6d;">${sId}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+              <span style="color: #64748b; font-size: 0.8rem; font-weight: 600;">Found Location:</span>
+              <span style="color: #0f172a; font-weight: 600;">📍 ${fLoc}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+              <span style="color: #64748b; font-size: 0.8rem; font-weight: 600;">Finder Name:</span>
+              <span style="color: #0f172a;">${fName}</span>
+            </div>
+            ${fNotes ? `
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+              <span style="color: #64748b; font-size: 0.8rem; font-weight: 600;">Notes / Condition:</span>
+              <span style="color: #334155; font-size: 0.82rem; max-width: 60%; text-align: right;">${fNotes}</span>
+            </div>` : ''}
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: #64748b; font-size: 0.8rem; font-weight: 600;">Status:</span>
+              <span style="color: #b45309; font-weight: 700; background: #fef3c7; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;">Missing (Pending Turnover)</span>
+            </div>
+          </div>
+
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; font-size: 0.82rem; color: #334155; line-height: 1.45;">
+            <div style="font-weight: 700; color: #142a6d; margin-bottom: 3px;">🏢 Official Destination:</div>
+            <div>Office of Student Affairs (OSA)</div>
+            <div>Room 1109</div>
+            <div>NCST Main Campus</div>
+          </div>
+
+          <div style="margin-top: 12px; font-size: 0.76rem; color: #64748b; text-align: center;">
+            🔒 Privacy Protected: Personal contact numbers and private account information are kept strictly confidential.
+          </div>
+        </div>
+      `;
+    }
+
+    function copySurrenderRef(ref) {
+      if (!ref) return;
+      navigator.clipboard.writeText(ref).then(() => {
+        SwalHelper.success('Copied!', 'Surrender Reference ID copied: ' + ref);
+      }).catch(() => {
+        prompt('Copy your Surrender Reference ID:', ref);
+      });
     }
 
     // ==========================================

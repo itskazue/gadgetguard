@@ -172,12 +172,30 @@ router.get('/my', authMiddleware, (req, res) => {
         }
       }
 
+      // If a finder reported finding the gadget and chose to surrender to OSA
+      let surrenderInfo = null;
+      if (g.status === 'MISSING') {
+        const surrenderReport = db.findOne('found_reports', f => f.gadgetId === g.id && (f.turnInMethod === 'SUBMITTED_TO_OSA' || f.finderDecision === 'WILL_SURRENDER_TO_OSA') && f.status === 'PENDING_OSA_TURNOVER');
+        if (surrenderReport) {
+          surrenderInfo = {
+            id: surrenderReport.id,
+            surrenderReference: surrenderReport.surrenderReference,
+            finderName: surrenderReport.finderName || 'Finder',
+            foundLocation: surrenderReport.foundLocation,
+            foundDate: surrenderReport.foundDate,
+            status: 'PENDING_OSA_TURNOVER',
+            message: surrenderReport.message || ''
+          };
+        }
+      }
+
       return {
         ...g,
         missingReport: missingReport || null,
         scanCount,
         latestClaim: latestClaim || null,
-        finderInfo
+        finderInfo,
+        surrenderInfo
       };
     });
 

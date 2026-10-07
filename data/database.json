@@ -4,7 +4,7 @@
       "id": "usr_admin_01",
       "name": "Carlos Mendoza",
       "email": "osa.admin@univ.edu",
-      "passwordHash": "$2b$10$FhrIWmVlfmRBNZ9SyNJI2uz5wDzq99aMIsK4Sexlhkyzhhyx0LRaa",
+      "passwordHash": "$2b$10$VQm8o2a2nJmhSoQxvtNZkeOENMmqOPCN.ZOD6zT9WKbV7pmKy1e7y",
       "role": "osa_admin",
       "idNumber": "OSA-DIR-001",
       "department": "Office of Student Affairs",
@@ -18,7 +18,7 @@
       "id": "usr_student_01",
       "name": "Denzel Kalingking",
       "email": "dkalingking@gmail.com",
-      "passwordHash": "$2b$10$IBPHsFKBNNv2/YvpHVG/YOQbRL9wpLvdNUGmiqhmfYlALzmNnh1wK",
+      "passwordHash": "$2b$10$c8n7a8YjoHcZqZ.1AJy9cuuQicxEFYoIZhqM/bWLTcUAzPas2K4Ry",
       "role": "student",
       "idNumber": "2024-58694",
       "department": "College - BS Electronics Engineering",
@@ -26,13 +26,13 @@
       "status": "ACTIVE",
       "avatarUrl": "https://api.dicebear.com/7.x/initials/svg?seed=Denzel%20Kalingking",
       "createdAt": "2026-09-05T09:30:00.000Z",
-      "updatedAt": "2026-10-06T22:07:40.387Z"
+      "updatedAt": "2026-09-05T09:30:00.000Z"
     },
     {
       "id": "usr_student_02",
       "name": "Thirdy Manaog",
       "email": "rogeliomanaog3@gmail.com",
-      "passwordHash": "$2b$10$Uor4cC48kHm0R069dB4oWOhRjL08Gi8VCGomaAWkCcnTcFauV.OG.",
+      "passwordHash": "$2b$10$FpR7tJsbj89afHXpVyqu7ubS5h08i9TEzT78Nd/aOn56Q84s.aAXW",
       "role": "student",
       "idNumber": "2024-12345",
       "department": "College - BS-Information Technology",
@@ -46,7 +46,7 @@
       "id": "usr_student_03",
       "name": "Maria Santos",
       "email": "msantos@gmail.com",
-      "passwordHash": "$2b$10$tHFGCqRkM1QsZSHA2XzNmuxxUNo4NUQB0pf4WcklBEh2z71CVCm6u",
+      "passwordHash": "$2b$10$U487aEq8NA.cG490Cjc6oeEl1AuiOMuF.SZM.yWp7JkWJ2pD00yfK",
       "role": "student",
       "idNumber": "2023-10294",
       "department": "College - BS-Computer Science",
@@ -60,7 +60,7 @@
       "id": "usr_student_04",
       "name": "Juan Dela Cruz",
       "email": "jdelacruz@gmail.com",
-      "passwordHash": "$2b$10$eqFHe/7k0b/HP5ft0PWTOOZpHybuf9toN6zRumi.CWubtyPszoFGW",
+      "passwordHash": "$2b$10$XiIg6Q447U2lqMcc84idx.Z2u53Yq3mnNnb9xIXpha51SFpWXD2G2",
       "role": "student",
       "idNumber": "2024-88412",
       "department": "SHS - STEM - Science, Technology, Engineering & Mathematics",
@@ -161,8 +161,8 @@
   "notifications": [],
   "audit_logs": [
     {
-      "id": "log_init_mux8axce",
-      "timestamp": "2026-10-06T22:06:50.702Z",
+      "id": "log_init_muxh1wqr",
+      "timestamp": "2026-10-07T02:11:46.563Z",
       "userId": "usr_admin_01",
       "userRole": "osa_admin",
       "action": "SYSTEM_INITIALIZATION",
@@ -170,32 +170,6 @@
       "targetId": "all",
       "details": "System initialized with pre-provisioned NCST Student & OSA Admin demo accounts ready for testing and SIS integration.",
       "ipAddress": "127.0.0.1"
-    },
-    {
-      "id": "log_1791324460200_ixub2",
-      "userId": "usr_student_01",
-      "userRole": "student",
-      "action": "USER_LOGIN",
-      "targetType": "user",
-      "targetId": "usr_student_01",
-      "details": "User login: Denzel Kalingking (student, ID: 2024-58694)",
-      "ipAddress": "::1",
-      "timestamp": "2026-10-06T22:07:40.200Z",
-      "createdAt": "2026-10-06T22:07:40.200Z",
-      "updatedAt": "2026-10-06T22:07:40.200Z"
-    },
-    {
-      "id": "log_1791324460387_acp7k",
-      "userId": "usr_student_01",
-      "userRole": "student",
-      "action": "USER_LOGIN",
-      "targetType": "user",
-      "targetId": "usr_student_01",
-      "details": "User login: Denzel Kalingking (student, ID: 2024-58694)",
-      "ipAddress": "::1",
-      "timestamp": "2026-10-06T22:07:40.387Z",
-      "createdAt": "2026-10-06T22:07:40.387Z",
-      "updatedAt": "2026-10-06T22:07:40.387Z"
     }
   ],
   "settings": {
