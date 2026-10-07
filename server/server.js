@@ -17,6 +17,7 @@ const finderRoutes = require('./routes/finderRoutes');
 const claimRoutes = require('./routes/claimRoutes');
 const osaRoutes = require('./routes/osaRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -76,6 +77,7 @@ function broadcastEvent(eventType, payload) {
     client.write(`data: ${data}\n\n`);
   }
 }
+app.set('broadcastEvent', broadcastEvent);
 
 // Hook broadcast into request flow
 app.use((req, res, next) => {
@@ -112,6 +114,7 @@ app.use('/api/finder', finderRoutes);
 app.use('/api/claims', claimRoutes);
 app.use('/api/osa', osaRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Test SMTP Connection status
 app.get('/api/smtp/status', async (req, res) => {

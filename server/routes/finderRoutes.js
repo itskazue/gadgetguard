@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const { authMiddleware, requireRole } = require('../auth');
 const db = require('../db');
 
@@ -9,8 +10,6 @@ router.post('/report', (req, res) => {
     const token = req.body.token || req.body.secureToken || req.body.gadgetToken;
     const gadgetId = req.body.gadgetId;
     const finderName = req.body.finderName;
-    const finderContact = req.body.finderContact;
-    const finderEmail = req.body.finderEmail;
     const foundLocation = req.body.foundLocation || req.body.location;
     const foundDate = req.body.foundDate;
     const itemCondition = req.body.itemCondition || req.body.condition;
@@ -28,41 +27,41 @@ router.post('/report', (req, res) => {
       return res.status(404).json({ success: false, error: 'Target gadget not found.' });
     }
 
-    if (!finderName || !foundLocation) {
-      return res.status(400).json({ success: false, error: 'Finder name and found location are required.' });
+    // Found Location is REQUIRED (manually entered by the finder)
+    if (!foundLocation || !foundLocation.trim()) {
+      return res.status(400).json({ success: false, error: 'Found location is required.' });
     }
+    const cleanFoundLocation = foundLocation.trim();
 
-    const nameRegex = /^[a-zA-ZñÑ\s\.\,\-]+$/;
-    if (!nameRegex.test(finderName.trim())) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Invalid Finder Name: Name must only contain letters and spaces.' 
-      });
-    }
-
-    if (finderContact) {
-      let cleanContact = finderContact.replace(/\D/g, '');
-      if (cleanContact.startsWith('63') && cleanContact.length === 12) {
-        cleanContact = '0' + cleanContact.substring(2);
-      }
-      if (cleanContact.length !== 11 || !cleanContact.startsWith('09')) {
+    // Finder Name is OPTIONAL; defaults to "Finder" if blank
+    let effectiveFinderName = 'Finder';
+    if (finderName && finderName.trim()) {
+      const trimmedName = finderName.trim();
+      const nameRegex = /^[a-zA-ZñÑ\s\.\,\-]+$/;
+      if (!nameRegex.test(trimmedName)) {
         return res.status(400).json({ 
           success: false, 
-          error: 'Invalid Contact Number: Contact number must be 11 digits starting with 09 (e.g. 09123456789 or +63 912 345 6789).' 
+          error: 'Invalid Finder Name: Name must only contain letters and spaces.' 
         });
       }
+      effectiveFinderName = trimmedName;
     }
 
+    // Determine Turn-in Action
+    const isKeeping = (turnInMethod === 'KEPT_SAFE' || turnInMethod === 'KEPT_SAFE_CONTACT_ME' || turnInMethod === 'FINDER_HOLDING');
+    const effectiveTurnInMethod = isKeeping ? 'KEPT_SAFE' : 'SUBMITTED_TO_OSA';
+
+    // Insert Found Report record
     const report = db.insert('found_reports', {
       id: 'fnd_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
       gadgetId: targetGadget.id,
-      finderName: finderName.trim(),
-      finderContact: finderContact ? finderContact.trim() : '',
-      finderEmail: finderEmail ? finderEmail.trim() : '',
-      foundLocation: foundLocation.trim(),
+      finderName: effectiveFinderName,
+      finderContact: '', // Contact number is NOT asked for or stored
+      finderEmail: '',
+      foundLocation: cleanFoundLocation,
       foundDate: foundDate || new Date().toISOString(),
       itemCondition: itemCondition || 'Good',
-      turnInMethod: turnInMethod || 'SUBMITTED_TO_OSA',
+      turnInMethod: effectiveTurnInMethod,
       message: message ? message.trim() : '',
       status: 'REPORTED'
     });
@@ -73,41 +72,101 @@ router.post('/report', (req, res) => {
       action: 'SUBMIT_FOUND_REPORT',
       targetType: 'gadget',
       targetId: targetGadget.id,
-      details: `Finder ${finderName} reported finding ${targetGadget.brand} ${targetGadget.model} at ${foundLocation}`,
+      details: `Finder (${effectiveFinderName}) reported finding ${targetGadget.brand} ${targetGadget.model} at ${cleanFoundLocation} (Action: ${isKeeping ? 'Keeping Gadget Safe' : 'Will Surrender to OSA'})`,
       ipAddress: req.ip
     });
 
-    // Notify Owner ONLY if finder chose direct contact (KEPT_SAFE_CONTACT_ME / FINDER_HOLDING).
-    // If finder selected SUBMITTED_TO_OSA, do not notify student yet to prevent false hope.
-    // Student will only be officially notified once OSA accepts the item into custody.
-    const isKeeping = (turnInMethod === 'KEPT_SAFE_CONTACT_ME' || turnInMethod === 'FINDER_HOLDING');
+    let recoveryChat = null;
+
     if (isKeeping) {
+      // Create secure temporary recovery chat
+      const activeMissing = db.findOne('missing_reports', m => m.gadgetId === targetGadget.id && m.status === 'ACTIVE');
+      const finderSessionToken = 'fnd_sec_' + crypto.randomBytes(16).toString('hex');
+      const chatId = 'cht_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+
+      recoveryChat = db.insert('recovery_chats', {
+        id: chatId,
+        gadgetId: targetGadget.id,
+        missingReportId: activeMissing ? activeMissing.id : null,
+        foundReportId: report.id,
+        finderSessionToken,
+        finderName: effectiveFinderName,
+        foundLocation: cleanFoundLocation,
+        ownerUserId: targetGadget.userId,
+        status: 'ACTIVE',
+        messages: [],
+        createdAt: new Date().toISOString()
+      });
+
+      // Update Owner Notification: Title "Someone Found Your Gadget" + Safety Notice
+      const safetyNoticeText = `⚠️ Safety & Liability Notice\nPlease prioritize your safety when arranging the return of a missing gadget.\nGadgetGuard and the school/OSA provide this platform to facilitate communication between the gadget owner and finder. Any personal meetup or arrangement outside the school/OSA is the responsibility of the individuals involved.\nThe school/OSA is not responsible for incidents, injuries, losses, or other circumstances arising from personal meetups conducted outside official school premises or OSA-supervised procedures.\nFor your safety, we strongly recommend arranging the return through the Office of Student Affairs (OSA – Room 1109).\nIf a personal meetup is necessary, choose a safe and public location, such as a police station or busy mall, and inform someone you trust.`;
+
       db.addNotification({
         userId: targetGadget.userId,
-        title: 'Someone Found Your Gadget (Finder Direct Contact) 🌟',
-        message: `Good news! ${finderName} found your ${targetGadget.brand} ${targetGadget.model} and is keeping it safe for you.\n\n👤 Finder: ${finderName}\n📞 Contact: ${finderContact || 'Not provided'}${finderEmail ? '\n✉️ Email: ' + finderEmail : ''}\n📍 Found At: ${foundLocation}${message ? '\n📝 Notes: ' + message : ''}\n\n💡 You may contact the finder to arrange the return of your gadget. For your safety, we recommend completing the return through the OSA (Room 1109) whenever possible.`,
+        title: 'Someone Found Your Gadget',
+        message: `Good news! Someone found your missing ${targetGadget.brand} ${targetGadget.model} and is keeping it safe.\n\n👤 Finder: ${effectiveFinderName}\n📍 Found At: ${cleanFoundLocation}\n📋 Action: Keeping Gadget Safe\n\n💬 You can now communicate securely through the GadgetGuard built-in private chat to coordinate safe return.\n\n${safetyNoticeText}`,
         type: 'GADGET_FOUND',
         linkUrl: '/student/#lost-status'
       });
-    }
 
-    // Notify OSA Admins
-    const osaAdmins = db.find('users', u => u.role === 'osa_admin');
-    osaAdmins.forEach(admin => {
-      db.addNotification({
-        userId: admin.id,
-        title: 'New Found Item Report 📦',
-        message: `Found report submitted for ${targetGadget.brand} ${targetGadget.model} by ${finderName} (${foundLocation}).`,
-        type: 'GADGET_FOUND',
-        linkUrl: '/osa/#found'
+      // Notify OSA Admins
+      const osaAdmins = db.find('users', u => u.role === 'osa_admin');
+      osaAdmins.forEach(admin => {
+        db.addNotification({
+          userId: admin.id,
+          title: 'Found Report: Finder Keeping Safe 📦',
+          message: `Finder (${effectiveFinderName}) found ${targetGadget.brand} ${targetGadget.model} at ${cleanFoundLocation} and is keeping it safe. Private chat enabled.`,
+          type: 'GADGET_FOUND',
+          linkUrl: '/osa/#found'
+        });
       });
-    });
 
-    return res.status(201).json({
-      success: true,
-      message: 'Found report submitted successfully. Thank you for being a responsible campus citizen!',
-      report
-    });
+      return res.status(201).json({
+        success: true,
+        message: 'Found report logged. You are now connected to the private recovery chat.',
+        report,
+        chat: {
+          id: recoveryChat.id,
+          finderSessionToken: recoveryChat.finderSessionToken,
+          finderName: effectiveFinderName,
+          foundLocation: cleanFoundLocation,
+          gadget: {
+            brand: targetGadget.brand,
+            model: targetGadget.model
+          }
+        }
+      });
+    } else {
+      // IF "I WILL SURRENDER IT TO OSA" IS SELECTED:
+      // No chat is created. Record action as "Will Surrender to OSA".
+      // Notify gadget owner that finder intends to surrender gadget to OSA.
+      db.addNotification({
+        userId: targetGadget.userId,
+        title: 'Someone Found Your Gadget 🏢',
+        message: `Good news! A finder found your ${targetGadget.brand} ${targetGadget.model} at ${cleanFoundLocation} and indicated: Will Surrender to OSA.\n\nAction: Will Surrender to OSA (Room 1109)\n\nYou will be notified once OSA verifies and receives the device into physical custody.`,
+        type: 'GADGET_FOUND',
+        linkUrl: '/student/#lost-status'
+      });
+
+      // Notify OSA Admins
+      const osaAdmins = db.find('users', u => u.role === 'osa_admin');
+      osaAdmins.forEach(admin => {
+        db.addNotification({
+          userId: admin.id,
+          title: 'Found Gadget Surrender Pending 📦',
+          message: `Finder (${effectiveFinderName}) reported finding ${targetGadget.brand} ${targetGadget.model} at ${cleanFoundLocation} and intends to surrender it to OSA Room 1109.`,
+          type: 'GADGET_FOUND',
+          linkUrl: '/osa/#found'
+        });
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: 'Thank you! Please surrender the device to OSA Room 1109 or to any on-duty Campus Security Guard.',
+        report,
+        chat: null
+      });
+    }
   } catch (err) {
     console.error('Finder report error:', err);
     return res.status(500).json({ success: false, error: 'Server error submitting found report.' });
@@ -208,6 +267,14 @@ router.post('/:id/receive', authMiddleware, requireRole('osa_admin'), (req, res)
     const updatedGadget = db.update('gadgets', gadget.id, {
       status: 'FOUND_IN_CUSTODY',
       custodyLocation: custodyLocation || 'OSA Lost & Found Locker'
+    });
+
+    // Close any active recovery chats for this gadget
+    const activeChats = db.find('recovery_chats', c => c.gadgetId === gadget.id);
+    activeChats.forEach(c => {
+      if (c.status !== 'CLOSED') {
+        db.update('recovery_chats', c.id, { status: 'CLOSED', closedReason: 'OSA_PHYSICAL_CUSTODY' });
+      }
     });
 
     db.addAuditLog({

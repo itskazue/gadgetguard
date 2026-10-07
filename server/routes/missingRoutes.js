@@ -190,6 +190,14 @@ router.post('/:id/cancel', authMiddleware, (req, res) => {
       }
     });
 
+    // Close any recovery chats as gadget is now recovered
+    const recoveryChats = db.find('recovery_chats', c => c.gadgetId === gadgetId);
+    recoveryChats.forEach(c => {
+      if (c.status !== 'CLOSED') {
+        db.update('recovery_chats', c.id, { status: 'CLOSED', closedReason: 'GADGET_RECOVERED' });
+      }
+    });
+
     db.addAuditLog({
       userId: req.user.id,
       userRole: req.user.role,

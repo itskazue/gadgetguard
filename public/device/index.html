@@ -327,12 +327,132 @@
       border: 3px solid #e2e8f0;
       border-top-color: #142a6d;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin-bottom: 14px;
+    .btn-qr-emerald {
+      background: #059669;
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(5, 150, 105, 0.25);
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    .btn-qr-emerald:hover {
+      background: #047857;
+      transform: translateY(-1px);
+    }
+
+    /* Safe Recovery Chat Styles */
+    .finder-chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 360px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .finder-chat-messages {
+      flex: 1;
+      padding: 14px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .chat-msg-row {
+      display: flex;
+      flex-direction: column;
+      max-width: 82%;
+    }
+
+    .chat-msg-row.mine {
+      align-self: flex-end;
+      align-items: flex-end;
+    }
+
+    .chat-msg-row.theirs {
+      align-self: flex-start;
+      align-items: flex-start;
+    }
+
+    .chat-msg-bubble {
+      padding: 9px 13px;
+      border-radius: 14px;
+      font-size: 0.86rem;
+      line-height: 1.45;
+      word-break: break-word;
+      text-align: left;
+    }
+
+    .chat-msg-row.mine .chat-msg-bubble {
+      background: #142a6d;
+      color: #ffffff;
+      border-bottom-right-radius: 2px;
+      box-shadow: 0 2px 6px rgba(20, 42, 109, 0.15);
+    }
+
+    .chat-msg-row.theirs .chat-msg-bubble {
+      background: #ffffff;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+      border-bottom-left-radius: 2px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .chat-msg-meta {
+      font-size: 0.68rem;
+      margin-top: 3px;
+      color: #64748b;
+    }
+
+    .chat-msg-row.mine .chat-msg-meta {
+      text-align: right;
+    }
+
+    .chat-sender-name {
+      font-weight: 700;
+      font-size: 0.72rem;
+      margin-bottom: 2px;
+      color: #475569;
+    }
+
+    .finder-chat-form {
+      display: flex;
+      gap: 8px;
+      padding: 10px 12px;
+      background: #ffffff;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .finder-chat-input {
+      flex: 1;
+      padding: 9px 12px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      outline: none;
+    }
+
+    .finder-chat-input:focus {
+      border-color: #142a6d;
+    }
+
+    .finder-chat-send-btn {
+      background: #142a6d;
+      color: #ffffff;
+      border: none;
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .finder-chat-send-btn:hover {
+      background: #0c1b48;
     }
   </style>
 </head>
@@ -444,61 +564,147 @@
     </div>
   </div>
 
-  <!-- Finder Report / Surrender Modal -->
-  <div id="finder-report-modal" class="modal-overlay">
+  <!-- 1. Modal: I Will Keep the Gadget Safe -->
+  <div id="keep-safe-modal" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header">
-        <h3 class="modal-title" style="color: #142a6d; display: flex; align-items: center; gap: 8px;">
-          🤝 Surrender Found Gadget to OSA
+        <h3 class="modal-title" style="color: #047857; display: flex; align-items: center; gap: 8px;">
+          🛡️ I Will Keep the Gadget Safe
         </h3>
-        <button type="button" class="btn btn-secondary btn-icon" onclick="closeModal('finder-report-modal')">&times;</button>
+        <button type="button" class="btn btn-secondary btn-icon" onclick="closeModal('keep-safe-modal')">&times;</button>
       </div>
-      <form onsubmit="handleFinderFormSubmit(event)">
+      <form onsubmit="handleKeepSafeSubmit(event)">
         <div class="modal-body">
           <p style="font-size: 0.85rem; color: #475569; margin-bottom: 14px; line-height: 1.45;">
-            Thank you for helping our school community! Please provide your information below and bring the item to <strong>OSA Room 1109</strong> or hand it to an on-duty Campus Security Guard.
+            Thank you for keeping this gadget safe! Please specify where you found it. You will be connected to a secure private chat directly with the gadget owner so you can coordinate safely.
           </p>
 
           <div class="form-group">
-            <label class="form-label">Your Full Name (Letters Only) *</label>
-            <input type="text" id="modal-finder-name" class="form-control" placeholder="e.g. Maria Santos" required pattern="[a-zA-ZñÑ\s\.\,\-]+" title="Please enter letters and spaces only" oninput="this.value = this.value.replace(/[^a-zA-ZñÑ\s\.\,\-]/g, '')">
+            <label class="form-label">
+              Finder Name <span style="font-size: 0.78rem; color: #64748b; font-weight: normal;">(Optional — default: Finder)</span>
+            </label>
+            <input type="text" id="keepsafe-finder-name" class="form-control" placeholder="e.g. Maria (or leave blank)" pattern="[a-zA-ZñÑ\s\.\,\-]*" title="Please enter letters and spaces only" oninput="this.value = this.value.replace(/[^a-zA-ZñÑ\s\.\,\-]/g, '')">
           </div>
-          
-          <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
-            <div class="form-group">
-              <label class="form-label">Contact Number (11 Digits) *</label>
-              <input type="tel" id="modal-finder-contact" class="form-control font-mono" placeholder="09123456789" maxlength="11" pattern="09[0-9]{9}" title="Must be 11 digits starting with 09 (e.g. 09123456789)" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
+
+          <div class="form-group">
+            <label class="form-label">
+              Found Location <span style="color: #dc2626;">*</span>
+            </label>
+            <input type="text" id="keepsafe-found-location" class="form-control" placeholder="Where did you find this? (e.g. Library 2nd Floor, Room 1109 hallway)" required>
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
+              📍 Manually entered location where you found the item.
             </div>
-            <div class="form-group">
-              <label class="form-label">Email (Optional)</label>
-              <input type="email" id="modal-finder-email" class="form-control" placeholder="name@email.com">
-            </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Where did you find this device? *</label>
-            <input type="text" id="modal-finder-location" class="form-control" placeholder="e.g. Library 3rd Floor, Room 1109, Cafeteria" required>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Turn-in Plan *</label>
-            <select id="modal-finder-turnin" class="form-control">
-              <option value="SUBMITTED_TO_OSA">I am surrendering it directly to OSA (Room 1109) / Security Guard</option>
-              <option value="KEPT_SAFE_CONTACT_ME">I am keeping it safe, please contact me immediately</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Notes / Condition (Optional)</label>
-            <textarea id="modal-finder-notes" class="form-control" rows="2" placeholder="e.g. Found on desk with blue case, undamaged..."></textarea>
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px 12px; font-size: 0.8rem; color: #1e40af; line-height: 1.45;">
+            🔒 <strong>Private & Secure:</strong> No phone number, email, or student login required. You can communicate safely with the owner using our built-in GadgetGuard chat.
           </div>
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('finder-report-modal')">Cancel</button>
-          <button type="submit" class="btn btn-primary btn-sm" style="background:#142a6d; border-color:#142a6d;">Submit Found Report</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('keep-safe-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm" style="background: #059669; border-color: #059669; font-weight: 700;">
+            Start Safe Recovery & Open Chat &rarr;
+          </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- 2. Modal: I Will Surrender It to OSA -->
+  <div id="surrender-osa-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color: #142a6d; display: flex; align-items: center; gap: 8px;">
+          🏢 Surrender Found Gadget to OSA
+        </h3>
+        <button type="button" class="btn btn-secondary btn-icon" onclick="closeModal('surrender-osa-modal')">&times;</button>
+      </div>
+      <form onsubmit="handleSurrenderOsaSubmit(event)">
+        <div class="modal-body">
+          <p style="font-size: 0.85rem; color: #475569; margin-bottom: 14px; line-height: 1.45;">
+            Thank you for helping our school community! Please bring this gadget to the <strong>Office of Student Affairs (OSA – Room 1109)</strong> or hand it to an on-duty Campus Security Guard.
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">
+              Finder Name <span style="font-size: 0.78rem; color: #64748b; font-weight: normal;">(Optional — default: Finder)</span>
+            </label>
+            <input type="text" id="osa-finder-name" class="form-control" placeholder="e.g. Maria (or leave blank)" pattern="[a-zA-ZñÑ\s\.\,\-]*" title="Please enter letters and spaces only" oninput="this.value = this.value.replace(/[^a-zA-ZñÑ\s\.\,\-]/g, '')">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              Found Location <span style="color: #dc2626;">*</span>
+            </label>
+            <input type="text" id="osa-found-location" class="form-control" placeholder="Where did you find this? (e.g. Science Lab 3, Cafeteria)" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Notes / Condition (Optional)</label>
+            <textarea id="osa-finder-notes" class="form-control" rows="2" placeholder="e.g. Found on desk, undamaged..."></textarea>
+          </div>
+
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; font-size: 0.8rem; color: #475569; line-height: 1.45;">
+            🏢 <strong>Surrender Location:</strong> Room 1109, NCST Main Campus. The owner will be notified of your planned surrender to OSA.
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('surrender-osa-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm" style="background: #142a6d; border-color: #142a6d; font-weight: 700;">
+            Confirm Surrender to OSA
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. Modal: Private Recovery Chat (Finder View) -->
+  <div id="finder-chat-modal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 480px;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" style="color: #142a6d; display: flex; align-items: center; gap: 8px; font-size: 1.05rem;">
+            💬 Private Recovery Chat
+          </h3>
+          <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">
+            Communicating with: <strong style="color: #047857;">Gadget Owner</strong>
+          </div>
+        </div>
+        <button type="button" class="btn btn-secondary btn-icon" onclick="closeFinderChatModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="padding-top: 8px;">
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 8px 12px; font-size: 0.78rem; color: #1e40af; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <strong>Device:</strong> <span id="finder-chat-device-name">Missing Gadget</span>
+          </div>
+          <div>
+            📍 <span id="finder-chat-location-name">Campus</span>
+          </div>
+        </div>
+
+        <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 8px 12px; font-size: 0.75rem; color: #92400e; margin-top: 8px; line-height: 1.45;">
+          💡 <strong>Safety Recommendation:</strong> For everyone's security, arrange device returns through the <strong>Office of Student Affairs (OSA – Room 1109)</strong> whenever possible.
+        </div>
+
+        <div class="finder-chat-container">
+          <div id="finder-chat-messages" class="finder-chat-messages">
+            <!-- Messages loaded dynamically -->
+          </div>
+
+          <div id="finder-chat-closed-banner" style="display: none; background: #f1f5f9; border-top: 1px solid #cbd5e1; padding: 10px; font-size: 0.8rem; color: #475569; text-align: center; font-weight: 600;">
+            🔒 This recovery conversation is closed because the gadget has been marked recovered or returned.
+          </div>
+
+          <form id="finder-chat-form" class="finder-chat-form" onsubmit="handleSendFinderMessage(event)">
+            <input type="text" id="finder-chat-input" class="finder-chat-input" placeholder="Type a message to the gadget owner..." maxlength="1000" autocomplete="off" required>
+            <button type="submit" class="finder-chat-send-btn">
+              Send 📤
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -659,21 +865,16 @@
           iconEl.innerHTML = '⚠️';
           titleEl.className = 'qr-scan-title title-missing';
           titleEl.textContent = 'This gadget has been reported as missing.';
-          descEl.innerHTML = 'If you found this gadget, please keep it safe and surrender it to the <strong>Office of Student Affairs (OSA)</strong>.';
+          descEl.innerHTML = 'If you found this gadget, please select an option below to assist in its safe return:';
 
           badgeEl.className = 'badge-status badge-missing';
           badgeEl.textContent = '● MISSING';
 
           osaBox.style.display = 'none'; // Strictly protected: Zero private owner information exposed
           if (locCardBox) locCardBox.style.display = 'block';
-          if (locHeaderTitle) locHeaderTitle.textContent = '📍 Return Location';
+          if (locHeaderTitle) locHeaderTitle.textContent = '📍 Campus Office Reference';
 
-          actionWrap.style.display = 'block';
-          actionWrap.innerHTML = `
-            <button type="button" class="btn-qr-action btn-qr-gold" onclick="openFinderModal()">
-              🤝 Report Found & Surrender to OSA
-            </button>
-          `;
+          renderMissingGadgetActions();
         }
 
         // Dynamically bind location, room, and contact info from OSA Database Settings
@@ -701,58 +902,141 @@
       }
     }
 
-    function openFinderModal() {
-      document.getElementById('finder-report-modal').classList.add('active');
+    // Render the two options for Missing Gadgets or active chat resume button
+    function renderMissingGadgetActions() {
+      const actionWrap = document.getElementById('qr-action-wrap');
+      if (!actionWrap) return;
+
+      const rawSession = localStorage.getItem('gg_finder_session_' + scannedToken);
+      let session = null;
+      if (rawSession) {
+        try { session = JSON.parse(rawSession); } catch(e) {}
+      }
+
+      actionWrap.style.display = 'block';
+
+      if (session && session.chatId && session.finderSessionToken) {
+        actionWrap.innerHTML = `
+          <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 12px; padding: 14px; margin-bottom: 12px; text-align: left;">
+            <div style="font-weight: 800; color: #047857; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
+              <span>🛡️</span> You are keeping this gadget safe
+            </div>
+            <div style="font-size: 0.8rem; color: #065f46; margin-top: 3px;">
+              Found location: <strong>${escapeHtml(session.foundLocation || 'Campus')}</strong>
+            </div>
+            <button type="button" class="btn-qr-action btn-qr-emerald" style="margin-top: 10px; margin-bottom: 0;" onclick="resumeSavedFinderChat()">
+              💬 Open Chat with Gadget Owner
+            </button>
+          </div>
+          <button type="button" class="btn-qr-action btn-qr-outline" onclick="openSurrenderOsaModal()">
+            🏢 I Will Surrender It to OSA Instead
+          </button>
+        `;
+      } else {
+        // Section A: Show 2 Options
+        actionWrap.innerHTML = `
+          <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+            <button type="button" class="btn-qr-action btn-qr-emerald" onclick="openKeepSafeModal()">
+              🛡️ I Will Keep the Gadget Safe
+            </button>
+            <button type="button" class="btn-qr-action btn-qr-blue" onclick="openSurrenderOsaModal()">
+              🏢 I Will Surrender It to OSA
+            </button>
+          </div>
+        `;
+      }
+    }
+
+    function openKeepSafeModal() {
+      document.getElementById('keep-safe-modal').classList.add('active');
+    }
+
+    function openSurrenderOsaModal() {
+      document.getElementById('surrender-osa-modal').classList.add('active');
     }
 
     function closeModal(modalId) {
-      document.getElementById(modalId).classList.remove('active');
+      const modal = document.getElementById(modalId);
+      if (modal) modal.classList.remove('active');
     }
 
-    async function handleFinderFormSubmit(e) {
+    // Handle "I Will Keep the Gadget Safe"
+    async function handleKeepSafeSubmit(e) {
       e.preventDefault();
-      const finderName = document.getElementById('modal-finder-name').value.trim();
-      const finderContact = document.getElementById('modal-finder-contact').value.trim();
-      const finderEmail = document.getElementById('modal-finder-email').value.trim();
-      const location = document.getElementById('modal-finder-location').value.trim();
-      const turnInMethod = document.getElementById('modal-finder-turnin').value;
-      const notes = document.getElementById('modal-finder-notes').value.trim();
+      const finderName = document.getElementById('keepsafe-finder-name').value.trim();
+      const foundLocation = document.getElementById('keepsafe-found-location').value.trim();
 
-      const nameRegex = /^[a-zA-ZñÑ\s\.\,\-]+$/;
-      if (!nameRegex.test(finderName)) {
-        await SwalHelper.warning('Invalid Name', 'Please enter letters and spaces only.');
+      if (!foundLocation) {
+        await SwalHelper.warning('Found Location Required', 'Please specify where you found this gadget.');
         return;
       }
 
-      let cleanContact = finderContact.replace(/\D/g, '');
-      if (cleanContact.startsWith('63') && cleanContact.length === 12) {
-        cleanContact = '0' + cleanContact.substring(2);
+      if (finderName) {
+        const nameRegex = /^[a-zA-ZñÑ\s\.\,\-]+$/;
+        if (!nameRegex.test(finderName)) {
+          await SwalHelper.warning('Invalid Name', 'Finder Name must only contain letters and spaces.');
+          return;
+        }
       }
-      if (cleanContact.length !== 11 || !cleanContact.startsWith('09')) {
-        await SwalHelper.warning('Invalid Contact', 'Contact number must be 11 digits starting with 09 (e.g. 09123456789).');
+
+      try {
+        const res = await api.reportFoundGadget(scannedToken, {
+          token: scannedToken,
+          secureToken: scannedToken,
+          gadgetId: currentGadgetData?.id,
+          finderName,
+          foundLocation,
+          turnInMethod: 'KEPT_SAFE'
+        });
+
+        closeModal('keep-safe-modal');
+
+        if (res.chat) {
+          // Save temporary session associated only with this recovery case
+          localStorage.setItem('gg_finder_session_' + scannedToken, JSON.stringify({
+            chatId: res.chat.id,
+            finderSessionToken: res.chat.finderSessionToken,
+            finderName: res.chat.finderName,
+            foundLocation: res.chat.foundLocation
+          }));
+
+          renderMissingGadgetActions();
+
+          await SwalHelper.success(
+            'Connected to Safe Chat! 🛡️',
+            'You are now connected with the gadget owner. You can coordinate the return safely.',
+            2500
+          );
+
+          openFinderChatModal(res.chat.id, res.chat.finderSessionToken, res.chat.foundLocation);
+        } else {
+          renderMissingGadgetActions();
+          await SwalHelper.success('Report Logged', 'Thank you for keeping this gadget safe!');
+        }
+      } catch (err) {
+        await SwalHelper.error('Submission Failed', err.message || 'Could not submit report.');
+      }
+    }
+
+    // Handle "I Will Surrender It to OSA"
+    async function handleSurrenderOsaSubmit(e) {
+      e.preventDefault();
+      const finderName = document.getElementById('osa-finder-name').value.trim();
+      const foundLocation = document.getElementById('osa-found-location').value.trim();
+      const notes = document.getElementById('osa-finder-notes').value.trim();
+
+      if (!foundLocation) {
+        await SwalHelper.warning('Found Location Required', 'Please specify where you found this gadget.');
         return;
       }
 
-      if (!location) {
-        await SwalHelper.warning('Location Required', 'Please specify where on campus this gadget was found.');
-        return;
+      if (finderName) {
+        const nameRegex = /^[a-zA-ZñÑ\s\.\,\-]+$/;
+        if (!nameRegex.test(finderName)) {
+          await SwalHelper.warning('Invalid Name', 'Finder Name must only contain letters and spaces.');
+          return;
+        }
       }
-
-      const confirmResult = await SwalHelper.confirm({
-        title: 'Submit Found Device Report?',
-        html: `<p>Confirm submission of found report for this gadget to the <strong>NCST Office of Student Affairs</strong>?</p>
-               <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; font-size:0.85rem; text-align:left; margin:12px 0;">
-                 <div>👤 <strong>Finder:</strong> ${escapeHtml(finderName)}</div>
-                 <div>📍 <strong>Found At:</strong> ${escapeHtml(location)}</div>
-                 <div>🏢 <strong>Turn-in Method:</strong> ${turnInMethod === 'SUBMITTED_TO_OSA' ? 'Surrendering to OSA Office (Room 1109)' : 'Keeping safe for direct contact'}</div>
-               </div>`,
-        icon: 'question',
-        confirmText: 'Yes, Submit Report',
-        cancelText: 'Review Form',
-        confirmColor: '#142a6d'
-      });
-
-      if (!confirmResult) return;
 
       try {
         await api.reportFoundGadget(scannedToken, {
@@ -760,27 +1044,167 @@
           secureToken: scannedToken,
           gadgetId: currentGadgetData?.id,
           finderName,
-          finderContact: cleanContact,
-          finderEmail,
-          location,
-          foundLocation: location,
-          turnInMethod,
+          foundLocation,
+          turnInMethod: 'SUBMITTED_TO_OSA',
           notes,
           message: notes
         });
 
-        closeModal('finder-report-modal');
-        await SwalHelper.success('Thank You, Good Samaritan! 🌟', 'Your found report has been submitted to the NCST Office of Student Affairs. The owner has been notified.', 3500);
-        
+        closeModal('surrender-osa-modal');
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'Thank You! 🏢',
+          html: `
+            <p>Your intent to surrender this gadget has been recorded and the owner has been notified.</p>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-top:10px; font-size:0.85rem; text-align:left;">
+              <strong>📍 Office of Student Affairs (OSA)</strong><br>
+              Room 1109, NCST Main Campus<br>
+              Hours: Mon - Fri (8:00 AM - 5:00 PM)
+            </div>
+          `,
+          confirmButtonColor: '#142a6d'
+        });
+
         document.getElementById('qr-action-wrap').innerHTML = `
-          <div style="background: #ecfdf5; border: 2px solid #a7f3d0; border-radius: 12px; padding: 16px; color: #047857; font-size: 0.9rem; text-align: center; margin-bottom: 10px;">
-            <div style="font-weight: 800; font-size: 1.05rem; margin-bottom: 4px;">✅ Report Successfully Logged!</div>
-            Please surrender the device to <strong>OSA Room 1109</strong> or to any on-duty Security Guard on campus.
+          <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 16px; color: #1e40af; font-size: 0.9rem; text-align: center;">
+            <div style="font-weight: 800; font-size: 1.05rem; margin-bottom: 4px;">🏢 Surrender to OSA Scheduled</div>
+            Please bring the item to <strong>OSA Room 1109</strong> or hand it to an on-duty Campus Security Guard.
           </div>
         `;
       } catch (err) {
-        await SwalHelper.error('Submission Failed', err.message || 'Could not submit found report.');
+        await SwalHelper.error('Submission Failed', err.message || 'Could not submit surrender report.');
       }
+    }
+
+    // ==========================================
+    // FINDER CHAT CLIENT LOGIC
+    // ==========================================
+    let activeFinderChatId = null;
+    let activeFinderToken = null;
+    let activeFinderChatInterval = null;
+
+    function resumeSavedFinderChat() {
+      const rawSession = localStorage.getItem('gg_finder_session_' + scannedToken);
+      if (!rawSession) return;
+      try {
+        const session = JSON.parse(rawSession);
+        openFinderChatModal(session.chatId, session.finderSessionToken, session.foundLocation);
+      } catch (e) {}
+    }
+
+    function openFinderChatModal(chatId, token, location) {
+      activeFinderChatId = chatId;
+      activeFinderToken = token;
+
+      const deviceNameEl = document.getElementById('finder-chat-device-name');
+      const locEl = document.getElementById('finder-chat-location-name');
+
+      if (deviceNameEl && currentGadgetData) {
+        deviceNameEl.textContent = `${currentGadgetData.brand} ${currentGadgetData.model}`;
+      }
+      if (locEl) {
+        locEl.textContent = location || 'Campus';
+      }
+
+      document.getElementById('finder-chat-modal').classList.add('active');
+
+      loadFinderChatMessages();
+
+      if (activeFinderChatInterval) clearInterval(activeFinderChatInterval);
+      activeFinderChatInterval = setInterval(loadFinderChatMessages, 3500);
+    }
+
+    function closeFinderChatModal() {
+      if (activeFinderChatInterval) {
+        clearInterval(activeFinderChatInterval);
+        activeFinderChatInterval = null;
+      }
+      closeModal('finder-chat-modal');
+    }
+
+    async function loadFinderChatMessages() {
+      if (!activeFinderChatId || !activeFinderToken) return;
+
+      try {
+        const res = await api.getRecoveryChat(activeFinderChatId, activeFinderToken);
+        const chat = res.chat;
+        const msgContainer = document.getElementById('finder-chat-messages');
+        const closedBanner = document.getElementById('finder-chat-closed-banner');
+        const chatForm = document.getElementById('finder-chat-form');
+
+        if (!msgContainer) return;
+
+        if (chat.isClosed) {
+          if (closedBanner) closedBanner.style.display = 'block';
+          if (chatForm) chatForm.style.display = 'none';
+        } else {
+          if (closedBanner) closedBanner.style.display = 'none';
+          if (chatForm) chatForm.style.display = 'flex';
+        }
+
+        if (!chat.messages || chat.messages.length === 0) {
+          msgContainer.innerHTML = `
+            <div style="margin: auto; text-align: center; color: #64748b; font-size: 0.84rem; padding: 20px;">
+              <div style="font-size: 1.8rem; margin-bottom: 6px;">💬</div>
+              <div style="font-weight: 700;">Safe Recovery Chat Initialized</div>
+              <p style="font-size: 0.78rem; margin-top: 4px;">Send a message to coordinate the return with the owner.</p>
+            </div>
+          `;
+          return;
+        }
+
+        const shouldScroll = (msgContainer.scrollHeight - msgContainer.scrollTop <= msgContainer.clientHeight + 60);
+
+        msgContainer.innerHTML = chat.messages.map(m => `
+          <div class="chat-msg-row ${m.isMine ? 'mine' : 'theirs'}">
+            <div class="chat-sender-name">${escapeHtml(m.senderLabel)}</div>
+            <div class="chat-msg-bubble">${escapeHtml(m.text)}</div>
+            <div class="chat-msg-meta">${formatChatDate(m.createdAt)}</div>
+          </div>
+        `).join('');
+
+        if (shouldScroll) {
+          msgContainer.scrollTop = msgContainer.scrollHeight;
+        }
+      } catch (e) {
+        console.error('Error polling chat messages:', e);
+      }
+    }
+
+    async function handleSendFinderMessage(e) {
+      e.preventDefault();
+      const input = document.getElementById('finder-chat-input');
+      const text = input ? input.value.trim() : '';
+
+      if (!text || !activeFinderChatId || !activeFinderToken) return;
+
+      input.value = '';
+
+      try {
+        await api.sendRecoveryChatMessage(activeFinderChatId, text, activeFinderToken);
+        await loadFinderChatMessages();
+        const msgContainer = document.getElementById('finder-chat-messages');
+        if (msgContainer) msgContainer.scrollTop = msgContainer.scrollHeight;
+      } catch (err) {
+        await SwalHelper.error('Message Not Sent', err.message || 'Could not send message.');
+      }
+    }
+
+    function formatChatDate(isoString) {
+      if (!isoString) return '';
+      const d = new Date(isoString);
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' • ' + d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
   </script>
 </body>

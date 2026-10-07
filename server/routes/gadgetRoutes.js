@@ -153,20 +153,21 @@ router.get('/my', authMiddleware, (req, res) => {
       }
       const latestClaim = db.findOne('claims', c => c.gadgetId === g.id);
 
-      // If a finder reported finding the gadget and chose to keep it safe for direct contact
+      // If a finder reported finding the gadget and chose to keep it safe
       let finderInfo = null;
       if (g.status === 'MISSING') {
         const foundReport = db.findOne('found_reports', f => f.gadgetId === g.id && f.status !== 'PROCESSED_BY_OSA' && f.status !== 'RETURNED' && f.status !== 'RESOLVED' && f.status !== 'CANCELLED');
-        if (foundReport && (foundReport.turnInMethod === 'KEPT_SAFE_CONTACT_ME' || foundReport.turnInMethod === 'FINDER_HOLDING')) {
+        if (foundReport && (foundReport.turnInMethod === 'KEPT_SAFE' || foundReport.turnInMethod === 'KEPT_SAFE_CONTACT_ME' || foundReport.turnInMethod === 'FINDER_HOLDING')) {
+          const activeChat = db.findOne('recovery_chats', c => c.gadgetId === g.id && c.status === 'ACTIVE');
           finderInfo = {
             id: foundReport.id,
-            finderName: foundReport.finderName,
-            finderContact: foundReport.finderContact,
-            finderEmail: foundReport.finderEmail,
+            finderName: foundReport.finderName || 'Finder',
             foundLocation: foundReport.foundLocation,
+            action: 'Keeping Gadget Safe',
+            turnInMethod: 'KEPT_SAFE',
             foundDate: foundReport.foundDate,
-            message: foundReport.message || foundReport.notes,
-            turnInMethod: foundReport.turnInMethod
+            message: foundReport.message || foundReport.notes || '',
+            chatId: activeChat ? activeChat.id : null
           };
         }
       }

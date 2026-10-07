@@ -782,6 +782,72 @@
     </div>
   </div>
 
-  <script src="/student/student.js?v=3.7"></script>
+  <!-- Modal: Finder ↔ Owner Private Recovery Chat (Owner View) -->
+  <div id="owner-recovery-chat-modal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 520px; padding: 20px;">
+      <div class="modal-header" style="padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--card-border);">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 40px; height: 40px; background: #eff6ff; color: #1e40af; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+            💬
+          </div>
+          <div>
+            <h3 style="font-weight: 800; font-size: 1.1rem; color: #142a6d; margin: 0;">
+              Chat with Finder: <span id="owner-chat-finder-title">Finder</span>
+            </h3>
+            <p style="font-size: 0.775rem; color: #64748b; margin: 2px 0 0;">
+              Device: <strong id="owner-chat-device-title" style="color: #0f172a;">Gadget</strong> • Found At: <span id="owner-chat-location-title">Campus</span>
+            </p>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-icon" onclick="closeOwnerRecoveryChat()">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 0;">
+        <!-- Safety & Liability Notice (Section G & H) -->
+        <div style="background: #fffbeb; border: 1.5px solid #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 10px 12px; font-size: 0.74rem; color: #92400e; line-height: 1.5; margin-bottom: 12px;">
+          <div style="font-weight: 800; color: #b45309; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; font-size: 0.78rem;">
+            <span>⚠️</span> Safety &amp; Liability Notice
+          </div>
+          <p style="margin-bottom: 4px;">
+            Please prioritize your safety when arranging the return of a missing gadget.
+          </p>
+          <p style="margin-bottom: 4px;">
+            GadgetGuard and the school/OSA provide this platform to facilitate communication between the gadget owner and finder. Any personal meetup or arrangement outside the school/OSA is the responsibility of the individuals involved.
+          </p>
+          <p style="margin-bottom: 4px;">
+            The school/OSA is not responsible for incidents, injuries, losses, or other circumstances arising from personal meetups conducted outside official school premises or OSA-supervised procedures.
+          </p>
+          <p style="margin-bottom: 4px;">
+            For your safety, we strongly recommend arranging the return through the <strong>Office of Student Affairs (OSA – Room 1109)</strong>.
+          </p>
+          <p style="margin-bottom: 0;">
+            If a personal meetup is necessary, choose a safe and public location, such as a police station or busy mall, and inform someone you trust.
+          </p>
+        </div>
+
+        <!-- Chat messages container -->
+        <div style="display: flex; flex-direction: column; height: 320px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+          <div id="owner-chat-messages" style="flex: 1; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+            <!-- Dynamic messages -->
+          </div>
+
+          <!-- Closed banner if recovery completed -->
+          <div id="owner-chat-closed-banner" style="display: none; background: #f1f5f9; border-top: 1px solid #cbd5e1; padding: 10px; font-size: 0.8rem; color: #475569; text-align: center; font-weight: 600;">
+            🔒 This recovery conversation is closed because the gadget has been marked recovered or returned.
+          </div>
+
+          <!-- Input form -->
+          <form id="owner-chat-form" onsubmit="handleSendOwnerChatMessage(event)" style="display: flex; gap: 8px; padding: 10px; background: #ffffff; border-top: 1px solid #e2e8f0;">
+            <input type="text" id="owner-chat-input" class="form-control" placeholder="Type a message to the finder..." maxlength="1000" autocomplete="off" style="font-size: 0.85rem;" required>
+            <button type="submit" class="btn btn-primary btn-sm" style="background: #142a6d; border-color: #142a6d; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; padding: 0 16px;">
+              Send 📤
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/student/student.js?v=3.8"></script>
 </body>
 </html>

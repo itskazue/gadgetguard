@@ -108,6 +108,14 @@ router.post('/return', authMiddleware, requireRole('osa_admin'), (req, res) => {
       }
     });
 
+    // Close any recovery chats
+    const recoveryChats = db.find('recovery_chats', c => c.gadgetId === gadgetId);
+    recoveryChats.forEach(c => {
+      if (c.status !== 'CLOSED') {
+        db.update('recovery_chats', c.id, { status: 'CLOSED', closedReason: 'OFFICIALLY_RETURNED_BY_OSA' });
+      }
+    });
+
     // Update claim if linked
     if (claimId) {
       db.update('claims', claimId, { status: 'APPROVED' });

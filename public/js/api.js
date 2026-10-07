@@ -394,6 +394,36 @@ const api = {
     });
   },
 
+  // Recovery Chat (Private Finder ↔ Owner communication)
+  async getRecoveryChat(chatId, finderToken = null) {
+    const headers = {};
+    if (finderToken) {
+      headers['x-finder-token'] = finderToken;
+    }
+    return await this.request(`/chat/${chatId}`, { headers });
+  },
+
+  async sendRecoveryChatMessage(chatId, text, finderToken = null) {
+    const headers = {};
+    if (finderToken) {
+      headers['x-finder-token'] = finderToken;
+    }
+    return await this.request(`/chat/${chatId}/message`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ text, finderToken })
+    });
+  },
+
+  async getRecoveryChatByGadget(gadgetId) {
+    return await this.request(`/chat/by-gadget/${gadgetId}`);
+  },
+
+  async getActiveFinderChat(token, finderToken) {
+    const headers = { 'x-finder-token': finderToken };
+    return await this.request(`/chat/active-finder/${token}`, { headers });
+  },
+
   // Claims
   async submitClaim(claimData) {
     return await this.request('/claims/submit', {

@@ -1017,26 +1017,39 @@ async function loadLostStatusScreen() {
 
         let finderCardHtml = '';
         if (g.finderInfo) {
+          const finderDisplayName = escapeHtml(g.finderInfo.finderName || 'Finder');
+          const foundLocationText = escapeHtml(g.finderInfo.foundLocation || 'Campus');
+          const deviceDisplayName = escapeHtml(`${g.brand} ${g.model}`);
+          const chatId = g.finderInfo.chatId || '';
+
           finderCardHtml = `
             <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 12px; padding: 16px; margin-top: 10px; text-align: left;">
-              <div style="font-weight: 800; color: #047857; font-size: 0.9rem; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                <span>🌟</span> Good Samaritan Contact Information:
-              </div>
-              <div style="font-size: 0.825rem; color: #065f46; line-height: 1.55; background: #ffffff; border: 1px solid #d1fae5; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
-                <div>👤 <strong>Finder Name:</strong> ${escapeHtml(g.finderInfo.finderName)}</div>
-                <div>📞 <strong>Contact Number:</strong> <a href="tel:${escapeHtml(g.finderInfo.finderContact)}" style="font-weight: 800; color: #1e40af; text-decoration: underline;">${escapeHtml(g.finderInfo.finderContact)}</a></div>
-                ${g.finderInfo.finderEmail ? `<div>✉️ <strong>Email:</strong> <a href="mailto:${escapeHtml(g.finderInfo.finderEmail)}">${escapeHtml(g.finderInfo.finderEmail)}</a></div>` : ''}
-                <div>📍 <strong>Found Location:</strong> ${escapeHtml(g.finderInfo.foundLocation)}</div>
-                ${g.finderInfo.message ? `<div>📝 <strong>Notes:</strong> "${escapeHtml(g.finderInfo.message)}"</div>` : ''}
+              <div style="font-weight: 800; color: #047857; font-size: 0.92rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span>🌟</span> Someone Found Your Gadget!
+                </div>
+                <span style="background: #d1fae5; color: #065f46; font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; border: 1px solid #a7f3d0;">
+                  Keeping Gadget Safe
+                </span>
               </div>
 
-              <div style="font-size: 0.78rem; color: #047857; font-weight: 600; line-height: 1.45; margin-bottom: 10px;">
-                💡 You may contact the finder to arrange the return of your gadget. For your safety, we recommend completing the return through the OSA whenever possible.
+              <!-- Finder Information (Section E: Strictly no contact number) -->
+              <div style="font-size: 0.84rem; color: #065f46; line-height: 1.6; background: #ffffff; border: 1px solid #d1fae5; border-radius: 10px; padding: 14px; margin-bottom: 12px;">
+                <div>👤 <strong>Finder:</strong> ${finderDisplayName}</div>
+                <div>📍 <strong>Found Location:</strong> ${foundLocationText}</div>
+                <div>📋 <strong>Finder Action:</strong> Keeping Gadget Safe</div>
+                ${g.finderInfo.message ? `<div style="margin-top: 4px; font-style: italic; color: #475569;">📝 Notes: "${escapeHtml(g.finderInfo.message)}"</div>` : ''}
+                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #d1fae5;">
+                  <button class="btn btn-primary btn-sm" onclick="openOwnerRecoveryChat('${chatId}', '${g.id}', '${finderDisplayName}', '${deviceDisplayName}', '${foundLocationText}')" style="background: #142a6d; border-color: #142a6d; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; padding: 7px 15px;">
+                    💬 Chat / Message Finder
+                  </button>
+                </div>
               </div>
 
+              <!-- Safety & Liability Notice (Section G & H) -->
               <div style="background: #fffbeb; border: 1px solid #fef3c7; border-left: 3.5px solid #f59e0b; border-radius: 6px; padding: 10px 12px; font-size: 0.74rem; color: #92400e; line-height: 1.5;">
                 <div style="font-weight: 800; color: #b45309; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
-                  <span>⚠️</span> Safety & Liability Notice
+                  <span>⚠️</span> Safety &amp; Liability Notice
                 </div>
                 <p style="margin-bottom: 4px;">
                   Please prioritize your safety when arranging the return of a missing gadget.
@@ -1047,8 +1060,11 @@ async function loadLostStatusScreen() {
                 <p style="margin-bottom: 4px;">
                   The school/OSA is not responsible for incidents, injuries, losses, or other circumstances arising from personal meetups conducted outside official school premises or OSA-supervised procedures.
                 </p>
-                <p>
-                  For your safety, we strongly recommend arranging the return through the <strong>Office of Student Affairs (OSA Room 1109)</strong>. If a personal meetup is necessary, choose a safe and public location, such as a police station or busy mall, and inform someone you trust.
+                <p style="margin-bottom: 4px;">
+                  For your safety, we strongly recommend arranging the return through the <strong>Office of Student Affairs (OSA – Room 1109)</strong>.
+                </p>
+                <p style="margin-bottom: 0;">
+                  If a personal meetup is necessary, choose a safe and public location, such as a police station or busy mall, and inform someone you trust.
                 </p>
               </div>
             </div>
@@ -1322,6 +1338,9 @@ async function handleNotificationClick(id, linkUrl) {
     await loadNotificationsFeed();
 
     if (notif) {
+      const isFoundNotif = notif.title === 'Someone Found Your Gadget' || notif.type === 'CHAT_MESSAGE';
+      const actionBtnText = isFoundNotif ? '💬 Open Chat / Message Finder' : (linkUrl ? 'View Related Screen' : 'Close');
+
       await Swal.fire({
         title: `${getNotifIcon(notif.type)} ${escapeHtml(notif.title)}`,
         html: `
@@ -1332,16 +1351,30 @@ async function handleNotificationClick(id, linkUrl) {
             Received: ${formatDate(notif.createdAt)}
           </div>
         `,
-        confirmButtonText: linkUrl ? 'View Related Screen' : 'Close',
+        confirmButtonText: actionBtnText,
         confirmButtonColor: '#142a6d',
-        showCancelButton: !!linkUrl,
+        showCancelButton: true,
         cancelButtonText: 'Close',
         cancelButtonColor: '#64748b'
-      }).then((result) => {
-        if (result.isConfirmed && linkUrl) {
-          let targetHash = linkUrl.split('#')[1] || '';
-          if (targetHash === 'scans') targetHash = 'lost-status';
-          if (targetHash) navigateStudent(targetHash);
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          if (isFoundNotif) {
+            navigateStudent('lost-status');
+            const myMissingWithFinder = myGadgetsData.find(g => g.status === 'MISSING' && g.finderInfo);
+            if (myMissingWithFinder && myMissingWithFinder.finderInfo) {
+              openOwnerRecoveryChat(
+                myMissingWithFinder.finderInfo.chatId || '',
+                myMissingWithFinder.id,
+                myMissingWithFinder.finderInfo.finderName || 'Finder',
+                `${myMissingWithFinder.brand} ${myMissingWithFinder.model}`,
+                myMissingWithFinder.finderInfo.foundLocation || 'Campus'
+              );
+            }
+          } else if (linkUrl) {
+            let targetHash = linkUrl.split('#')[1] || '';
+            if (targetHash === 'scans') targetHash = 'lost-status';
+            if (targetHash) navigateStudent(targetHash);
+          }
         }
       });
     } else if (linkUrl) {
@@ -1365,4 +1398,147 @@ async function markAllNotificationsRead() {
 function closeModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) modal.classList.remove('active');
+}
+
+// ==========================================
+// OWNER RECOVERY CHAT LOGIC (Section C, E, H)
+// ==========================================
+let activeOwnerChatId = null;
+let activeOwnerGadgetId = null;
+let activeOwnerChatInterval = null;
+
+async function openOwnerRecoveryChat(chatId, gadgetId, finderName, deviceName, foundLocation) {
+  activeOwnerChatId = chatId;
+  activeOwnerGadgetId = gadgetId;
+
+  const finderTitle = document.getElementById('owner-chat-finder-title');
+  const deviceTitle = document.getElementById('owner-chat-device-title');
+  const locTitle = document.getElementById('owner-chat-location-title');
+
+  if (finderTitle) finderTitle.textContent = finderName || 'Finder';
+  if (deviceTitle) deviceTitle.textContent = deviceName || 'Missing Gadget';
+  if (locTitle) locTitle.textContent = foundLocation || 'Campus';
+
+  document.getElementById('owner-recovery-chat-modal').classList.add('active');
+
+  // If chatId is not provided directly, lookup by gadget
+  if (!activeOwnerChatId && gadgetId) {
+    try {
+      const res = await api.getRecoveryChatByGadget(gadgetId);
+      if (res.chat) {
+        activeOwnerChatId = res.chat.id;
+        if (finderTitle) finderTitle.textContent = res.chat.finderName || 'Finder';
+        if (locTitle) locTitle.textContent = res.chat.foundLocation || 'Campus';
+      }
+    } catch (e) {}
+  }
+
+  loadOwnerChatMessages();
+
+  if (activeOwnerChatInterval) clearInterval(activeOwnerChatInterval);
+  activeOwnerChatInterval = setInterval(loadOwnerChatMessages, 3500);
+}
+
+function closeOwnerRecoveryChat() {
+  if (activeOwnerChatInterval) {
+    clearInterval(activeOwnerChatInterval);
+    activeOwnerChatInterval = null;
+  }
+  closeModal('owner-recovery-chat-modal');
+}
+
+async function loadOwnerChatMessages() {
+  if (!activeOwnerChatId) {
+    if (activeOwnerGadgetId) {
+      try {
+        const res = await api.getRecoveryChatByGadget(activeOwnerGadgetId);
+        if (res.chat) {
+          activeOwnerChatId = res.chat.id;
+        }
+      } catch (e) {
+        return;
+      }
+    } else {
+      return;
+    }
+  }
+
+  try {
+    const res = await api.getRecoveryChat(activeOwnerChatId);
+    const chat = res.chat;
+    const msgContainer = document.getElementById('owner-chat-messages');
+    const closedBanner = document.getElementById('owner-chat-closed-banner');
+    const chatForm = document.getElementById('owner-chat-form');
+
+    if (!msgContainer) return;
+
+    if (chat.isClosed) {
+      if (closedBanner) closedBanner.style.display = 'block';
+      if (chatForm) chatForm.style.display = 'none';
+    } else {
+      if (closedBanner) closedBanner.style.display = 'none';
+      if (chatForm) chatForm.style.display = 'flex';
+    }
+
+    if (!chat.messages || chat.messages.length === 0) {
+      msgContainer.innerHTML = `
+        <div style="margin: auto; text-align: center; color: #64748b; font-size: 0.84rem; padding: 20px;">
+          <div style="font-size: 1.8rem; margin-bottom: 6px;">💬</div>
+          <div style="font-weight: 700;">Safe Recovery Chat Initialized</div>
+          <p style="font-size: 0.78rem; margin-top: 4px;">Send a message to coordinate with the finder.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const shouldScroll = (msgContainer.scrollHeight - msgContainer.scrollTop <= msgContainer.clientHeight + 60);
+
+    msgContainer.innerHTML = chat.messages.map(m => {
+      const isMine = m.senderRole === 'OWNER';
+      return `
+        <div style="display: flex; flex-direction: column; max-width: 82%; align-self: ${isMine ? 'flex-end' : 'flex-start'}; align-items: ${isMine ? 'flex-end' : 'flex-start'};">
+          <div style="font-weight: 700; font-size: 0.72rem; margin-bottom: 2px; color: #475569;">
+            ${escapeHtml(m.senderLabel)}
+          </div>
+          <div style="padding: 9px 13px; border-radius: 14px; font-size: 0.86rem; line-height: 1.45; word-break: break-word; text-align: left; background: ${isMine ? '#142a6d' : '#ffffff'}; color: ${isMine ? '#ffffff' : '#0f172a'}; border: ${isMine ? 'none' : '1px solid #cbd5e1'}; ${isMine ? 'border-bottom-right-radius: 2px;' : 'border-bottom-left-radius: 2px;'}; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            ${escapeHtml(m.text)}
+          </div>
+          <div style="font-size: 0.68rem; margin-top: 3px; color: #64748b; ${isMine ? 'text-align: right;' : ''}">
+            ${formatChatDate(m.createdAt)}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    if (shouldScroll) {
+      msgContainer.scrollTop = msgContainer.scrollHeight;
+    }
+  } catch (e) {
+    console.error('Error polling owner chat:', e);
+  }
+}
+
+async function handleSendOwnerChatMessage(e) {
+  e.preventDefault();
+  const input = document.getElementById('owner-chat-input');
+  const text = input ? input.value.trim() : '';
+
+  if (!text || !activeOwnerChatId) return;
+
+  input.value = '';
+
+  try {
+    await api.sendRecoveryChatMessage(activeOwnerChatId, text);
+    await loadOwnerChatMessages();
+    const msgContainer = document.getElementById('owner-chat-messages');
+    if (msgContainer) msgContainer.scrollTop = msgContainer.scrollHeight;
+  } catch (err) {
+    await SwalHelper.error('Message Not Sent', err.message || 'Could not send message.');
+  }
+}
+
+function formatChatDate(isoString) {
+  if (!isoString) return '';
+  const d = new Date(isoString);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' • ' + d.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
