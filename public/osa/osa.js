@@ -1347,6 +1347,7 @@ async function handleReceiveCustodySubmit(e) {
 }
 
 // 6. Claims Review Desk
+// 6. Ownership Claims & Return Records Desk (Section A & D)
 async function loadClaimsDesk() {
   const container = document.getElementById('claims-review-table');
   if (!container) return;
@@ -1354,55 +1355,350 @@ async function loadClaimsDesk() {
   try {
     const res = await api.getAllClaims();
     const claims = res.claims || [];
+    window._claimsList = claims;
+    renderClaimsTable(claims);
+  } catch (e) {
+    console.error('Error loading claims:', e);
+  }
+}
 
-    if (claims.length === 0) {
-      container.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted);">No ownership claims submitted.</div>`;
-      return;
-    }
+function renderClaimsTable(claims) {
+  const container = document.getElementById('claims-review-table');
+  if (!container) return;
 
-    container.innerHTML = `
-      <table class="clean-table">
-        <thead>
-          <tr>
-            <th>Gadget</th>
-            <th>Claimant</th>
-            <th>Proof of Ownership</th>
-            <th>ID Verification</th>
-            <th>Status</th>
-            <th class="text-right">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${claims.map(c => `
+  if (!claims || claims.length === 0) {
+    container.innerHTML = `<div style="padding: 36px; text-align: center; color: var(--text-muted); font-size: 0.9rem;">No ownership claims or return records found matching criteria.</div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <table class="clean-table">
+      <thead>
+        <tr>
+          <th>Owner</th>
+          <th>Gadget</th>
+          <th>Device Identification</th>
+          <th>Claim Proof</th>
+          <th>Return Details</th>
+          <th>Status</th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${claims.map(c => {
+          const ownerName = c.user?.name || c.returnRecord?.receivedByPersonName || 'Student Member';
+          const studentId = c.user?.idNumber || c.verificationIdNumber || c.returnRecord?.receivedByPersonId || 'No ID';
+          const brandModel = `${c.gadget?.brand || 'Gadget'} ${c.gadget?.model || ''}`.trim();
+          const gadgetId = c.gadgetId || c.gadget?.id || '-';
+          const serialNo = c.gadget?.serialNumber || '-';
+          const color = c.gadget?.color || 'Standard';
+          const gadgetPhoto = c.gadget?.photoUrl || '/assets/default-gadget.png';
+          const handoverPhoto = c.handoverPhotoUrl || c.returnRecord?.handoverPhotoUrl || null;
+          const returnDate = c.returnDate || c.returnedAt || c.processedAt || c.createdAt;
+          const processedStaff = c.processedByName || 'OSA Staff';
+          const isReturned = (c.status === 'RETURNED' || c.status === 'CLAIMED');
+          const isApproved = (c.status === 'APPROVED');
+          const isPending = (c.status === 'PENDING');
+
+          return `
             <tr>
+              <!-- Group 1: Owner (Owner Name + Student ID) -->
               <td>
-                <div class="table-primary-title">${escapeHtml(c.gadget?.brand)} ${escapeHtml(c.gadget?.model)}</div>
-                <div class="table-secondary-sub" style="color: #142a6d; font-weight: 600;">Locker: ${escapeHtml(c.gadget?.custodyLocation || 'Vault')}</div>
+                <div class="table-primary-title" style="font-weight: 700; color: #0f172a;">${escapeHtml(ownerName)}</div>
+                <div class="font-mono" style="font-size: 0.775rem; color: #142a6d; font-weight: 700; margin-top: 1px;">
+                  ${escapeHtml(studentId)}
+                </div>
+                ${c.user?.department ? `<div style="font-size: 0.72rem; color: #64748b; margin-top: 2px;">${escapeHtml(c.user.department)}</div>` : ''}
               </td>
+
+              <!-- Group 2: Gadget (Gadget Photo + Brand/Model + Color) -->
               <td>
-                <div style="font-weight: 700; color: #0f172a; margin-bottom: 3px;">${escapeHtml(c.user?.name || 'Student')}</div>
-                <div class="font-mono" style="font-size: 0.775rem; color: var(--primary); font-weight: 600;">${escapeHtml(c.user?.idNumber || '-')}</div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div style="position: relative; flex-shrink: 0; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(gadgetPhoto)}', '${escapeHtml(brandModel)} Photo')" title="Click to view larger photo">
+                    <img src="${escapeHtml(gadgetPhoto)}" alt="${escapeHtml(brandModel)}" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
+                    <span style="position: absolute; bottom: -3px; right: -3px; background: #ffffff; border-radius: 50%; font-size: 9px; padding: 1px 3px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">🔍</span>
+                  </div>
+                  <div>
+                    <div class="table-primary-title" style="font-weight: 700; font-size: 0.88rem;">${escapeHtml(brandModel)}</div>
+                    <div style="display: flex; gap: 4px; align-items: center; margin-top: 3px; flex-wrap: wrap;">
+                      <span style="background: #f1f5f9; color: #334155; font-size: 0.72rem; padding: 1px 6px; border-radius: 4px; font-weight: 600; border: 1px solid #e2e8f0;">
+                        🎨 ${escapeHtml(color)}
+                      </span>
+                      ${c.gadget?.category ? `<span style="font-size: 0.72rem; color: #64748b;">${escapeHtml(c.gadget.category)}</span>` : ''}
+                    </div>
+                  </div>
+                </div>
               </td>
-              <td style="font-size: 0.825rem; color: #475569; max-width: 260px; line-height: 1.45;">"${escapeHtml(c.claimProofDetails)}"</td>
+
+              <!-- Group 3: Device Identification (Gadget ID + Serial Number/IMEI) -->
               <td>
-                <div style="font-size: 0.825rem; font-weight: 700; color: #0f172a; margin-bottom: 2px;">${escapeHtml(c.verificationIdType)}</div>
-                <div class="font-mono" style="font-size: 0.775rem; color: var(--primary); font-weight: 600;">${escapeHtml(c.verificationIdNumber)}</div>
+                <div class="font-mono" style="font-size: 0.78rem; font-weight: 700; color: #0f172a;">
+                  ID: <span style="color: #142a6d;">${escapeHtml(gadgetId)}</span>
+                </div>
+                <div class="font-mono" style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
+                  ${serialNo !== '-' ? `S/N: ${escapeHtml(serialNo)}` : '<span style="font-style:italic; color:#94a3b8;">No S/N recorded</span>'}
+                </div>
+                ${c.gadget?.custodyLocation ? `<div style="font-size: 0.72rem; color: #059669; font-weight: 600; margin-top: 2px;">📦 Locker: ${escapeHtml(c.gadget.custodyLocation)}</div>` : ''}
               </td>
-              <td>${renderStatusBadge(c.status)}</td>
+
+              <!-- Group 4: Claim Proof (Claim/Return Photo thumbnail) -->
+              <td>
+                ${handoverPhoto ? `
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="position: relative; flex-shrink: 0; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(handoverPhoto)}', 'Handover Photo Proof — ${escapeHtml(brandModel)}')" title="Click to view larger handover photo">
+                      <img src="${escapeHtml(handoverPhoto)}" alt="Handover Proof" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid #10b981; box-shadow: 0 1px 4px rgba(16,185,129,0.2); transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
+                      <span style="position: absolute; bottom: -3px; right: -3px; background: #ecfdf5; color: #047857; border-radius: 50%; font-size: 9px; padding: 1px 3px; border: 1px solid #10b981; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">✓</span>
+                    </div>
+                    <div>
+                      <span style="background: #ecfdf5; color: #047857; font-size: 0.72rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; border: 1px solid #a7f3d0; display: inline-block;">
+                        📸 Handover Proof
+                      </span>
+                      <div style="font-size: 0.7rem; color: #059669; margin-top: 2px; font-weight: 600;">Verified In-person</div>
+                    </div>
+                  </div>
+                ` : c.proofDocumentUrl ? `
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="position: relative; flex-shrink: 0; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(c.proofDocumentUrl)}', 'Proof of Ownership Document')" title="Click to view ownership document">
+                      <img src="${escapeHtml(c.proofDocumentUrl)}" alt="Ownership Proof" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid #cbd5e1;">
+                    </div>
+                    <div>
+                      <span style="background: #eff6ff; color: #1e40af; font-size: 0.72rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; border: 1px solid #bfdbfe;">
+                        📄 Ownership Doc
+                      </span>
+                      <div style="font-size: 0.7rem; color: #64748b; margin-top: 2px;">Receipt / Proof</div>
+                    </div>
+                  </div>
+                ` : `
+                  <div>
+                    <span style="background: #f8fafc; color: #64748b; font-size: 0.72rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0; display: inline-block;">
+                      ID &amp; Statement
+                    </span>
+                    <div style="font-size: 0.72rem; color: #64748b; margin-top: 2px; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(c.claimProofDetails || '')}">
+                      "${escapeHtml(c.claimProofDetails || 'In-person ID check')}"
+                    </div>
+                  </div>
+                `}
+              </td>
+
+              <!-- Group 5: Return Details (Date/Time + Processed By) -->
+              <td>
+                <div style="font-size: 0.82rem; font-weight: 600; color: #1e293b;">
+                  📅 ${formatDate(returnDate)}
+                </div>
+                <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
+                  Staff: <span style="color: #142a6d; font-weight: 700;">${escapeHtml(processedStaff)}</span>
+                </div>
+              </td>
+
+              <!-- Group 6: Status -->
+              <td>
+                ${isReturned ? `
+                  <span class="status-badge" style="background: #ecfdf5; color: #047857; font-weight: 800; font-size: 0.74rem; padding: 4px 10px; border: 1px solid #a7f3d0;">
+                    ✓ RETURNED
+                  </span>
+                  <div style="font-size: 0.7rem; color: #059669; font-weight: 600; margin-top: 2px;">Handover Complete</div>
+                ` : isApproved ? `
+                  <span class="status-badge" style="background: #eff6ff; color: #1e40af; font-weight: 800; font-size: 0.74rem; padding: 4px 10px; border: 1px solid #bfdbfe;">
+                    ✓ APPROVED
+                  </span>
+                  <div style="font-size: 0.7rem; color: #2563eb; font-weight: 600; margin-top: 2px;">Awaiting Handover</div>
+                ` : isPending ? `
+                  <span class="status-badge" style="background: #fef3c7; color: #92400e; font-weight: 800; font-size: 0.74rem; padding: 4px 10px; border: 1px solid #fde68a;">
+                    ⏳ PENDING REVIEW
+                  </span>
+                  <div style="font-size: 0.7rem; color: #b45309; font-weight: 600; margin-top: 2px;">Awaiting Verification</div>
+                ` : `
+                  <span class="status-badge" style="background: #fef2f2; color: #991b1b; font-weight: 800; font-size: 0.74rem; padding: 4px 10px; border: 1px solid #fecaca;">
+                    ✕ REJECTED
+                  </span>
+                `}
+              </td>
+
+              <!-- Group 7: Actions / View Details -->
               <td class="text-right">
-                <div class="table-action-btns">
-                  ${c.status === 'PENDING' ? `
-                    <button class="btn btn-success btn-sm" onclick="handleApproveClaim('${c.id}')">✓ Approve</button>
-                    <button class="btn btn-danger btn-sm" onclick="handleReviewClaim('${c.id}', 'REJECT')">✕ Reject</button>
-                  ` : '<span style="font-size:0.8rem; color:#64748b;">Processed</span>'}
+                <div class="table-action-btns" style="justify-content: flex-end; gap: 5px;">
+                  <button class="btn btn-secondary btn-sm" onclick="openClaimDetailsModal('${c.id}')" title="View Full Details" style="font-size: 0.78rem; padding: 5px 10px;">
+                    👁️ View Details
+                  </button>
+                  ${isPending ? `
+                    <button class="btn btn-success btn-sm" onclick="handleApproveClaim('${c.id}')" title="Approve Claim" style="font-size: 0.78rem; padding: 5px 9px;">
+                      ✓ Approve
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="handleReviewClaim('${c.id}', 'REJECT')" title="Reject Claim" style="font-size: 0.78rem; padding: 5px 9px;">
+                      ✕
+                    </button>
+                  ` : ''}
+                  ${isApproved ? `
+                    <button class="btn btn-primary btn-sm" onclick="openDispatchReturnForGadget('${c.gadgetId}', '${escapeHtml(ownerName)}', '${escapeHtml(studentId)}', '${c.id}')" style="background: #6d28d9; border-color: #6d28d9; font-size: 0.78rem; padding: 5px 10px; font-weight: 700;" title="Complete Face-to-Face Handover">
+                      🤝 Handover
+                    </button>
+                  ` : ''}
                 </div>
               </td>
             </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
-  } catch (e) {}
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function filterClaimsTable() {
+  const query = (document.getElementById('claims-search-input')?.value || '').toLowerCase().trim();
+  const statusFilter = document.getElementById('claims-status-filter')?.value || 'ALL';
+  if (!window._claimsList) return;
+
+  const filtered = window._claimsList.filter(c => {
+    // Status filter
+    if (statusFilter !== 'ALL') {
+      if (statusFilter === 'RETURNED' && !(c.status === 'RETURNED' || c.status === 'CLAIMED')) return false;
+      if (statusFilter === 'APPROVED' && c.status !== 'APPROVED') return false;
+      if (statusFilter === 'PENDING' && c.status !== 'PENDING') return false;
+      if (statusFilter === 'REJECTED' && c.status !== 'REJECTED') return false;
+    }
+
+    // Text search
+    if (!query) return true;
+    const ownerName = (c.user?.name || c.returnRecord?.receivedByPersonName || '').toLowerCase();
+    const studentId = (c.user?.idNumber || c.verificationIdNumber || c.returnRecord?.receivedByPersonId || '').toLowerCase();
+    const brand = (c.gadget?.brand || '').toLowerCase();
+    const model = (c.gadget?.model || '').toLowerCase();
+    const gadgetId = (c.gadgetId || c.gadget?.id || '').toLowerCase();
+    const serial = (c.gadget?.serialNumber || '').toLowerCase();
+    const color = (c.gadget?.color || '').toLowerCase();
+    const staff = (c.processedByName || '').toLowerCase();
+
+    return ownerName.includes(query) || studentId.includes(query) || brand.includes(query) ||
+      model.includes(query) || gadgetId.includes(query) || serial.includes(query) ||
+      color.includes(query) || staff.includes(query);
+  });
+
+  renderClaimsTable(filtered);
+}
+
+// Lightbox Photo Viewer
+function viewLargePhoto(photoUrl, caption = 'Photo Preview') {
+  if (!photoUrl) return;
+  Swal.fire({
+    title: caption,
+    imageUrl: photoUrl,
+    imageAlt: caption,
+    showCloseButton: true,
+    confirmButtonText: 'Close',
+    confirmButtonColor: '#142a6d',
+    imageHeight: 380,
+    customClass: {
+      image: 'preview-modal-img'
+    }
+  });
+}
+
+// View Full Claim & Return Details Modal
+function openClaimDetailsModal(claimId) {
+  if (!window._claimsList) return;
+  const c = window._claimsList.find(item => item.id === claimId);
+  if (!c) return;
+
+  const content = document.getElementById('claim-details-content');
+  if (!content) return;
+
+  const ownerName = c.user?.name || c.returnRecord?.receivedByPersonName || 'Student Member';
+  const studentId = c.user?.idNumber || c.verificationIdNumber || c.returnRecord?.receivedByPersonId || 'No ID';
+  const brandModel = `${c.gadget?.brand || 'Gadget'} ${c.gadget?.model || ''}`.trim();
+  const gadgetId = c.gadgetId || c.gadget?.id || '-';
+  const serialNo = c.gadget?.serialNumber || '-';
+  const color = c.gadget?.color || 'Standard';
+  const category = c.gadget?.category || 'General';
+  const gadgetPhoto = c.gadget?.photoUrl || '/assets/default-gadget.png';
+  const handoverPhoto = c.handoverPhotoUrl || c.returnRecord?.handoverPhotoUrl || null;
+  const returnDate = c.returnDate || c.returnedAt || c.processedAt || c.createdAt;
+  const processedStaff = c.processedByName || 'OSA Staff';
+  const isReturned = (c.status === 'RETURNED' || c.status === 'CLAIMED');
+
+  content.innerHTML = `
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px;">
+      <div>
+        <span class="status-badge" style="${isReturned ? 'background:#ecfdf5; color:#047857;' : (c.status === 'APPROVED' ? 'background:#eff6ff; color:#1e40af;' : 'background:#fef3c7; color:#92400e;')} font-size:0.8rem; font-weight:800; padding:4px 12px;">
+          ${isReturned ? '✓ RETURNED' : (c.status === 'APPROVED' ? '✓ APPROVED' : c.status)}
+        </span>
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">Record Ref: <code class="font-mono">${escapeHtml(c.id)}</code></div>
+      </div>
+      ${c.status === 'APPROVED' ? `
+        <button class="btn btn-primary btn-sm" onclick="closeModal('claim-details-modal'); openDispatchReturnForGadget('${c.gadgetId}', '${escapeHtml(ownerName)}', '${escapeHtml(studentId)}', '${c.id}')" style="background: #6d28d9; border-color: #6d28d9; font-weight:700;">
+          🤝 Proceed to Handover
+        </button>
+      ` : ''}
+    </div>
+
+    <!-- Photos Grid: Gadget Photo + Handover Proof -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 18px;">
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center;">
+        <div style="font-weight: 700; color: #334155; font-size: 0.8rem; margin-bottom: 8px;">📱 Registered Gadget Photo</div>
+        <img src="${escapeHtml(gadgetPhoto)}" alt="${escapeHtml(brandModel)}" style="width: 100%; height: 160px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(gadgetPhoto)}', '${escapeHtml(brandModel)}')">
+        <div style="font-size: 0.72rem; color: #64748b; margin-top: 6px;">Click image to enlarge</div>
+      </div>
+
+      <div style="background: ${handoverPhoto ? '#f0fdf4' : '#f8fafc'}; border: 1px solid ${handoverPhoto ? '#86efac' : '#e2e8f0'}; border-radius: 10px; padding: 12px; text-align: center;">
+        <div style="font-weight: 700; color: ${handoverPhoto ? '#166534' : '#334155'}; font-size: 0.8rem; margin-bottom: 8px;">
+          ${handoverPhoto ? '📸 Photo Proof of Gadget Handover' : '📸 Handover Photo Proof'}
+        </div>
+        ${handoverPhoto ? `
+          <img src="${escapeHtml(handoverPhoto)}" alt="Handover Proof" style="width: 100%; height: 160px; object-fit: cover; border-radius: 8px; border: 1.5px solid #16a34a; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(handoverPhoto)}', 'Handover Proof — ${escapeHtml(brandModel)}')">
+          <div style="font-size: 0.72rem; color: #15803d; margin-top: 6px; font-weight: 600;">✓ Verified Handover Photo Attached</div>
+        ` : `
+          <div style="height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ffffff; border-radius: 8px; border: 1.5px dashed #cbd5e1; color: #94a3b8; font-size: 0.82rem; padding: 10px;">
+            <span>📷</span>
+            <div style="margin-top: 6px;">Handover photo will be captured upon physical return.</div>
+          </div>
+        `}
+      </div>
+    </div>
+
+    <!-- Structured Details Groups -->
+    <div style="display: grid; gap: 12px; font-size: 0.85rem;">
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px;">
+        <div style="font-weight: 800; color: #142a6d; font-size: 0.85rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.03em;">
+          👤 Registered Owner / Claimant
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+          <div><span style="color:#64748b;">Full Name:</span> <strong>${escapeHtml(ownerName)}</strong></div>
+          <div><span style="color:#64748b;">Student ID:</span> <strong class="font-mono" style="color:#142a6d;">${escapeHtml(studentId)}</strong></div>
+          ${c.user?.email ? `<div><span style="color:#64748b;">Email:</span> ${escapeHtml(c.user.email)}</div>` : ''}
+          ${c.user?.contactNumber ? `<div><span style="color:#64748b;">Contact:</span> ${escapeHtml(c.user.contactNumber)}</div>` : ''}
+          ${c.user?.department ? `<div><span style="color:#64748b;">Department:</span> ${escapeHtml(c.user.department)}</div>` : ''}
+        </div>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px;">
+        <div style="font-weight: 800; color: #142a6d; font-size: 0.85rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.03em;">
+          📱 Device Identification
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+          <div><span style="color:#64748b;">Device:</span> <strong>${escapeHtml(brandModel)}</strong></div>
+          <div><span style="color:#64748b;">Color:</span> <strong>${escapeHtml(color)}</strong></div>
+          <div><span style="color:#64748b;">Gadget ID:</span> <span class="font-mono">${escapeHtml(gadgetId)}</span></div>
+          <div><span style="color:#64748b;">Serial / IMEI:</span> <span class="font-mono">${escapeHtml(serialNo)}</span></div>
+          <div><span style="color:#64748b;">Category:</span> ${escapeHtml(category)}</div>
+          ${c.gadget?.custodyLocation ? `<div><span style="color:#64748b;">Vault Locker:</span> <strong style="color:#059669;">${escapeHtml(c.gadget.custodyLocation)}</strong></div>` : ''}
+        </div>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px;">
+        <div style="font-weight: 800; color: #142a6d; font-size: 0.85rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.03em;">
+          📜 Verification &amp; Return Handover Audit
+        </div>
+        <div style="display: grid; gap: 6px;">
+          <div><span style="color:#64748b;">Date &amp; Time:</span> <strong>${formatDate(returnDate)}</strong></div>
+          <div><span style="color:#64748b;">Processed By OSA Staff:</span> <strong style="color:#142a6d;">${escapeHtml(processedStaff)}</strong></div>
+          <div><span style="color:#64748b;">Proof / Statement:</span> "${escapeHtml(c.claimProofDetails || 'Face-to-face handover at OSA Room 1109.')}"</div>
+          ${c.returnRecord?.notes ? `<div><span style="color:#64748b;">Handover Notes:</span> "${escapeHtml(c.returnRecord.notes)}"</div>` : ''}
+          ${c.returnRecord?.id ? `<div><span style="color:#64748b;">Official Receipt ID:</span> <code class="font-mono" style="color:#6d28d9; font-weight:700;">${escapeHtml(c.returnRecord.id)}</code></div>` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('claim-details-modal').classList.add('active');
 }
 
 async function handleApproveClaim(claimId) {
@@ -1420,7 +1716,8 @@ async function handleApproveClaim(claimId) {
   try {
     await api.reviewClaim(claimId, 'APPROVE');
     await SwalHelper.success('Claim Approved! 🤝', 'Claimant has been notified to proceed to OSA for device handover.');
-    loadCurrentOsaScreenData();
+    loadClaimsDesk();
+    loadFoundCustodyVault();
   } catch (err) {
     await SwalHelper.error('Approval Error', err.message || 'Could not approve claim.');
   }
@@ -1457,16 +1754,25 @@ async function handleReviewClaim(claimId, action) {
   try {
     await api.reviewClaim(claimId, 'REJECT', reason);
     await SwalHelper.info('Claim Rejected', 'Student notified of rejection remarks.');
-    loadCurrentOsaScreenData();
+    loadClaimsDesk();
+    loadFoundCustodyVault();
   } catch (err) {
     await SwalHelper.error('Rejection Failed', err.message || 'Could not reject claim.');
   }
 }
 
-// 7. Official Return Handover Dispatch
-async function openDispatchReturnModal() {
+// =========================================================================
+// 7. Official Return Handover Dispatch with Photo Proof (Section B, C, D)
+// =========================================================================
+let activeHandoverCameraStream = null;
+
+async function openDispatchReturnModal(preselectedGadgetId = null, preselectedOwnerName = '', preselectedOwnerId = '', linkedClaimId = '') {
   const select = document.getElementById('return-select-gadget');
   if (!select) return;
+
+  // Clean previous photo state
+  removeHandoverPhoto();
+  document.getElementById('return-claim-id').value = linkedClaimId || '';
 
   const res = await api.getAllGadgets();
   // Filter exclusively to gadgets currently held in OSA custody / vault locker
@@ -1476,13 +1782,24 @@ async function openDispatchReturnModal() {
     select.innerHTML = `<option value="">-- No Gadgets Currently in Vault Locker --</option>`;
   } else {
     select.innerHTML = `<option value="">-- Choose Vault Gadget for Handover (${eligible.length} in Custody) --</option>` + eligible.map(g => `
-      <option value="${g.id}" data-owner="${escapeHtml(g.owner?.name || '')}" data-idnum="${escapeHtml(g.owner?.idNumber || '')}">
-        ${escapeHtml(g.brand)} ${escapeHtml(g.model)} (S/N: ${escapeHtml(g.serialNumber)}) — Owner: ${escapeHtml(g.owner?.name || 'Student')} [Locker: ${escapeHtml(g.custodyLocation || 'Vault')}]
+      <option value="${g.id}" data-owner="${escapeHtml(g.owner?.name || '')}" data-idnum="${escapeHtml(g.owner?.idNumber || '')}" ${preselectedGadgetId === g.id ? 'selected' : ''}>
+        ${escapeHtml(g.brand)} ${escapeHtml(g.model)} (S/N: ${escapeHtml(g.serialNumber || 'N/A')}) — Owner: ${escapeHtml(g.owner?.name || 'Student')} [Locker: ${escapeHtml(g.custodyLocation || 'Vault')}]
       </option>
     `).join('');
   }
 
+  if (preselectedGadgetId) {
+    document.getElementById('return-recipient-name').value = preselectedOwnerName || '';
+    document.getElementById('return-recipient-id').value = preselectedOwnerId || '';
+  } else if (eligible.length > 0) {
+    handleReturnSelectChange(select.value);
+  }
+
   document.getElementById('dispatch-return-modal').classList.add('active');
+}
+
+function openDispatchReturnForGadget(gadgetId, ownerName, studentId, claimId) {
+  openDispatchReturnModal(gadgetId, ownerName, studentId, claimId);
 }
 
 function handleReturnSelectChange(gadgetId) {
@@ -1494,26 +1811,164 @@ function handleReturnSelectChange(gadgetId) {
   }
 }
 
+// Camera / Webcam handler
+async function triggerHandoverCamera() {
+  const cameraBox = document.getElementById('handover-camera-box');
+  const video = document.getElementById('handover-camera-video');
+  if (!cameraBox || !video) return;
+
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    try {
+      if (activeHandoverCameraStream) {
+        stopHandoverCamera();
+      }
+      activeHandoverCameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false
+      });
+      video.srcObject = activeHandoverCameraStream;
+      cameraBox.style.display = 'block';
+    } catch (err) {
+      console.warn('Camera access unavailable, opening file selector fallback:', err);
+      // Fallback: trigger file input (which on mobile opens the native camera)
+      document.getElementById('handover-photo-file-input').click();
+    }
+  } else {
+    document.getElementById('handover-photo-file-input').click();
+  }
+}
+
+function captureHandoverPhotoFromCamera() {
+  const video = document.getElementById('handover-camera-video');
+  const canvas = document.getElementById('handover-camera-canvas');
+  if (!video || !canvas) return;
+
+  canvas.width = video.videoWidth || 640;
+  canvas.height = video.videoHeight || 480;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+  stopHandoverCamera();
+  setHandoverPhoto(dataUrl);
+}
+
+function stopHandoverCamera() {
+  if (activeHandoverCameraStream) {
+    activeHandoverCameraStream.getTracks().forEach(track => track.stop());
+    activeHandoverCameraStream = null;
+  }
+  const cameraBox = document.getElementById('handover-camera-box');
+  if (cameraBox) cameraBox.style.display = 'none';
+}
+
+function handleHandoverPhotoFileChange(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    SwalHelper.warning('Invalid File', 'Please select a valid image file (JPG, PNG, WebP).');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    setHandoverPhoto(event.target.result);
+  };
+  reader.readAsDataURL(file);
+}
+
+function setHandoverPhoto(photoDataUrl) {
+  document.getElementById('handover-photo-data').value = photoDataUrl;
+  document.getElementById('handover-photo-preview-img').src = photoDataUrl;
+  document.getElementById('handover-photo-preview-wrap').style.display = 'block';
+  document.getElementById('handover-photo-empty-notice').style.display = 'none';
+}
+
+function removeHandoverPhoto() {
+  stopHandoverCamera();
+  const photoInput = document.getElementById('handover-photo-data');
+  const fileInput = document.getElementById('handover-photo-file-input');
+  const previewWrap = document.getElementById('handover-photo-preview-wrap');
+  const emptyNotice = document.getElementById('handover-photo-empty-notice');
+
+  if (photoInput) photoInput.value = '';
+  if (fileInput) fileInput.value = '';
+  if (previewWrap) previewWrap.style.display = 'none';
+  if (emptyNotice) emptyNotice.style.display = 'block';
+}
+
+// Submit Handover Dispatch (Section C: Requires Photo Proof)
 async function handleDispatchReturnSubmit(e) {
   e.preventDefault();
   const gadgetId = document.getElementById('return-select-gadget').value;
+  const claimId = document.getElementById('return-claim-id')?.value || null;
   const receivedByPersonName = document.getElementById('return-recipient-name').value.trim();
   const receivedByPersonId = document.getElementById('return-recipient-id').value.trim();
   const notes = document.getElementById('return-notes-input').value.trim();
+  const handoverPhotoRaw = document.getElementById('handover-photo-data')?.value;
+
+  if (!gadgetId) {
+    await SwalHelper.warning('Select Gadget', 'Please select a gadget held in custody vault.');
+    return;
+  }
+
+  // Section C: Photo proof of gadget handover is STRICTLY REQUIRED before completing return
+  if (!handoverPhotoRaw || !handoverPhotoRaw.trim()) {
+    await SwalHelper.warning(
+      'Photo Proof Required 📸',
+      'Photo proof of gadget handover is required before completing the return. Please snap or upload a face-to-face turnover photo.'
+    );
+    return;
+  }
 
   try {
+    let finalPhotoUrl = handoverPhotoRaw;
+
+    // If photo is a base64 string, upload to persistent storage
+    if (handoverPhotoRaw.startsWith('data:')) {
+      const uploadRes = await api.uploadPhoto(handoverPhotoRaw);
+      if (uploadRes && (uploadRes.photoUrl || uploadRes.url)) {
+        finalPhotoUrl = uploadRes.photoUrl || uploadRes.url;
+      }
+    }
+
     const res = await api.dispatchReturn({
       gadgetId,
+      claimId,
       receivedByPersonName,
       receivedByPersonId,
-      notes
+      notes,
+      handoverPhotoUrl: finalPhotoUrl
     });
 
-    showToast('success', 'Handover Recorded! 🎉', `Official Return Receipt generated: ${res.returnRecord.id}`);
     closeModal('dispatch-return-modal');
-    loadCurrentOsaScreenData();
+    removeHandoverPhoto();
+
+    await Swal.fire({
+      icon: 'success',
+      title: 'Handover Completed! 🎉',
+      html: `
+        <p style="font-size:0.92rem; color:#334155; margin-bottom:12px;">
+          The gadget has been officially returned to <strong>${escapeHtml(receivedByPersonName)}</strong> (${escapeHtml(receivedByPersonId)}).
+        </p>
+        <div style="background:#f0fdf4; border:1.5px solid #86efac; border-radius:10px; padding:12px; font-size:0.85rem; text-align:left;">
+          <div style="font-weight:700; color:#166534; margin-bottom:4px;">📜 Official Handover Receipt:</div>
+          <div style="font-family:monospace; font-weight:800; color:#14532d; font-size:1.05rem;">${escapeHtml(res.returnRecord?.id || 'RECEIPT-RECORDED')}</div>
+          <div style="font-size:0.75rem; color:#15803d; margin-top:6px;">✓ Photo proof securely attached to audit trail and Claims table.</div>
+        </div>
+      `,
+      confirmButtonText: 'Great!',
+      confirmButtonColor: '#142a6d'
+    });
+
+    loadClaimsDesk();
+    loadFoundCustodyVault();
+    loadMissingGadgets();
+    loadRegisteredGadgets();
+    loadOsaDashboardStats();
   } catch (err) {
-    showToast('error', 'Return Failed', err.message);
+    await SwalHelper.error('Return Dispatch Failed', err.message || 'Could not complete gadget return.');
   }
 }
 

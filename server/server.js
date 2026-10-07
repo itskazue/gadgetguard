@@ -96,13 +96,32 @@ app.use((req, res, next) => {
   next();
 });
 
-// Photo upload API
-app.post('/api/upload', upload.single('photo'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ success: false, error: 'No image file provided.' });
+// Photo upload API (Supports multipart form files & base64 camera data URLs)
+app.post('/api/upload', (req, res, next) => {
+  if (req.is('application/json') && (req.body.imageBase64 || req.body.dataUrl || req.body.photo)) {
+    try {
+      const rawData = req.body.imageBase64 || req.body.dataUrl || req.body.photo;
+      const matches = rawData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+      if (matches && matches.length === 3) {
+        const ext = matches[1].includes('png') ? '.png' : (matches[1].includes('webp') ? '.webp' : '.jpg');
+        const filename = 'handover_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7) + ext;
+        const filePath = path.join(uploadsDir, filename);
+        fs.writeFileSync(filePath, Buffer.from(matches[2], 'base64'));
+        return res.json({ success: true, photoUrl: `/uploads/${filename}`, url: `/uploads/${filename}`, filename });
+      }
+    } catch (e) {
+      return res.status(500).json({ success: false, error: 'Failed to process base64 image.' });
+    }
   }
-  const photoUrl = `/uploads/${req.file.filename}`;
-  return res.json({ success: true, photoUrl, filename: req.file.filename });
+
+  upload.single('photo')(req, res, (err) => {
+    if (err) return res.status(400).json({ success: false, error: err.message });
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No image file provided.' });
+    }
+    const photoUrl = `/uploads/${req.file.filename}`;
+    return res.json({ success: true, photoUrl, url: photoUrl, filename: req.file.filename });
+  });
 });
 
 // Mount API Routes

@@ -57,15 +57,23 @@ router.get('/stats', authMiddleware, requireRole('osa_admin'), (req, res) => {
   }
 });
 
-// POST /api/osa/return (Official Dispatch & Return to Owner)
+// POST /api/osa/return (Official Dispatch & Return to Owner with Photo Proof)
 router.post('/return', authMiddleware, requireRole('osa_admin'), (req, res) => {
   try {
-    const { gadgetId, claimId, receivedByPersonName, receivedByPersonId, notes } = req.body;
+    const { gadgetId, claimId, receivedByPersonName, receivedByPersonId, notes, handoverPhotoUrl } = req.body;
 
     if (!gadgetId || !receivedByPersonName) {
       return res.status(400).json({ 
         success: false, 
         error: 'Gadget ID and recipient person name are required.' 
+      });
+    }
+
+    // Section C: Photo proof of gadget handover is STRICTLY REQUIRED before completing return
+    if (!handoverPhotoUrl || !handoverPhotoUrl.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Photo proof of gadget handover is required before completing the return.'
       });
     }
 
@@ -75,36 +83,58 @@ router.post('/return', authMiddleware, requireRole('osa_admin'), (req, res) => {
     }
 
     const owner = db.findById('users', gadget.userId);
+    const returnDateIso = new Date().toISOString();
+    const cleanPhotoUrl = handoverPhotoUrl.trim();
 
-    // Create return record
+    // Create return record securely linked to gadget, student, admin, and photo proof
     const returnRecord = db.insert('returns', {
       id: 'ret_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
       gadgetId,
       userId: gadget.userId,
+      ownerStudentId: owner ? (owner.idNumber || receivedByPersonId) : receivedByPersonId,
       claimId: claimId || null,
       returnedByOsaAdminId: req.user.id,
+      returnedByOsaAdminName: req.user.name,
       receivedByPersonName: receivedByPersonName.trim(),
       receivedByPersonId: receivedByPersonId ? receivedByPersonId.trim() : (owner?.idNumber || 'ID Verified'),
-      returnDate: new Date().toISOString(),
+      returnDate: returnDateIso,
+      handoverPhotoUrl: cleanPhotoUrl,
       notes: notes ? notes.trim() : 'Official return handover completed at OSA Office.',
       signedReceiptAck: true
     });
 
-    // Update gadget status back to active REGISTERED
+    // Update gadget status back to active REGISTERED and store return link & handover photo
     db.update('gadgets', gadgetId, { 
       status: 'REGISTERED',
-      custodyLocation: null 
+      custodyStatus: 'RETURNED_TO_OWNER',
+      claimStatus: 'RETURNED',
+      custodyLocation: null,
+      lastReturnId: returnRecord.id,
+      lastHandoverPhotoUrl: cleanPhotoUrl,
+      lastReturnedAt: returnDateIso,
+      lastReturnedByAdminId: req.user.id,
+      lastReturnedByAdminName: req.user.name
     });
 
-    // Close any active missing report
+    // Close any active missing report and link photo proof
     const activeMissing = db.find('missing_reports', m => m.gadgetId === gadgetId && m.status === 'ACTIVE');
-    activeMissing.forEach(m => db.update('missing_reports', m.id, { status: 'RESOLVED' }));
+    activeMissing.forEach(m => db.update('missing_reports', m.id, { 
+      status: 'RESOLVED',
+      resolvedAt: returnDateIso,
+      resolvedBy: req.user.id,
+      handoverPhotoUrl: cleanPhotoUrl,
+      returnId: returnRecord.id
+    }));
 
     // Also close and resolve any found reports for this gadget
     const foundReports = db.find('found_reports', f => f.gadgetId === gadgetId);
     foundReports.forEach(f => {
       if (f.status !== 'RESOLVED' && f.status !== 'RETURNED') {
-        db.update('found_reports', f.id, { status: 'RETURNED' });
+        db.update('found_reports', f.id, { 
+          status: 'RETURNED', 
+          handoverPhotoUrl: cleanPhotoUrl,
+          returnId: returnRecord.id 
+        });
       }
     });
 
@@ -116,9 +146,33 @@ router.post('/return', authMiddleware, requireRole('osa_admin'), (req, res) => {
       }
     });
 
-    // Update claim if linked
-    if (claimId) {
-      db.update('claims', claimId, { status: 'APPROVED' });
+    // Update or link claim record with status RETURNED and photo proof
+    let targetClaim = claimId ? db.findById('claims', claimId) : db.findOne('claims', c => c.gadgetId === gadgetId);
+    if (targetClaim) {
+      db.update('claims', targetClaim.id, { 
+        status: 'RETURNED',
+        handoverPhotoUrl: cleanPhotoUrl,
+        returnedAt: returnDateIso,
+        processedBy: req.user.id,
+        processedByName: req.user.name,
+        returnId: returnRecord.id
+      });
+    } else {
+      db.insert('claims', {
+        id: 'clm_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
+        gadgetId,
+        userId: gadget.userId,
+        claimProofDetails: notes ? `Handover: ${notes.trim()}` : 'Official in-person gadget handover at OSA Room 1109.',
+        verificationIdType: 'School ID',
+        verificationIdNumber: receivedByPersonId ? receivedByPersonId.trim() : (owner?.idNumber || 'Verified'),
+        status: 'RETURNED',
+        createdAt: returnDateIso,
+        processedBy: req.user.id,
+        processedByName: req.user.name,
+        processedAt: returnDateIso,
+        handoverPhotoUrl: cleanPhotoUrl,
+        returnId: returnRecord.id
+      });
     }
 
     db.addAuditLog({
@@ -127,7 +181,7 @@ router.post('/return', authMiddleware, requireRole('osa_admin'), (req, res) => {
       action: 'RETURN_GADGET',
       targetType: 'gadget',
       targetId: gadgetId,
-      details: `Official gadget handover: ${gadget.brand} ${gadget.model} returned to ${receivedByPersonName} (Ref: ${returnRecord.id})`,
+      details: `Official gadget handover with photo proof: ${gadget.brand} ${gadget.model} returned to ${receivedByPersonName} (Ref: ${returnRecord.id})`,
       ipAddress: req.ip
     });
 

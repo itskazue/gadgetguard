@@ -469,6 +469,44 @@ const api = {
     return await this.request('/osa/stats');
   },
 
+  // Photo Upload helper
+  async uploadPhoto(fileOrBase64) {
+    if (typeof fileOrBase64 === 'string' && fileOrBase64.startsWith('data:')) {
+      return await this.request('/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photo: fileOrBase64 })
+      });
+    } else if (fileOrBase64 instanceof FormData) {
+      const token = this.getToken();
+      const headers = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await fetch(`${this.baseUrl}/upload`, {
+        method: 'POST',
+        headers,
+        body: fileOrBase64
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      return data;
+    } else if (fileOrBase64 instanceof File || fileOrBase64 instanceof Blob) {
+      const formData = new FormData();
+      formData.append('photo', fileOrBase64);
+      const token = this.getToken();
+      const headers = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await fetch(`${this.baseUrl}/upload`, {
+        method: 'POST',
+        headers,
+        body: formData
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      return data;
+    }
+    throw new Error('Invalid photo upload payload');
+  },
+
   async dispatchReturn(returnData) {
     return await this.request('/osa/return', {
       method: 'POST',
