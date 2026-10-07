@@ -1602,7 +1602,10 @@ async function loadScanTelemetry() {
                   ${s.scanStatus || 'REGISTERED_DEVICE_SCANNED'}
                 </span>
               </td>
-              <td style="font-size: 0.85rem; font-weight: 600;">📍 ${escapeHtml(s.scanLocationNote || 'Location unavailable')}</td>
+              <td style="font-size: 0.85rem; font-weight: 600;">
+                📍 ${escapeHtml(s.scanLocationNote || 'Location unavailable')}
+                ${s.locationSource === 'GPS' ? '<span class="badge" style="background:#ecfdf5; color:#047857; font-size:0.68rem; font-weight:700; border:1px solid #a7f3d0; border-radius:4px; padding:1px 5px; margin-left:4px;">GPS</span>' : (s.locationSource === 'IP' ? '<span class="badge" style="background:#eff6ff; color:#1e40af; font-size:0.68rem; font-weight:700; border:1px solid #bfdbfe; border-radius:4px; padding:1px 5px; margin-left:4px;">IP</span>' : '')}
+              </td>
               <td style="font-size: 0.775rem; color: var(--text-secondary);">${escapeHtml(s.deviceInfo || 'Device unavailable')}</td>
               <td class="font-mono" style="font-size: 0.75rem; color: var(--text-dim);">${escapeHtml(s.scannerIp)}</td>
               <td class="text-right" style="font-size: 0.75rem; color: var(--text-muted);">${formatDate(s.scannedAt)}</td>

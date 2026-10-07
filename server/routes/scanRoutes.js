@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { authMiddleware, requireRole, JWT_SECRET } = require('../auth');
 const db = require('../db');
+const locationService = require('../services/locationService');
 
 // Helper to format scanner user-agent into clean device info
 function parseScannerDeviceInfo(ua) {
@@ -28,7 +29,7 @@ function parseScannerDeviceInfo(ua) {
 }
 
 // GET /api/scan/device/:token (Public QR device lookup + automatic scan log with strict privacy & OSA differentiation)
-router.get('/device/:token', (req, res) => {
+router.get('/device/:token', async (req, res) => {
   try {
     const { token } = req.params;
     const { locationNote, latitude, longitude, approxLocation } = req.query;
@@ -46,11 +47,22 @@ router.get('/device/:token', (req, res) => {
     const settings = db.getSettings();
     const userAgent = req.headers['user-agent'] || 'Unknown Device';
     const scannerDeviceFormatted = parseScannerDeviceInfo(userAgent);
-    const scannerIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+    const scannerIp = locationService.extractClientIp(req);
 
     const scanStatus = (gadget.status === 'MISSING') ? 'MISSING_DEVICE_SCANNED' : 'REGISTERED_DEVICE_SCANNED';
-    const finalLocationNote = approxLocation ? decodeURIComponent(approxLocation) : 
-      (locationNote ? decodeURIComponent(locationNote) : (latitude && longitude ? `Coordinates: ${latitude}, ${longitude}` : 'Location unavailable'));
+
+    // Priority 1: GPS Geolocation (reverse geocoded) -> "Approximate Location: [Landmark], [City], [Province]"
+    // Priority 2: IP-based Geolocation fallback -> "Estimated Location: [City], [Province]" (Never invent landmark)
+    // Fallback: "Location unavailable"
+    const locResult = await locationService.resolveScanLocation({
+      latitude,
+      longitude,
+      ip: scannerIp
+    });
+
+    const finalLocationNote = locResult.formattedLocation || 
+      (approxLocation ? decodeURIComponent(approxLocation) : 
+      (locationNote ? decodeURIComponent(locationNote) : 'Location unavailable'));
 
     // Check if scanner is an authenticated OSA Administrator
     let isAuthorizedOsa = false;
@@ -67,7 +79,7 @@ router.get('/device/:token', (req, res) => {
       }
     } catch (e) {}
 
-    // Record QR scan log
+    // Record QR scan log with full location metadata
     const scanLog = db.insert('qr_scans', {
       id: 'scn_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
       gadgetId: gadget.id,
@@ -76,8 +88,12 @@ router.get('/device/:token', (req, res) => {
       scannerUserAgent: userAgent,
       deviceInfo: scannerDeviceFormatted,
       scanLocationNote: finalLocationNote,
-      latitude: latitude ? parseFloat(latitude) : null,
-      longitude: longitude ? parseFloat(longitude) : null,
+      locationSource: locResult.source, // 'GPS' or 'IP' or null
+      placeName: locResult.placeName,
+      city: locResult.city,
+      province: locResult.province,
+      latitude: locResult.latitude,
+      longitude: locResult.longitude,
       scannerAccountId,
       scanStatus,
       scannedAt: new Date().toISOString()
@@ -209,10 +225,10 @@ router.get('/device/:token', (req, res) => {
   }
 });
 
-// POST /api/scan/log (Explicit client log with geolocation/note)
-router.post('/log', (req, res) => {
+// POST /api/scan/log (Explicit client log with geolocation or update with GPS coordinates)
+router.post('/log', async (req, res) => {
   try {
-    const { token, locationNote, deviceInfo } = req.body;
+    const { token, locationNote, deviceInfo, latitude, longitude, scanId } = req.body;
     if (!token) {
       return res.status(400).json({ success: false, error: 'Token is required.' });
     }
@@ -222,13 +238,45 @@ router.post('/log', (req, res) => {
       return res.status(404).json({ success: false, error: 'Invalid token.' });
     }
 
+    const scannerIp = locationService.extractClientIp(req);
+    const locResult = await locationService.resolveScanLocation({
+      latitude,
+      longitude,
+      ip: scannerIp
+    });
+
+    const finalLocationNote = locResult.formattedLocation || (locationNote ? locationNote.trim() : 'Location unavailable');
+
+    // If updating an existing recent scan record from this scan session (e.g. GPS granted after initial load)
+    if (scanId) {
+      const existingScan = db.findById('qr_scans', scanId);
+      if (existingScan && existingScan.gadgetId === gadget.id) {
+        const updatedScan = db.update('qr_scans', scanId, {
+          scanLocationNote: finalLocationNote,
+          locationSource: locResult.source,
+          placeName: locResult.placeName,
+          city: locResult.city,
+          province: locResult.province,
+          latitude: locResult.latitude,
+          longitude: locResult.longitude
+        });
+        return res.json({ success: true, scan: updatedScan, isUpdated: true });
+      }
+    }
+
     const scanLog = db.insert('qr_scans', {
       id: 'scn_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
       gadgetId: gadget.id,
       scannedToken: token,
-      scannerIp: req.ip,
+      scannerIp,
       scannerUserAgent: req.headers['user-agent'] || 'Unknown',
-      scanLocationNote: locationNote || 'Location unavailable',
+      scanLocationNote: finalLocationNote,
+      locationSource: locResult.source,
+      placeName: locResult.placeName,
+      city: locResult.city,
+      province: locResult.province,
+      latitude: locResult.latitude,
+      longitude: locResult.longitude,
       deviceInfo: deviceInfo || 'Web Scanner',
       scanStatus: (gadget.status === 'MISSING') ? 'MISSING_DEVICE_SCANNED' : 'REGISTERED_DEVICE_SCANNED',
       scannedAt: new Date().toISOString()
@@ -238,9 +286,9 @@ router.post('/log', (req, res) => {
       db.addNotification({
         userId: gadget.userId,
         title: 'QR Scan Location Tagged 📍',
-        message: `Someone scanned your ${gadget.brand} ${gadget.model} at: "${locationNote || 'Location unavailable'}".`,
+        message: `Someone scanned your ${gadget.brand} ${gadget.model}. ${finalLocationNote}`,
         type: 'QR_SCANNED',
-        linkUrl: '/student/#scans'
+        linkUrl: '/student/#lost-status'
       });
     }
 
@@ -282,6 +330,10 @@ router.get('/history/my', authMiddleware, (req, res) => {
         gadgetId: s.gadgetId,
         scannedAt: s.scannedAt,
         scanLocationNote: s.scanLocationNote || 'Location unavailable',
+        locationSource: s.locationSource || null,
+        placeName: s.placeName || null,
+        city: s.city || null,
+        province: s.province || null,
         deviceInfo: s.deviceInfo || 'Scanner device unavailable',
         gadget: g ? {
           brand: g.brand,

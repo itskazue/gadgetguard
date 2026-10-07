@@ -506,6 +506,37 @@
     let scannedToken = '';
     let currentGadgetData = null;
 
+    function getQuickGpsCoords(timeoutMs = 2500) {
+      return new Promise((resolve) => {
+        if (!navigator.geolocation) return resolve(null);
+        let done = false;
+        const timer = setTimeout(() => {
+          if (!done) { done = true; resolve(null); }
+        }, timeoutMs);
+
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            if (!done) {
+              done = true;
+              clearTimeout(timer);
+              resolve({
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude
+              });
+            }
+          },
+          (err) => {
+            if (!done) {
+              done = true;
+              clearTimeout(timer);
+              resolve(null);
+            }
+          },
+          { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 60000 }
+        );
+      });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const queryToken = urlParams.get('token') || urlParams.get('t');
@@ -518,10 +549,33 @@
 
     async function executeScanLookup(token) {
       try {
-        const res = await api.lookupDeviceQR(token, {});
+        // Priority 1: Attempt quick browser GPS coords if permission already granted or fast
+        const gpsCoords = await getQuickGpsCoords(2500);
+        const lookupParams = {};
+        if (gpsCoords && typeof gpsCoords.latitude === 'number') {
+          lookupParams.latitude = gpsCoords.latitude;
+          lookupParams.longitude = gpsCoords.longitude;
+        }
+
+        const res = await api.lookupDeviceQR(token, lookupParams);
         currentGadgetData = res.gadget;
         if (res.gadget && res.gadget.secureToken) {
           scannedToken = res.gadget.secureToken;
+        }
+
+        // If GPS wasn't available during initial fast lookup, but browser geolocation is supported:
+        // Request in background without blocking UI; if user approves later, upgrade the scan record
+        if (!gpsCoords && navigator.geolocation && res.scanId) {
+          navigator.geolocation.getCurrentPosition(async (pos) => {
+            try {
+              await api.logScan({
+                token,
+                scanId: res.scanId,
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude
+              });
+            } catch (e) {}
+          }, () => {}, { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 });
         }
 
         document.getElementById('qr-loading-box').style.display = 'none';

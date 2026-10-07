@@ -1004,6 +1004,7 @@ async function loadLostStatusScreen() {
                   <div style="background: #ffffff; border: 1px solid #fed7aa; border-radius: 8px; padding: 8px 12px; font-size: 0.78rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
                     <div>
                       <strong style="color: #b91c1c;">📍 ${escapeHtml(s.scanLocationNote || 'Location unavailable')}</strong>
+                      ${s.locationSource === 'GPS' ? '<span style="background:#ecfdf5; color:#047857; font-size:0.68rem; font-weight:700; border:1px solid #a7f3d0; border-radius:4px; padding:1px 5px; margin-left:6px;">GPS</span>' : (s.locationSource === 'IP' ? '<span style="background:#eff6ff; color:#1e40af; font-size:0.68rem; font-weight:700; border:1px solid #bfdbfe; border-radius:4px; padding:1px 5px; margin-left:6px;">Estimated Area</span>' : '')}
                       <span style="color: #64748b; margin-left: 6px;">(${escapeHtml(s.deviceInfo || 'Mobile Browser')})</span>
                     </div>
                     <div style="color: #64748b; font-size: 0.74rem;">${formatDate(s.scannedAt)}</div>

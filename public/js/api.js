@@ -344,10 +344,16 @@ const api = {
     return await this.request(`/scan/device/${token}?${query}`);
   },
 
-  async logScan(token, locationNote, deviceInfo) {
+  async logScan(tokenOrPayload, locationNote, deviceInfo) {
+    let payload = {};
+    if (typeof tokenOrPayload === 'object' && tokenOrPayload !== null) {
+      payload = tokenOrPayload;
+    } else {
+      payload = { token: tokenOrPayload, locationNote, deviceInfo };
+    }
     return await this.request('/scan/log', {
       method: 'POST',
-      body: JSON.stringify({ token, locationNote, deviceInfo })
+      body: JSON.stringify(payload)
     });
   },
 
