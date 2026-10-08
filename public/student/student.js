@@ -1295,14 +1295,17 @@ async function handleClaimSubmit(e) {
   }
 }
 
-// Notifications Feed
+// Notifications Feed & Collapsible Accordion System
+const expandedNotificationIds = new Set();
+let studentNotifsCache = [];
+
 async function loadNotificationsFeed() {
   const container = document.getElementById('student-notifications-feed');
   const badge = document.getElementById('badge-notif-count');
 
   try {
     const res = await api.getNotifications();
-    const notifs = res.notifications || [];
+    studentNotifsCache = res.notifications || [];
     const unread = res.unreadCount || 0;
 
     if (badge) {
@@ -1316,35 +1319,181 @@ async function loadNotificationsFeed() {
 
     if (!container) return;
 
-    if (notifs.length === 0) {
+    if (studentNotifsCache.length === 0) {
       container.innerHTML = `
-        <div style="padding: 40px; text-align: center; color: var(--text-muted);">
-          <div style="font-size: 2rem; margin-bottom: 8px;">📭</div>
-          <h4 style="font-weight: 700;">No notifications yet</h4>
-          <p style="font-size: 0.8rem;">You are completely up to date.</p>
+        <div style="padding: 44px 20px; text-align: center; color: var(--text-muted);">
+          <div style="font-size: 2.2rem; margin-bottom: 8px;">📭</div>
+          <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 4px;">No notifications yet</h4>
+          <p style="font-size: 0.825rem;">You are completely up to date.</p>
         </div>
       `;
       return;
     }
 
-    container.innerHTML = notifs.map(n => `
-      <div style="padding: 16px; border-bottom: 1px solid var(--card-border); display: flex; gap: 14px; background: ${n.read ? '#ffffff' : '#eff6ff'};" onclick="handleNotificationClick('${n.id}', '${n.linkUrl || ''}')">
-        <div style="font-size: 1.4rem; flex-shrink: 0;">${getNotifIcon(n.type)}</div>
-        <div style="flex: 1;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-            <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main);">${escapeHtml(n.title)}</span>
-            <span style="font-size: 0.75rem; color: var(--text-muted);">${formatDate(n.createdAt)}</span>
+    container.innerHTML = `
+      <div class="notif-accordion-container">
+        ${studentNotifsCache.map(n => renderNotificationCard(n)).join('')}
+      </div>
+    `;
+  } catch (e) {
+    console.error('Error loading notifications feed:', e);
+  }
+}
+
+function renderNotificationCard(n) {
+  const isExpanded = expandedNotificationIds.has(n.id);
+  const isUnread = !n.read;
+  const icon = getNotifIcon(n.type, n.title);
+
+  return `
+    <div class="notif-accordion-card ${isUnread ? 'unread' : 'read'} ${isExpanded ? 'expanded' : ''}" id="notif-card-${n.id}">
+      <div class="notif-header-row" onclick="toggleNotificationItem('${n.id}', event)" role="button" aria-expanded="${isExpanded}">
+        <div class="notif-header-left">
+          <div class="notif-icon-badge">${icon}</div>
+          <div class="notif-title-area">
+            <span class="notif-title-text" title="${escapeHtml(n.title)}">${escapeHtml(n.title)}</span>
+            ${isUnread ? `<span class="notif-unread-dot" id="notif-dot-${n.id}" title="Unread notification"></span>` : ''}
           </div>
-          <div style="font-size: 0.825rem; color: var(--text-secondary); line-height: 1.45; white-space: pre-line;">
-            ${escapeHtml(n.message)}
+        </div>
+        <div class="notif-header-right">
+          <span class="notif-timestamp-text">${formatDate(n.createdAt)}</span>
+          <span class="notif-chevron-wrap" aria-hidden="true">
+            <svg class="notif-chevron-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </span>
+        </div>
+      </div>
+      <div class="notif-collapse-body" id="notif-body-${n.id}">
+        <div class="notif-collapse-inner">
+          <div class="notif-details-content">
+            <div class="notif-message-text">
+              ${renderFormattedNotificationMessage(n.message)}
+            </div>
+            ${renderNotificationActions(n)}
           </div>
         </div>
       </div>
-    `).join('');
-  } catch (e) {}
+    </div>
+  `;
 }
 
-function getNotifIcon(type) {
+function renderFormattedNotificationMessage(msg) {
+  if (!msg) return '';
+  const lines = msg.split('\n').map(l => l.trim());
+  
+  let html = '';
+  let metaRows = [];
+  let currentParagraph = [];
+
+  function flushParagraph() {
+    if (currentParagraph.length > 0) {
+      html += `<p style="margin: 0 0 8px 0; line-height: 1.55;">${currentParagraph.join(' ')}</p>`;
+      currentParagraph = [];
+    }
+  }
+
+  function flushMeta() {
+    if (metaRows.length > 0) {
+      html += `<div class="notif-meta-block">${metaRows.join('')}</div>`;
+      metaRows = [];
+    }
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line) {
+      flushParagraph();
+      flushMeta();
+      continue;
+    }
+
+    if (line.includes('Safety & Liability Notice') || line.includes('Safety Notice')) {
+      flushParagraph();
+      flushMeta();
+      html += `<div class="notif-notice-card">⚠️ <strong>Safety Notice:</strong> ${escapeHtml(line.replace(/^[⚠️\s]*Safety\s*(&|and)?\s*Liability\s*Notice:?/i, '').trim())}</div>`;
+      continue;
+    }
+
+    const matchMeta = line.match(/^(Device|Custody Location|Finder Name|Found Location|Approximate Location|Device Info|Audit IP|Reason|Reference No|Claim Status):\s*(.+)$/i);
+    if (matchMeta) {
+      flushParagraph();
+      metaRows.push(`
+        <div class="notif-meta-row">
+          <span class="notif-meta-label">${escapeHtml(matchMeta[1])}:</span>
+          <span class="notif-meta-val">${escapeHtml(matchMeta[2])}</span>
+        </div>
+      `);
+      continue;
+    }
+
+    flushMeta();
+    currentParagraph.push(escapeHtml(line));
+  }
+
+  flushParagraph();
+  flushMeta();
+
+  return html;
+}
+
+function renderNotificationActions(n) {
+  const isFoundNotif = n.title === 'Someone Found Your Gadget' || n.type === 'CHAT_MESSAGE';
+  const hasCustody = n.title?.includes('Custody') || n.type === 'GADGET_FOUND';
+  const isMissing = n.type === 'MISSING_ALERT' || n.title?.includes('Missing');
+
+  let buttons = [];
+
+  if (isFoundNotif) {
+    buttons.push(`
+      <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); handleNotifActionClick('${n.id}', 'chat')" style="font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+        💬 Open Chat / Message Finder
+      </button>
+    `);
+  }
+
+  if (hasCustody) {
+    buttons.push(`
+      <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); handleNotifActionClick('${n.id}', 'claims')" style="background: #059669; border-color: #059669; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+        📋 View Claims / Handover History
+      </button>
+    `);
+  }
+
+  if (isMissing && !isFoundNotif) {
+    buttons.push(`
+      <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); handleNotifActionClick('${n.id}', 'lost-status')" style="font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+        🚨 Lost Gadget Status
+      </button>
+    `);
+  }
+
+  if (n.linkUrl && !isFoundNotif && !hasCustody && !isMissing) {
+    buttons.push(`
+      <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); handleNotifActionClick('${n.id}', '${n.linkUrl}')" style="font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+        🔗 View Details
+      </button>
+    `);
+  }
+
+  if (buttons.length === 0) return '';
+  return `<div class="notif-actions-bar">${buttons.join('')}</div>`;
+}
+
+function getNotifIcon(type, title = '') {
+  const t = title || '';
+  if (t.includes('Returned')) return '✨';
+  if (t.includes('Custody') || type === 'GADGET_FOUND') return '🌟';
+  if (t.includes('Missing') || type === 'MISSING_ALERT') return '🚨';
+  if (t.includes('Approved') || type === 'REGISTRATION_APPROVED') return '🎉';
+  if (t.includes('Submitted') || t.includes('Review')) return '🛡️';
+  if (t.includes('Scanned') || type === 'QR_SCANNED') return '📍';
+  if (t.includes('Found') || type === 'CHAT_MESSAGE') return '💬';
+  if (type === 'CLAIM_APPROVED') return '📦';
+  if (type === 'REGISTRATION_REJECTED' || type === 'CLAIM_REJECTED') return '⚠️';
+  if (type === 'RETURNED_SUCCESS') return '✨';
+  if (type === 'SYSTEM') return '🛡️';
+
   const icons = {
     REGISTRATION_APPROVED: '🎉',
     REGISTRATION_REJECTED: '⚠️',
@@ -1354,66 +1503,86 @@ function getNotifIcon(type) {
     CLAIM_APPROVED: '📦',
     CLAIM_REJECTED: '❌',
     RETURNED_SUCCESS: '✨',
-    SYSTEM: '🛡️'
+    SYSTEM: '🛡️',
+    CHAT_MESSAGE: '💬'
   };
   return icons[type] || '🔔';
 }
 
-async function handleNotificationClick(id, linkUrl) {
-  try {
-    const res = await api.getNotifications();
-    const notif = (res.notifications || []).find(n => n.id === id);
+async function toggleNotificationItem(id, event) {
+  if (event) event.stopPropagation();
 
-    await api.markNotificationRead(id);
-    await loadNotificationsFeed();
+  const card = document.getElementById(`notif-card-${id}`);
+  if (!card) return;
 
-    if (notif) {
-      const isFoundNotif = notif.title === 'Someone Found Your Gadget' || notif.type === 'CHAT_MESSAGE';
-      const actionBtnText = isFoundNotif ? '💬 Open Chat / Message Finder' : (linkUrl ? 'View Related Screen' : 'Close');
+  const isCurrentlyExpanded = card.classList.contains('expanded');
 
-      await Swal.fire({
-        title: `${getNotifIcon(notif.type)} ${escapeHtml(notif.title)}`,
-        html: `
-          <div style="text-align: left; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 12px 0; font-size: 0.88rem; line-height: 1.6; color: #1e293b; white-space: pre-line;">
-            ${escapeHtml(notif.message)}
-          </div>
-          <div style="font-size: 0.75rem; color: #64748b; text-align: right;">
-            Received: ${formatDate(notif.createdAt)}
-          </div>
-        `,
-        confirmButtonText: actionBtnText,
-        confirmButtonColor: '#142a6d',
-        showCancelButton: true,
-        cancelButtonText: 'Close',
-        cancelButtonColor: '#64748b'
-      }).then(async (result) => {
-        if (result.isConfirmed) {
-          if (isFoundNotif) {
-            navigateStudent('lost-status');
-            const myMissingWithFinder = myGadgetsData.find(g => g.status === 'MISSING' && g.finderInfo);
-            if (myMissingWithFinder && myMissingWithFinder.finderInfo) {
-              openOwnerRecoveryChat(
-                myMissingWithFinder.finderInfo.chatId || '',
-                myMissingWithFinder.id,
-                myMissingWithFinder.finderInfo.finderName || 'Finder',
-                `${myMissingWithFinder.brand} ${myMissingWithFinder.model}`,
-                myMissingWithFinder.finderInfo.foundLocation || 'Campus'
-              );
-            }
-          } else if (linkUrl) {
-            let targetHash = linkUrl.split('#')[1] || '';
-            if (targetHash === 'scans') targetHash = 'lost-status';
-            if (targetHash) navigateStudent(targetHash);
-          }
+  if (isCurrentlyExpanded) {
+    // Collapse clicked notification
+    card.classList.remove('expanded');
+    card.querySelector('.notif-header-row')?.setAttribute('aria-expanded', 'false');
+    expandedNotificationIds.delete(id);
+  } else {
+    // Expand clicked notification
+    card.classList.add('expanded');
+    card.querySelector('.notif-header-row')?.setAttribute('aria-expanded', 'true');
+    expandedNotificationIds.add(id);
+
+    // If unread, mark as read
+    if (card.classList.contains('unread')) {
+      card.classList.remove('unread');
+      card.classList.add('read');
+
+      const dot = document.getElementById(`notif-dot-${id}`);
+      if (dot) dot.remove();
+
+      // Decrement sidebar unread badge
+      const badge = document.getElementById('badge-notif-count');
+      if (badge && badge.style.display !== 'none') {
+        let currentCount = parseInt(badge.textContent) || 0;
+        currentCount = Math.max(0, currentCount - 1);
+        if (currentCount > 0) {
+          badge.textContent = currentCount;
+        } else {
+          badge.style.display = 'none';
         }
-      });
-    } else if (linkUrl) {
-      let targetHash = linkUrl.split('#')[1] || '';
-      if (targetHash === 'scans') targetHash = 'lost-status';
-      if (targetHash) navigateStudent(targetHash);
+      }
+
+      // Mark as read in server & memory cache
+      const cached = studentNotifsCache.find(n => n.id === id);
+      if (cached) cached.read = true;
+
+      try {
+        await api.markNotificationRead(id);
+      } catch (err) {
+        console.warn('Error marking notification read:', err);
+      }
     }
-  } catch (e) {
-    console.error('Notification click error:', e);
+  }
+}
+
+async function handleNotifActionClick(id, actionTarget) {
+  if (actionTarget === 'chat') {
+    navigateStudent('lost-status');
+    const myMissingWithFinder = myGadgetsData.find(g => g.status === 'MISSING' && g.finderInfo);
+    if (myMissingWithFinder && myMissingWithFinder.finderInfo) {
+      openOwnerRecoveryChat(
+        myMissingWithFinder.finderInfo.chatId || '',
+        myMissingWithFinder.id,
+        myMissingWithFinder.finderInfo.finderName || 'Finder',
+        `${myMissingWithFinder.brand} ${myMissingWithFinder.model}`,
+        myMissingWithFinder.finderInfo.foundLocation || 'Campus'
+      );
+    }
+  } else if (actionTarget === 'claims') {
+    navigateStudent('claims');
+  } else if (actionTarget === 'lost-status') {
+    navigateStudent('lost-status');
+  } else if (actionTarget) {
+    let targetHash = actionTarget.split('#')[1] || actionTarget;
+    if (targetHash === 'scans') targetHash = 'lost-status';
+    if (targetHash.startsWith('/')) targetHash = targetHash.replace(/^\//, '');
+    if (targetHash) navigateStudent(targetHash);
   }
 }
 
@@ -1421,8 +1590,22 @@ async function markAllNotificationsRead() {
   try {
     await api.markAllNotificationsRead();
     showToast('info', 'Updated', 'All notifications marked as read.');
-    await loadNotificationsFeed();
-  } catch (e) {}
+    
+    // Smoothly update existing cards without collapsing active items
+    studentNotifsCache.forEach(n => { n.read = true; });
+    const cards = document.querySelectorAll('.notif-accordion-card.unread');
+    cards.forEach(c => {
+      c.classList.remove('unread');
+      c.classList.add('read');
+    });
+    const dots = document.querySelectorAll('.notif-unread-dot');
+    dots.forEach(d => d.remove());
+
+    const badge = document.getElementById('badge-notif-count');
+    if (badge) badge.style.display = 'none';
+  } catch (e) {
+    console.error('Error marking all notifications read:', e);
+  }
 }
 
 function closeModal(modalId) {
