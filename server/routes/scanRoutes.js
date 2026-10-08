@@ -50,16 +50,77 @@ router.get('/device/:token', async (req, res) => {
     const scannerDeviceFormatted = parseScannerDeviceInfo(userAgent);
     const scannerIp = locationService.extractClientIp(req);
 
-    // Check for returning finder recovery session using secure browser session token
+    const missingReport = (gadget.status === 'MISSING') ? 
+      db.findOne('missing_reports', m => m.gadgetId === gadget.id && m.status === 'ACTIVE') : null;
+
+    // Check for returning finder recovery session specifically linked to this gadget + active missing case
     let activeRecoveryChat = null;
+    let pastRecoveryChat = null;
     if (finderToken) {
-      activeRecoveryChat = db.findOne('recovery_chats', c => c.gadgetId === gadget.id && c.finderSessionToken === finderToken);
+      if (gadget.status === 'MISSING' && missingReport) {
+        activeRecoveryChat = db.findOne('recovery_chats', c => 
+          c.gadgetId === gadget.id && 
+          c.missingReportId === missingReport.id && 
+          c.finderSessionToken === finderToken &&
+          c.status === 'ACTIVE'
+        );
+      }
+      pastRecoveryChat = db.findOne('recovery_chats', c => 
+        c.gadgetId === gadget.id && 
+        c.finderSessionToken === finderToken
+      );
     }
     const isReturningFinder = Boolean(activeRecoveryChat);
 
     const scanStatus = (gadget.status === 'MISSING') 
       ? (isReturningFinder ? 'RETURNING_FINDER_SCANNED' : 'MISSING_DEVICE_SCANNED') 
       : 'REGISTERED_DEVICE_SCANNED';
+
+    // Check if finder decided to surrender or gadget is awaiting handover to OSA
+    const isSurrenderPending = (gadget.custodyStatus === 'PENDING_OSA_TURNOVER' || gadget.surrenderStatus === 'WILL_SURRENDER_TO_OSA');
+    let surrenderDetails = null;
+    if (isSurrenderPending) {
+      const surrenderReport = db.findOne('found_reports', f => 
+        f.gadgetId === gadget.id && 
+        (f.turnInMethod === 'SUBMITTED_TO_OSA' || f.finderDecision === 'WILL_SURRENDER_TO_OSA') && 
+        f.status === 'PENDING_OSA_TURNOVER'
+      );
+      surrenderDetails = {
+        hasSurrender: true,
+        surrenderReference: (surrenderReport && surrenderReport.surrenderReference) || gadget.pendingSurrenderRef || 'SRF-PENDING',
+        finderName: (surrenderReport && surrenderReport.finderName) || (gadget.surrenderInfo && gadget.surrenderInfo.finderName) || 'Finder',
+        foundLocation: (surrenderReport && surrenderReport.foundLocation) || (gadget.surrenderInfo && gadget.surrenderInfo.foundLocation) || 'Campus',
+        foundDate: (surrenderReport && surrenderReport.foundDate) || (gadget.surrenderInfo && gadget.surrenderInfo.foundDate) || gadget.updatedAt,
+        status: 'AWAITING OSA HANDOVER',
+        notes: (surrenderReport && (surrenderReport.message || surrenderReport.notes)) || (gadget.surrenderInfo && gadget.surrenderInfo.notes) || ''
+      };
+    }
+
+    // Build active finder recovery session descriptor
+    let activeFinderSession = null;
+    if (activeRecoveryChat) {
+      activeFinderSession = {
+        hasSession: true,
+        chatId: activeRecoveryChat.id,
+        finderSessionToken: activeRecoveryChat.finderSessionToken,
+        finderName: activeRecoveryChat.finderName || 'Finder',
+        foundLocation: activeRecoveryChat.foundLocation,
+        missingReportId: activeRecoveryChat.missingReportId,
+        status: activeRecoveryChat.status,
+        isClosed: false
+      };
+    } else if (pastRecoveryChat && (gadget.status !== 'MISSING' || isSurrenderPending)) {
+      activeFinderSession = {
+        hasSession: true,
+        chatId: pastRecoveryChat.id,
+        finderSessionToken: pastRecoveryChat.finderSessionToken,
+        finderName: pastRecoveryChat.finderName || 'Finder',
+        foundLocation: pastRecoveryChat.foundLocation,
+        missingReportId: pastRecoveryChat.missingReportId,
+        status: pastRecoveryChat.status || 'CLOSED',
+        isClosed: true
+      };
+    }
 
     // Priority 1: GPS Geolocation (reverse geocoded) -> "Approximate Location: [Landmark], [City], [Province]"
     // Priority 2: IP-based Geolocation fallback -> "Estimated Location: [City], [Province]" (Never invent landmark)
@@ -134,21 +195,6 @@ router.get('/device/:token', async (req, res) => {
       });
     }
 
-    const missingReport = (gadget.status === 'MISSING') ? 
-      db.findOne('missing_reports', m => m.gadgetId === gadget.id && m.status === 'ACTIVE') : null;
-
-    // Build active finder recovery session descriptor
-    const activeFinderSession = activeRecoveryChat ? {
-      hasSession: true,
-      chatId: activeRecoveryChat.id,
-      finderSessionToken: activeRecoveryChat.finderSessionToken,
-      finderName: activeRecoveryChat.finderName || 'Finder',
-      foundLocation: activeRecoveryChat.foundLocation,
-      missingReportId: activeRecoveryChat.missingReportId,
-      status: activeRecoveryChat.status,
-      isClosed: Boolean(activeRecoveryChat.status === 'CLOSED' || gadget.status !== 'MISSING')
-    } : null;
-
     // =========================================================================
     // 1. OSA STAFF SCANNER VIEW (Full Authorized Information & Actions)
     // =========================================================================
@@ -172,6 +218,9 @@ router.get('/device/:token', async (req, res) => {
           description: gadget.description,
           photoUrl: gadget.photoUrl,
           status: gadget.status,
+          custodyStatus: gadget.custodyStatus,
+          surrenderStatus: gadget.surrenderStatus || null,
+          pendingSurrenderRef: gadget.pendingSurrenderRef || null,
           registrationDate: gadget.registrationDate,
           approvedAt: gadget.approvedAt,
           approvedBy: gadget.approvedBy
@@ -203,7 +252,8 @@ router.get('/device/:token', async (req, res) => {
           hours: settings.operatingHours
         },
         scanId: scanLog.id,
-        activeFinderSession
+        activeFinderSession,
+        surrenderDetails
       });
     }
 
@@ -231,6 +281,8 @@ router.get('/device/:token', async (req, res) => {
         photoUrl: gadget.photoUrl,
         status: gadget.status,
         custodyStatus: gadget.custodyStatus || 'MISSING',
+        surrenderStatus: gadget.surrenderStatus || null,
+        pendingSurrenderRef: gadget.pendingSurrenderRef || null,
         studentIdNumber: isMissing && owner ? (owner.idNumber || 'Registered Student') : undefined
       },
       owner: null, // Strictly protected
@@ -247,7 +299,8 @@ router.get('/device/:token', async (req, res) => {
         hours: settings.operatingHours
       },
       scanId: scanLog.id,
-      activeFinderSession
+      activeFinderSession,
+      surrenderDetails
     });
   } catch (err) {
     console.error('Scan lookup error:', err);

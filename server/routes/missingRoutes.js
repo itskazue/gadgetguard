@@ -175,6 +175,14 @@ router.post('/:id/cancel', authMiddleware, (req, res) => {
       return res.status(404).json({ success: false, error: 'Active missing report or gadget not found.' });
     }
 
+    const targetGadget = db.findById('gadgets', gadgetId);
+    if (req.user.role !== 'osa_admin' && targetGadget && (targetGadget.custodyStatus === 'PENDING_OSA_TURNOVER' || targetGadget.surrenderStatus === 'WILL_SURRENDER_TO_OSA')) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Cannot cancel missing report: The finder has decided to surrender this gadget to OSA. Please await OSA handover and physical receipt.' 
+      });
+    }
+
     // Cancel any other active missing reports for this gadget
     const activeMissing = db.find('missing_reports', m => m.gadgetId === gadgetId && m.status === 'ACTIVE');
     activeMissing.forEach(m => db.update('missing_reports', m.id, { status: 'CANCELLED' }));

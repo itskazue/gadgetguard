@@ -49,13 +49,16 @@ router.get('/:chatId', (req, res) => {
 
     const gadget = db.findById('gadgets', chat.gadgetId);
     
-    // Check if recovery is resolved / completed -> closed / read-only
-    const isGadgetClosed = !gadget || gadget.status !== 'MISSING';
+    // Check if recovery is resolved, surrendered to OSA, or completed -> closed / read-only
+    const isSurrendered = Boolean(gadget && (gadget.custodyStatus === 'PENDING_OSA_TURNOVER' || gadget.surrenderStatus === 'WILL_SURRENDER_TO_OSA'));
+    const isGadgetClosed = !gadget || gadget.status !== 'MISSING' || isSurrendered;
     const isClosed = chat.status === 'CLOSED' || isGadgetClosed;
 
     if (isGadgetClosed && chat.status !== 'CLOSED') {
-      db.update('recovery_chats', chat.id, { status: 'CLOSED', closedReason: 'GADGET_RECOVERED' });
+      const closedReason = isSurrendered ? 'SURRENDERED_TO_OSA' : 'GADGET_RECOVERED';
+      db.update('recovery_chats', chat.id, { status: 'CLOSED', closedReason });
       chat.status = 'CLOSED';
+      chat.closedReason = closedReason;
     }
 
     const isFinder = participant.role === 'FINDER';
@@ -64,7 +67,9 @@ router.get('/:chatId', (req, res) => {
     const messages = (chat.messages || []).map(m => {
       const isMyMsg = (isFinder && m.senderRole === 'FINDER') || (!isFinder && m.senderRole === 'OWNER');
       let senderLabel = 'Unknown';
-      if (isMyMsg) {
+      if (m.senderRole === 'SYSTEM') {
+        senderLabel = 'System Notice';
+      } else if (isMyMsg) {
         senderLabel = 'You';
       } else if (isFinder) {
         senderLabel = 'Gadget Owner';
@@ -92,7 +97,8 @@ router.get('/:chatId', (req, res) => {
           model: gadget.model,
           category: gadget.category,
           photoUrl: gadget.photoUrl,
-          status: gadget.status
+          status: gadget.status,
+          custodyStatus: gadget.custodyStatus
         } : null,
         myRole: participant.role,
         otherParticipant: isFinder ? 'Gadget Owner' : (chat.finderName || 'Finder'),
@@ -100,6 +106,7 @@ router.get('/:chatId', (req, res) => {
         foundLocation: chat.foundLocation,
         status: chat.status,
         isClosed,
+        closedReason: chat.closedReason,
         messages,
         createdAt: chat.createdAt
       }
@@ -127,14 +134,19 @@ router.post('/:chatId/message', (req, res) => {
     }
 
     const gadget = db.findById('gadgets', chat.gadgetId);
-    const isGadgetClosed = !gadget || gadget.status !== 'MISSING';
+    const isSurrendered = Boolean(gadget && (gadget.custodyStatus === 'PENDING_OSA_TURNOVER' || gadget.surrenderStatus === 'WILL_SURRENDER_TO_OSA'));
+    const isGadgetClosed = !gadget || gadget.status !== 'MISSING' || isSurrendered;
     if (chat.status === 'CLOSED' || isGadgetClosed) {
       if (isGadgetClosed && chat.status !== 'CLOSED') {
-        db.update('recovery_chats', chat.id, { status: 'CLOSED', closedReason: 'GADGET_RECOVERED' });
+        const closedReason = isSurrendered ? 'SURRENDERED_TO_OSA' : 'GADGET_RECOVERED';
+        db.update('recovery_chats', chat.id, { status: 'CLOSED', closedReason });
       }
+      const errorMsg = (isSurrendered || chat.closedReason === 'SURRENDERED_TO_OSA')
+        ? 'This recovery conversation is closed and read-only because the finder has chosen to surrender the gadget to OSA.'
+        : 'This recovery conversation is closed because the gadget has been marked recovered or returned.';
       return res.status(400).json({ 
         success: false, 
-        error: 'This recovery conversation is closed because the gadget has been marked recovered or returned.' 
+        error: errorMsg
       });
     }
 

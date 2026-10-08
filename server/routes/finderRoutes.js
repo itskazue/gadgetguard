@@ -30,10 +30,20 @@ router.post('/report', (req, res) => {
 
     // Check if finder already has an existing active recovery session for this gadget
     const clientFinderToken = req.headers['x-finder-token'] || req.body.finderSessionToken || req.body.finderToken;
-    if (clientFinderToken) {
-      const existingChat = db.findOne('recovery_chats', c => c.gadgetId === targetGadget.id && c.finderSessionToken === clientFinderToken);
-      if (existingChat) {
-        const isClosed = (existingChat.status === 'CLOSED' || targetGadget.status !== 'MISSING');
+    const clientChatId = req.body.chatId;
+
+    // Determine Turn-in Action
+    const isKeeping = (turnInMethod === 'KEPT_SAFE' || turnInMethod === 'KEPT_SAFE_CONTACT_ME' || turnInMethod === 'FINDER_HOLDING');
+    const effectiveTurnInMethod = isKeeping ? 'KEPT_SAFE' : 'SUBMITTED_TO_OSA';
+
+    // If finder is keeping gadget and already has an active chat session for this gadget, reconnect without duplicate
+    if (isKeeping && (clientFinderToken || clientChatId)) {
+      const existingChat = db.findOne('recovery_chats', c => 
+        c.gadgetId === targetGadget.id && 
+        (c.finderSessionToken === clientFinderToken || c.id === clientChatId) &&
+        c.status === 'ACTIVE'
+      );
+      if (existingChat && targetGadget.status === 'MISSING') {
         return res.status(200).json({
           success: true,
           message: 'Active finder recovery session already exists. Reconnecting to your existing chat.',
@@ -45,7 +55,7 @@ router.post('/report', (req, res) => {
             foundLocation: existingChat.foundLocation,
             missingReportId: existingChat.missingReportId,
             status: existingChat.status,
-            isClosed,
+            isClosed: false,
             gadget: {
               id: targetGadget.id,
               brand: targetGadget.brand,
@@ -82,30 +92,56 @@ router.post('/report', (req, res) => {
       effectiveFinderContact = finderContact.trim().substring(0, 30);
     }
 
-    // Determine Turn-in Action
-    const isKeeping = (turnInMethod === 'KEPT_SAFE' || turnInMethod === 'KEPT_SAFE_CONTACT_ME' || turnInMethod === 'FINDER_HOLDING');
-    const effectiveTurnInMethod = isKeeping ? 'KEPT_SAFE' : 'SUBMITTED_TO_OSA';
-
     const activeMissing = db.findOne('missing_reports', m => m.gadgetId === targetGadget.id && m.status === 'ACTIVE');
-    const surrenderRef = 'SRF-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
 
-    // Insert Found Report record
-    const report = db.insert('found_reports', {
-      id: 'fnd_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
-      surrenderReference: surrenderRef,
-      gadgetId: targetGadget.id,
-      missingReportId: activeMissing ? activeMissing.id : null,
-      finderName: effectiveFinderName,
-      finderContact: effectiveFinderContact, // Strictly for authorized OSA use
-      finderEmail: '',
-      foundLocation: cleanFoundLocation,
-      foundDate: foundDate || new Date().toISOString(),
-      itemCondition: itemCondition || 'Good',
-      turnInMethod: effectiveTurnInMethod,
-      message: message ? message.trim() : '',
-      status: isKeeping ? 'REPORTED' : 'PENDING_OSA_TURNOVER',
-      finderDecision: isKeeping ? 'KEPT_SAFE' : 'WILL_SURRENDER_TO_OSA'
-    });
+    // Find any existing active recovery chat or found report for this gadget to avoid duplicate cases
+    const existingActiveChat = db.findOne('recovery_chats', c => 
+      c.gadgetId === targetGadget.id && 
+      (c.finderSessionToken === clientFinderToken || c.id === clientChatId || (activeMissing && c.missingReportId === activeMissing.id && c.status === 'ACTIVE'))
+    );
+    const existingFoundReport = existingActiveChat 
+      ? db.findById('found_reports', existingActiveChat.foundReportId) 
+      : db.findOne('found_reports', f => f.gadgetId === targetGadget.id && f.status !== 'RETURNED' && f.status !== 'RESOLVED' && f.status !== 'CANCELLED');
+
+    const surrenderRef = (existingFoundReport && existingFoundReport.surrenderReference) || 
+      ('SRF-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase());
+
+    let report = null;
+
+    if (existingFoundReport) {
+      // Update existing found report instead of creating another duplicate case
+      report = db.update('found_reports', existingFoundReport.id, {
+        surrenderReference: surrenderRef,
+        missingReportId: activeMissing ? activeMissing.id : existingFoundReport.missingReportId,
+        finderName: effectiveFinderName !== 'Finder' ? effectiveFinderName : (existingFoundReport.finderName || 'Finder'),
+        finderContact: effectiveFinderContact || existingFoundReport.finderContact || '',
+        foundLocation: cleanFoundLocation || existingFoundReport.foundLocation,
+        foundDate: foundDate || existingFoundReport.foundDate || new Date().toISOString(),
+        itemCondition: itemCondition || existingFoundReport.itemCondition || 'Good',
+        turnInMethod: effectiveTurnInMethod,
+        message: message ? message.trim() : (existingFoundReport.message || ''),
+        status: isKeeping ? 'REPORTED' : 'PENDING_OSA_TURNOVER',
+        finderDecision: isKeeping ? 'KEPT_SAFE' : 'WILL_SURRENDER_TO_OSA'
+      });
+    } else {
+      // Insert new Found Report record
+      report = db.insert('found_reports', {
+        id: 'fnd_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
+        surrenderReference: surrenderRef,
+        gadgetId: targetGadget.id,
+        missingReportId: activeMissing ? activeMissing.id : null,
+        finderName: effectiveFinderName,
+        finderContact: effectiveFinderContact, // Strictly for authorized OSA use
+        finderEmail: '',
+        foundLocation: cleanFoundLocation,
+        foundDate: foundDate || new Date().toISOString(),
+        itemCondition: itemCondition || 'Good',
+        turnInMethod: effectiveTurnInMethod,
+        message: message ? message.trim() : '',
+        status: isKeeping ? 'REPORTED' : 'PENDING_OSA_TURNOVER',
+        finderDecision: isKeeping ? 'KEPT_SAFE' : 'WILL_SURRENDER_TO_OSA'
+      });
+    }
 
     db.addAuditLog({
       userId: 'PUBLIC_FINDER',
@@ -113,30 +149,34 @@ router.post('/report', (req, res) => {
       action: 'SUBMIT_FOUND_REPORT',
       targetType: 'gadget',
       targetId: targetGadget.id,
-      details: `Finder (${effectiveFinderName}) reported finding ${targetGadget.brand} ${targetGadget.model} at ${cleanFoundLocation} (Decision: ${isKeeping ? 'Keeping Gadget Safe' : 'Will Surrender to OSA, Ref: ' + surrenderRef})`,
+      details: `Finder (${effectiveFinderName}) submitted found report for ${targetGadget.brand} ${targetGadget.model} at ${cleanFoundLocation} (Decision: ${isKeeping ? 'Keeping Gadget Safe' : 'Surrender to OSA / Awaiting Handover, Ref: ' + surrenderRef})`,
       ipAddress: req.ip
     });
 
     let recoveryChat = null;
 
     if (isKeeping) {
-      // Create secure temporary recovery chat
-      const finderSessionToken = 'fnd_sec_' + crypto.randomBytes(16).toString('hex');
-      const chatId = 'cht_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+      // Create secure temporary recovery chat if none exists
+      if (existingActiveChat && existingActiveChat.status === 'ACTIVE') {
+        recoveryChat = existingActiveChat;
+      } else {
+        const finderSessionToken = 'fnd_sec_' + crypto.randomBytes(16).toString('hex');
+        const chatId = 'cht_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
 
-      recoveryChat = db.insert('recovery_chats', {
-        id: chatId,
-        gadgetId: targetGadget.id,
-        missingReportId: activeMissing ? activeMissing.id : null,
-        foundReportId: report.id,
-        finderSessionToken,
-        finderName: effectiveFinderName,
-        foundLocation: cleanFoundLocation,
-        ownerUserId: targetGadget.userId,
-        status: 'ACTIVE',
-        messages: [],
-        createdAt: new Date().toISOString()
-      });
+        recoveryChat = db.insert('recovery_chats', {
+          id: chatId,
+          gadgetId: targetGadget.id,
+          missingReportId: activeMissing ? activeMissing.id : null,
+          foundReportId: report.id,
+          finderSessionToken,
+          finderName: effectiveFinderName,
+          foundLocation: cleanFoundLocation,
+          ownerUserId: targetGadget.userId,
+          status: 'ACTIVE',
+          messages: [],
+          createdAt: new Date().toISOString()
+        });
+      }
 
       // Update Owner Notification: Title "Someone Found Your Gadget" + Safety Notice
       const safetyNoticeText = `⚠️ Safety & Liability Notice\nPlease prioritize your safety when arranging the return of a missing gadget.\nGadgetGuard and the school/OSA provide this platform to facilitate communication between the gadget owner and finder. Any personal meetup or arrangement outside the school/OSA is the responsibility of the individuals involved.\nThe school/OSA is not responsible for incidents, injuries, losses, or other circumstances arising from personal meetups conducted outside official school premises or OSA-supervised procedures.\nFor your safety, we strongly recommend arranging the return through the Office of Student Affairs (OSA – Room 1109).\nIf a personal meetup is necessary, choose a safe and public location, such as a police station or busy mall, and inform someone you trust.`;
@@ -181,41 +221,92 @@ router.post('/report', (req, res) => {
         }
       });
     } else {
-      // IF "I WILL SURRENDER IT TO OSA" IS SELECTED:
-      // Record custody progression: MISSING -> WILL SURRENDER TO OSA -> PENDING OSA TURNOVER
-      // Do NOT mark as physically received by OSA yet (actual receipt requires OSA confirmation).
+      // =========================================================================
+      // FINDER CHOOSES OR TRANSITIONS TO "I WILL SURRENDER IT TO OSA"
+      // =========================================================================
+      // Close or make any existing recovery chats read-only (do not delete chat history)
+      const chatsToClose = db.find('recovery_chats', c => c.gadgetId === targetGadget.id && c.status !== 'CLOSED');
+      chatsToClose.forEach(c => {
+        const currentMessages = Array.isArray(c.messages) ? [...c.messages] : [];
+        currentMessages.push({
+          id: 'msg_sys_' + Date.now().toString(36),
+          senderRole: 'SYSTEM',
+          messageText: '📋 Notice: The finder has decided to surrender this gadget to the Office of Student Affairs (OSA Room 1109). This chat is now closed and read-only. Status: Awaiting OSA Handover.',
+          createdAt: new Date().toISOString()
+        });
+        db.update('recovery_chats', c.id, {
+          status: 'CLOSED',
+          closedReason: 'SURRENDERED_TO_OSA',
+          messages: currentMessages
+        });
+      });
+
+      // Update gadget custody and surrender status to AWAITING HANDOVER
+      const surrenderInfoData = {
+        surrenderReference: surrenderRef,
+        finderName: effectiveFinderName,
+        foundLocation: cleanFoundLocation,
+        foundDate: report.foundDate || new Date().toISOString(),
+        status: 'AWAITING OSA HANDOVER',
+        notes: message ? message.trim() : ''
+      };
+
       db.update('gadgets', targetGadget.id, {
         custodyStatus: 'PENDING_OSA_TURNOVER',
         surrenderStatus: 'WILL_SURRENDER_TO_OSA',
-        pendingSurrenderRef: surrenderRef
+        pendingSurrenderRef: surrenderRef,
+        surrenderInfo: surrenderInfoData
       });
 
-      // Notify gadget owner that finder indicated intent to surrender via Campus Security / OSA
-      // (Strictly do not expose finder's optional contact number to owner)
+      // Format current Philippine date and time for owner notification
+      const now = new Date();
+      const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const phDate = new Date(utcMs + (8 * 3600000));
+      const monthsLong = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const dateStr = `${monthsLong[phDate.getMonth()]} ${phDate.getDate()}, ${phDate.getFullYear()}`;
+      const hours24 = phDate.getHours();
+      const hours12 = String(hours24 % 12 || 12).padStart(2, '0');
+      const minutes = String(phDate.getMinutes()).padStart(2, '0');
+      const ampm = hours24 >= 12 ? 'PM' : 'AM';
+      const formattedDateTime = `${dateStr} at ${hours12}:${minutes} ${ampm}`;
+
+      // Notify gadget owner immediately with exact required content
       db.addNotification({
         userId: targetGadget.userId,
-        title: 'Finder Plans to Surrender Your Gadget 🏢',
-        message: `A finder has indicated that they will surrender your missing gadget through Campus Security/OSA.\n\n📍 Found At: ${cleanFoundLocation}\n📋 Status: Pending Turnover to Campus Security & OSA\nRef: ${surrenderRef}\n\nYou will be notified once OSA physically receives and confirms possession of your device.`,
+        title: 'Finder Decided to Surrender Your Gadget to OSA',
+        message: `The finder has decided to surrender your missing gadget to the Office of Student Affairs (OSA Room 1109). Please wait for OSA to confirm that the gadget has been physically received before proceeding with the claiming process.\n\n📱 Gadget: ${targetGadget.brand} ${targetGadget.model}\n📍 Found Location: ${cleanFoundLocation}\n🕒 Notification Date/Time: ${formattedDateTime}\n📋 Case Reference: ${surrenderRef}`,
         type: 'GADGET_FOUND',
         linkUrl: '/student/#lost-status'
       });
 
-      // Notify OSA Admins (authorized OSA staff can access contact number if voluntarily provided)
+      // Notify OSA Admins
       const osaAdmins = db.find('users', u => u.role === 'osa_admin');
       osaAdmins.forEach(admin => {
         db.addNotification({
           userId: admin.id,
           title: 'Found Gadget Surrender Pending 📦',
-          message: `Finder (${effectiveFinderName}${effectiveFinderContact ? ', Tel: ' + effectiveFinderContact : ''}) reported finding ${targetGadget.brand} ${targetGadget.model} at ${cleanFoundLocation} and intends to surrender it via Campus Security Guard / OSA Room 1109. Ref: ${surrenderRef}`,
+          message: `Finder (${effectiveFinderName}${effectiveFinderContact ? ', Tel: ' + effectiveFinderContact : ''}) has chosen to surrender missing gadget ${targetGadget.brand} ${targetGadget.model} to OSA Room 1109. Found at: ${cleanFoundLocation}. Ref: ${surrenderRef}`,
           type: 'GADGET_FOUND',
-          linkUrl: '/osa/#found'
+          linkUrl: '/osa/#claims'
         });
       });
+
+      // Broadcast live event to update active views
+      try {
+        const broadcast = req.app.get('broadcastEvent');
+        if (typeof broadcast === 'function') {
+          broadcast('FINDER_SURRENDER_DECIDED', {
+            gadgetId: targetGadget.id,
+            surrenderReference: surrenderRef,
+            status: 'AWAITING_OSA_HANDOVER'
+          });
+        }
+      } catch (e) {}
 
       const owner = db.findById('users', targetGadget.userId);
       const studentIdNumber = owner ? (owner.idNumber || 'N/A') : 'N/A';
 
-      return res.status(201).json({
+      return res.status(200).json({
         success: true,
         message: 'Thank you for helping our school community! Please bring the device to the designated Campus Security Guard or OSA Room 1109.',
         report: {
@@ -225,14 +316,21 @@ router.post('/report', (req, res) => {
           finderName: report.finderName,
           foundLocation: report.foundLocation,
           foundDate: report.foundDate,
-          status: report.status
+          status: 'PENDING_OSA_TURNOVER',
+          turnInMethod: 'SUBMITTED_TO_OSA'
         },
         surrenderReference: surrenderRef,
         gadgetName: `${targetGadget.brand} ${targetGadget.model}`,
         gadgetId: targetGadget.id,
         studentIdNumber,
-        status: 'Missing (Pending Turnover)',
-        chat: null
+        status: 'AWAITING OSA HANDOVER',
+        recoveryStatus: 'SURRENDER TO OSA / AWAITING HANDOVER',
+        chat: existingActiveChat ? {
+          id: existingActiveChat.id,
+          status: 'CLOSED',
+          isClosed: true,
+          closedReason: 'SURRENDERED_TO_OSA'
+        } : null
       });
     }
   } catch (err) {

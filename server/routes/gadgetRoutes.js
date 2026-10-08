@@ -153,40 +153,42 @@ router.get('/my', authMiddleware, (req, res) => {
       }
       const latestClaim = db.findOne('claims', c => c.gadgetId === g.id);
 
-      // If a finder reported finding the gadget and chose to keep it safe
+      // If a finder reported finding the gadget and chose to keep it safe (suppressed if finder surrendered to OSA)
       let finderInfo = null;
-      if (g.status === 'MISSING') {
+      const isSurrenderPending = (g.custodyStatus === 'PENDING_OSA_TURNOVER' || g.surrenderStatus === 'WILL_SURRENDER_TO_OSA');
+
+      if (g.status === 'MISSING' && !isSurrenderPending) {
         const foundReport = db.findOne('found_reports', f => f.gadgetId === g.id && f.status !== 'PROCESSED_BY_OSA' && f.status !== 'RETURNED' && f.status !== 'RESOLVED' && f.status !== 'CANCELLED');
         if (foundReport && (foundReport.turnInMethod === 'KEPT_SAFE' || foundReport.turnInMethod === 'KEPT_SAFE_CONTACT_ME' || foundReport.turnInMethod === 'FINDER_HOLDING')) {
           const activeChat = db.findOne('recovery_chats', c => c.gadgetId === g.id && c.status === 'ACTIVE');
-          finderInfo = {
-            id: foundReport.id,
-            finderName: foundReport.finderName || 'Finder',
-            foundLocation: foundReport.foundLocation,
-            action: 'Keeping Gadget Safe',
-            turnInMethod: 'KEPT_SAFE',
-            foundDate: foundReport.foundDate,
-            message: foundReport.message || foundReport.notes || '',
-            chatId: activeChat ? activeChat.id : null
-          };
+          if (activeChat) {
+            finderInfo = {
+              id: foundReport.id,
+              finderName: foundReport.finderName || 'Finder',
+              foundLocation: foundReport.foundLocation,
+              action: 'Keeping Gadget Safe',
+              turnInMethod: 'KEPT_SAFE',
+              foundDate: foundReport.foundDate,
+              message: foundReport.message || foundReport.notes || '',
+              chatId: activeChat.id
+            };
+          }
         }
       }
 
       // If a finder reported finding the gadget and chose to surrender to OSA
       let surrenderInfo = null;
-      if (g.status === 'MISSING') {
+      if (isSurrenderPending || (g.status === 'MISSING' && g.custodyStatus === 'PENDING_OSA_TURNOVER')) {
         const surrenderReport = db.findOne('found_reports', f => f.gadgetId === g.id && (f.turnInMethod === 'SUBMITTED_TO_OSA' || f.finderDecision === 'WILL_SURRENDER_TO_OSA') && f.status === 'PENDING_OSA_TURNOVER');
-        if (surrenderReport) {
-          surrenderInfo = {
-            id: surrenderReport.id,
-            surrenderReference: surrenderReport.surrenderReference,
-            finderName: surrenderReport.finderName || 'Finder',
-            foundLocation: surrenderReport.foundLocation,
-            foundDate: surrenderReport.foundDate,
-            status: 'PENDING_OSA_TURNOVER',
-            message: surrenderReport.message || ''
-          };
-        }
+        surrenderInfo = {
+          id: surrenderReport ? surrenderReport.id : (g.pendingSurrenderRef || g.id),
+          surrenderReference: (surrenderReport && surrenderReport.surrenderReference) || g.pendingSurrenderRef || 'SRF-PENDING',
+          finderName: (surrenderReport && surrenderReport.finderName) || (g.surrenderInfo && g.surrenderInfo.finderName) || 'Finder',
+          foundLocation: (surrenderReport && surrenderReport.foundLocation) || (g.surrenderInfo && g.surrenderInfo.foundLocation) || 'Campus',
+          foundDate: (surrenderReport && surrenderReport.foundDate) || (g.surrenderInfo && g.surrenderInfo.foundDate) || g.updatedAt || new Date().toISOString(),
+          status: 'AWAITING OSA HANDOVER',
+          message: (surrenderReport && (surrenderReport.message || surrenderReport.notes)) || (g.surrenderInfo && g.surrenderInfo.notes) || ''
+        };
       }
 
       return {

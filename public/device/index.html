@@ -868,10 +868,10 @@
       });
     }
 
-    // Persistent Finder Recovery Session Helpers
-    function getFinderSession(token, gadgetId) {
-      if (token) {
-        const raw = localStorage.getItem('gg_finder_session_token_' + token) || localStorage.getItem('gg_finder_session_' + token);
+    // Persistent Finder Recovery Session Helpers (strictly scoped to gadget ID & missing case ID)
+    function getFinderSession(token, gadgetId, missingReportId = null) {
+      if (gadgetId && missingReportId) {
+        const raw = localStorage.getItem('gg_finder_case_' + gadgetId + '_' + missingReportId);
         if (raw) {
           try {
             const p = JSON.parse(raw);
@@ -888,25 +888,37 @@
           } catch (e) {}
         }
       }
+      if (token) {
+        const raw = localStorage.getItem('gg_finder_session_token_' + token) || localStorage.getItem('gg_finder_session_' + token);
+        if (raw) {
+          try {
+            const p = JSON.parse(raw);
+            if (p && p.chatId && p.finderSessionToken) return p;
+          } catch (e) {}
+        }
+      }
       return null;
     }
 
     function saveFinderSession(session) {
       if (!session || !session.chatId || !session.finderSessionToken) return;
       const jsonStr = JSON.stringify(session);
-      if (session.gadgetToken) {
-        localStorage.setItem('gg_finder_session_token_' + session.gadgetToken, jsonStr);
-        localStorage.setItem('gg_finder_session_' + session.gadgetToken, jsonStr);
+      if (session.gadgetId && session.missingReportId) {
+        localStorage.setItem('gg_finder_case_' + session.gadgetId + '_' + session.missingReportId, jsonStr);
       }
       if (session.gadgetId) {
         localStorage.setItem('gg_finder_session_gadget_' + session.gadgetId, jsonStr);
       }
+      if (session.gadgetToken) {
+        localStorage.setItem('gg_finder_session_token_' + session.gadgetToken, jsonStr);
+        localStorage.setItem('gg_finder_session_' + session.gadgetToken, jsonStr);
+      }
     }
 
     // Surrender Session Helpers
-    function getSurrenderSession(token, gadgetId) {
-      if (token) {
-        const raw = localStorage.getItem('gg_surrender_ref_' + token);
+    function getSurrenderSession(token, gadgetId, missingReportId = null) {
+      if (gadgetId && missingReportId) {
+        const raw = localStorage.getItem('gg_surrender_case_' + gadgetId + '_' + missingReportId);
         if (raw) {
           try {
             const p = JSON.parse(raw);
@@ -923,17 +935,29 @@
           } catch (e) {}
         }
       }
+      if (token) {
+        const raw = localStorage.getItem('gg_surrender_ref_' + token);
+        if (raw) {
+          try {
+            const p = JSON.parse(raw);
+            if (p && p.surrenderReference) return p;
+          } catch (e) {}
+        }
+      }
       return null;
     }
 
     function saveSurrenderSession(data) {
       if (!data || !data.surrenderReference) return;
       const jsonStr = JSON.stringify(data);
-      if (scannedToken) {
-        localStorage.setItem('gg_surrender_ref_' + scannedToken, jsonStr);
+      if (data.gadgetId && data.missingReportId) {
+        localStorage.setItem('gg_surrender_case_' + data.gadgetId + '_' + data.missingReportId, jsonStr);
       }
       if (data.gadgetId) {
         localStorage.setItem('gg_surrender_ref_gadget_' + data.gadgetId, jsonStr);
+      }
+      if (scannedToken) {
+        localStorage.setItem('gg_surrender_ref_' + scannedToken, jsonStr);
       }
     }
 
@@ -949,10 +973,14 @@
 
     async function executeScanLookup(token) {
       try {
-        // Priority 1: Check if there is an existing local session for this token
+        // Clear in-memory session from previous scans so scanning Gadget A does not affect Gadget B
+        window.__activeFinderSession = null;
+        currentGadgetData = null;
+
+        // Priority 1: Check if there is an existing local session specifically for this token
         const existingSession = getFinderSession(token, null);
         const lookupParams = {};
-        if (existingSession && existingSession.finderSessionToken) {
+        if (existingSession && existingSession.finderSessionToken && !existingSession.isClosed) {
           lookupParams.finderToken = existingSession.finderSessionToken;
         }
 
@@ -969,26 +997,37 @@
           scannedToken = res.gadget.secureToken;
         }
 
+        const currentMissingId = res.missingReport ? res.missingReport.id : null;
+
         // Persist and synchronize verified active recovery session
         if (res.activeFinderSession && res.activeFinderSession.hasSession) {
-          window.__activeFinderSession = res.activeFinderSession;
-          saveFinderSession({
-            chatId: res.activeFinderSession.chatId,
-            finderSessionToken: res.activeFinderSession.finderSessionToken,
-            finderName: res.activeFinderSession.finderName,
-            foundLocation: res.activeFinderSession.foundLocation,
-            missingReportId: res.activeFinderSession.missingReportId,
+          window.__activeFinderSession = {
+            ...res.activeFinderSession,
             gadgetId: res.gadget?.id,
-            gadgetToken: res.gadget?.secureToken || token,
-            isClosed: Boolean(res.activeFinderSession.isClosed),
-            status: res.activeFinderSession.status
-          });
-        } else {
-          // Check if local session exists by gadgetId
-          const sessionByGadget = getFinderSession(token, res.gadget?.id);
-          if (sessionByGadget) {
+            gadgetToken: res.gadget?.secureToken || token
+          };
+          saveFinderSession(window.__activeFinderSession);
+        } else if (res.gadget && res.gadget.status === 'MISSING') {
+          // Check if local session exists specifically for this gadget + missing report
+          const sessionByGadget = getFinderSession(token, res.gadget.id, currentMissingId);
+          if (sessionByGadget && sessionByGadget.gadgetId === res.gadget.id && !sessionByGadget.isClosed) {
             window.__activeFinderSession = sessionByGadget;
           }
+        }
+
+        // Check if surrender is active or pending
+        if (res.surrenderDetails && res.surrenderDetails.hasSurrender) {
+          saveSurrenderSession({
+            surrenderReference: res.surrenderDetails.surrenderReference,
+            gadgetName: `${res.gadget.brand} ${res.gadget.model}`,
+            gadgetId: res.gadget.id,
+            missingReportId: currentMissingId,
+            studentIdNumber: res.gadget.studentIdNumber || 'Registered Student',
+            foundLocation: res.surrenderDetails.foundLocation,
+            finderName: res.surrenderDetails.finderName,
+            notes: res.surrenderDetails.notes,
+            status: 'AWAITING OSA HANDOVER'
+          });
         }
 
         // If GPS wasn't available during initial fast lookup, but browser geolocation is supported:
@@ -1083,7 +1122,7 @@
           const pastSession = (window.__activeFinderSession && window.__activeFinderSession.hasSession ? window.__activeFinderSession : null) || 
             getFinderSession(scannedToken, res.gadget?.id);
 
-          if (pastSession && pastSession.chatId) {
+          if (pastSession && pastSession.chatId && pastSession.gadgetId === res.gadget?.id) {
             actionWrap.style.display = 'block';
             actionWrap.innerHTML = `
               <div class="finder-active-session-card closed" style="margin-top: 14px;">
@@ -1191,15 +1230,33 @@
       }
 
       // Check if finder already submitted intent to surrender
+      const isSurrenderPending = Boolean(
+        currentGadgetData && (currentGadgetData.custodyStatus === 'PENDING_OSA_TURNOVER' || currentGadgetData.surrenderStatus === 'WILL_SURRENDER_TO_OSA')
+      );
       const savedSurrender = getSurrenderSession(scannedToken, currentGadgetData?.id);
-      if (savedSurrender && (currentGadgetData?.status === 'MISSING' || currentGadgetData?.custodyStatus === 'PENDING_OSA_TURNOVER')) {
-        renderSurrenderReferenceCard(savedSurrender);
+      if (isSurrenderPending || (savedSurrender && currentGadgetData?.status === 'MISSING')) {
+        const surrenderData = savedSurrender || {
+          surrenderReference: currentGadgetData?.pendingSurrenderRef || 'SRF-PENDING',
+          gadgetName: `${currentGadgetData?.brand || ''} ${currentGadgetData?.model || ''}`.trim() || 'Gadget',
+          gadgetId: currentGadgetData?.id || '',
+          studentIdNumber: currentGadgetData?.studentIdNumber || 'Registered Student',
+          foundLocation: currentGadgetData?.surrenderInfo?.foundLocation || 'Campus Grounds',
+          finderName: currentGadgetData?.surrenderInfo?.finderName || 'Finder',
+          notes: currentGadgetData?.surrenderInfo?.notes || '',
+          status: 'AWAITING OSA HANDOVER'
+        };
+        renderSurrenderReferenceCard(surrenderData);
         return;
       }
 
-      const session = explicitSession || 
+      let session = explicitSession || 
         (window.__activeFinderSession && window.__activeFinderSession.hasSession ? window.__activeFinderSession : null) || 
         getFinderSession(scannedToken, currentGadgetData?.id);
+
+      // Verify that this session actually belongs to the current gadget
+      if (session && session.gadgetId && currentGadgetData && session.gadgetId !== currentGadgetData.id) {
+        session = null;
+      }
 
       if (session && session.chatId && session.finderSessionToken) {
         const isClosed = Boolean(session.isClosed || (currentGadgetData && currentGadgetData.status !== 'MISSING'));
@@ -1281,6 +1338,18 @@
     }
 
     function openSurrenderOsaModal() {
+      // Pre-fill existing finder details if transitioning from Keep Safe chat
+      const existingSession = window.__activeFinderSession || getFinderSession(scannedToken, currentGadgetData?.id);
+      if (existingSession) {
+        const nameInput = document.getElementById('osa-finder-name');
+        const locInput = document.getElementById('osa-found-location');
+        if (nameInput && !nameInput.value && existingSession.finderName && existingSession.finderName !== 'Finder') {
+          nameInput.value = existingSession.finderName;
+        }
+        if (locInput && !locInput.value && existingSession.foundLocation) {
+          locInput.value = existingSession.foundLocation;
+        }
+      }
       document.getElementById('surrender-osa-modal').classList.add('active');
     }
 
@@ -1309,14 +1378,21 @@
       }
 
       try {
-        const res = await api.reportFoundGadget(scannedToken, {
+        const existingSession = window.__activeFinderSession || getFinderSession(scannedToken, currentGadgetData?.id);
+        const payload = {
           token: scannedToken,
           secureToken: scannedToken,
           gadgetId: currentGadgetData?.id,
           finderName,
           foundLocation,
           turnInMethod: 'KEPT_SAFE'
-        });
+        };
+        if (existingSession && existingSession.finderSessionToken) {
+          payload.finderSessionToken = existingSession.finderSessionToken;
+          payload.chatId = existingSession.chatId;
+        }
+
+        const res = await api.reportFoundGadget(scannedToken, payload);
 
         closeModal('keep-safe-modal');
 
@@ -1353,7 +1429,7 @@
       }
     }
 
-    // Handle "I Will Surrender It to OSA" (Section A & C)
+    // Handle "I Will Surrender It to OSA"
     async function handleSurrenderOsaSubmit(e) {
       e.preventDefault();
       const finderNameInput = document.getElementById('osa-finder-name').value.trim();
@@ -1378,7 +1454,8 @@
       const effectiveFinderName = finderNameInput || 'Finder';
 
       try {
-        const res = await api.reportFoundGadget(scannedToken, {
+        const existingSession = window.__activeFinderSession || getFinderSession(scannedToken, currentGadgetData?.id);
+        const reportPayload = {
           token: scannedToken,
           secureToken: scannedToken,
           gadgetId: currentGadgetData?.id,
@@ -1389,9 +1466,20 @@
           turnInMethod: 'SUBMITTED_TO_OSA',
           notes,
           message: notes
-        });
+        };
+
+        if (existingSession && existingSession.finderSessionToken) {
+          reportPayload.finderSessionToken = existingSession.finderSessionToken;
+          reportPayload.chatId = existingSession.chatId;
+        }
+
+        const res = await api.submitFoundReport(reportPayload);
 
         closeModal('surrender-osa-modal');
+
+        if (activeFinderChatId) {
+          closeFinderChatModal();
+        }
 
         const surrenderRef = res.surrenderReference || res.report?.surrenderReference || ('SRF-' + Date.now().toString(36).toUpperCase());
         const gadgetName = res.gadgetName || `${currentGadgetData?.brand || ''} ${currentGadgetData?.model || ''}`.trim() || 'Gadget';
@@ -1402,15 +1490,29 @@
           surrenderReference: surrenderRef,
           gadgetName,
           gadgetId,
+          missingReportId: currentGadgetData?.missingReport?.id || null,
           studentIdNumber,
           foundLocation,
           finderName: effectiveFinderName,
           notes,
           submittedAt: new Date().toISOString(),
-          status: 'Missing (Pending Turnover)'
+          status: 'AWAITING OSA HANDOVER'
         };
 
         saveSurrenderSession(surrenderSession);
+
+        if (existingSession) {
+          existingSession.isClosed = true;
+          existingSession.status = 'CLOSED';
+          saveFinderSession(existingSession);
+          window.__activeFinderSession = existingSession;
+        }
+
+        if (currentGadgetData) {
+          currentGadgetData.custodyStatus = 'PENDING_OSA_TURNOVER';
+          currentGadgetData.surrenderStatus = 'WILL_SURRENDER_TO_OSA';
+          currentGadgetData.pendingSurrenderRef = surrenderRef;
+        }
 
         await Swal.fire({
           icon: 'success',
@@ -1611,9 +1713,22 @@
 
         if (!msgContainer) return;
 
-        if (chat.isClosed || (currentGadgetData && currentGadgetData.status !== 'MISSING')) {
+        const isSurrendered = Boolean(
+          chat.closedReason === 'SURRENDERED_TO_OSA' ||
+          (currentGadgetData && (currentGadgetData.custodyStatus === 'PENDING_OSA_TURNOVER' || currentGadgetData.surrenderStatus === 'WILL_SURRENDER_TO_OSA'))
+        );
+        const isDeviceClosed = Boolean(chat.isClosed || (currentGadgetData && currentGadgetData.status !== 'MISSING') || isSurrendered);
+
+        if (isDeviceClosed) {
           activeFinderIsClosed = true;
-          if (closedBanner) closedBanner.style.display = 'block';
+          if (closedBanner) {
+            closedBanner.style.display = 'block';
+            if (isSurrendered) {
+              closedBanner.innerHTML = '🔒 This conversation is closed and read-only because the finder chose to surrender the gadget to OSA Room 1109.';
+            } else {
+              closedBanner.innerHTML = '🔒 This recovery conversation is closed because the gadget has been marked recovered or returned.';
+            }
+          }
           if (chatForm) chatForm.style.display = 'none';
           if (activeFinderChatInterval) {
             clearInterval(activeFinderChatInterval);
@@ -1623,6 +1738,7 @@
           const s = getFinderSession(scannedToken, currentGadgetData?.id);
           if (s) {
             s.isClosed = true;
+            s.status = 'CLOSED';
             saveFinderSession(s);
           }
         } else {

@@ -1015,8 +1015,14 @@ async function loadLostStatusScreen() {
           `;
         }
 
+        const isAwaitingOsaHandover = Boolean(
+          g.custodyStatus === 'PENDING_OSA_TURNOVER' || 
+          g.surrenderStatus === 'WILL_SURRENDER_TO_OSA' || 
+          (g.surrenderInfo && (g.surrenderInfo.status === 'AWAITING OSA HANDOVER' || g.surrenderInfo.status === 'PENDING_OSA_TURNOVER'))
+        );
+
         let finderCardHtml = '';
-        if (g.finderInfo) {
+        if (g.finderInfo && !isAwaitingOsaHandover) {
           const finderDisplayName = escapeHtml(g.finderInfo.finderName || 'Finder');
           const foundLocationText = escapeHtml(g.finderInfo.foundLocation || 'Campus');
           const deviceDisplayName = escapeHtml(`${g.brand} ${g.model}`);
@@ -1072,32 +1078,41 @@ async function loadLostStatusScreen() {
         }
 
         let surrenderCardHtml = '';
-        if (g.surrenderInfo) {
+        if (isAwaitingOsaHandover || g.surrenderInfo) {
+          const sRef = escapeHtml(g.surrenderInfo?.surrenderReference || g.pendingSurrenderRef || '');
+          const sLoc = escapeHtml(g.surrenderInfo?.foundLocation || 'Campus');
           surrenderCardHtml = `
-            <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 16px; margin-top: 10px; text-align: left;">
-              <div style="font-weight: 800; color: #1e40af; font-size: 0.92rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <span>🏢</span> Finder Surrender in Progress
+            <div class="surrender-status-card" style="background: #eff6ff; border: 1.5px solid #93c5fd; border-radius: 12px; padding: 16px; margin-top: 10px; text-align: left; box-shadow: 0 2px 8px rgba(30,58,138,0.04);">
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 1.25rem;">🏢</span>
+                  <strong style="color: #1e40af; font-size: 0.96rem;">Finder Will Surrender Your Gadget to OSA</strong>
                 </div>
-                <span style="background: #dbeafe; color: #1e40af; font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; border: 1px solid #bfdbfe;">
-                  Pending Turnover to Campus Security &amp; OSA
+                <span style="background: #fef3c7; color: #92400e; font-size: 0.74rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; border: 1px solid #fde68a; text-transform: uppercase; letter-spacing: 0.03em;">
+                  AWAITING OSA HANDOVER
                 </span>
               </div>
-              <div style="font-size: 0.84rem; color: #1e3a8a; line-height: 1.6; background: #ffffff; border: 1px solid #dbeafe; border-radius: 10px; padding: 14px;">
-                <p style="margin: 0 0 6px; font-weight: 600;">
-                  A finder has indicated that they will surrender your missing gadget through Campus Security/OSA.
+              <div style="font-size: 0.85rem; color: #1e3a8a; line-height: 1.6; background: #ffffff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 14px;">
+                <p style="margin: 0 0 8px; font-weight: 600; font-size: 0.88rem; color: #1e40af;">
+                  The finder has chosen to surrender your gadget to OSA Room 1109. Please wait for confirmation once OSA receives it.
                 </p>
-                <div style="font-size: 0.8rem; color: #475569;">
-                  📍 <strong>Found At:</strong> ${escapeHtml(g.surrenderInfo.foundLocation || 'Campus')}<br>
-                  📋 <strong>Case Ref:</strong> <span class="font-mono" style="color: #1e40af; font-weight: 700;">${escapeHtml(g.surrenderInfo.surrenderReference || '')}</span><br>
-                  🏢 <strong>Turnover Destination:</strong> Campus Security Guard &rarr; Office of Student Affairs (OSA – Room 1109)
-                </div>
-                <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #cbd5e1; font-size: 0.78rem; color: #64748b;">
-                  <em>Note: The finder has declared their intent to surrender. You will receive an official notification once OSA physically receives and verifies possession of your gadget.</em>
+                <div style="display: grid; gap: 6px; font-size: 0.82rem; color: #334155; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #cbd5e1;">
+                  <div>📍 <strong>Found Location:</strong> ${sLoc}</div>
+                  ${sRef ? `<div>📋 <strong>Case Reference:</strong> <span class="font-mono" style="color: #1e40af; font-weight: 700;">${sRef}</span></div>` : ''}
+                  <div>🏢 <strong>Turnover Destination:</strong> Office of Student Affairs (OSA Room 1109)</div>
+                  <div style="color: #64748b; font-style: italic; margin-top: 2px;">
+                    Once OSA physically receives and confirms possession of the gadget, its status will be updated to IN OSA CUSTODY / READY FOR CLAIM.
+                  </div>
                 </div>
               </div>
             </div>
           `;
+        }
+
+        // Action buttons: "I Found My Gadget / Cancel Alert" is removed ONLY for this gadget if awaiting OSA handover
+        let actionButtonsHtml = `<button class="btn btn-secondary btn-sm" onclick="openGadgetDetailsModal('${g.id}')">View Details</button>`;
+        if (!isAwaitingOsaHandover) {
+          actionButtonsHtml += ` <button class="btn btn-success btn-sm" onclick="cancelMissingReportFor('${g.missingReport?.id || g.id}')">✅ I Found My Device (Cancel Alert)</button>`;
         }
 
         return `
@@ -1109,12 +1124,11 @@ async function loadLostStatusScreen() {
                   📍 Last Seen: ${escapeHtml(g.missingReport?.lastSeenLocation || 'Campus')}
                 </div>
                 <div style="font-size: 0.78rem; color: #991b1b; font-weight: 700; margin-top: 4px;">
-                  🔴 Public Missing Alert: Active • Scans: ${scansCount}
+                  ${isAwaitingOsaHandover ? '🟡 Status: Awaiting OSA Handover' : '🔴 Public Missing Alert: Active'} • Scans: ${scansCount}
                 </div>
               </div>
               <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <button class="btn btn-secondary btn-sm" onclick="openGadgetDetailsModal('${g.id}')">View Details</button>
-                <button class="btn btn-success btn-sm" onclick="cancelMissingReportFor('${g.missingReport?.id || g.id}')">✅ I Found My Device (Cancel Alert)</button>
+                ${actionButtonsHtml}
               </div>
             </div>
             ${finderCardHtml}

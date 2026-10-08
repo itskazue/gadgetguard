@@ -108,6 +108,9 @@ router.post('/return', authMiddleware, requireRole('osa_admin'), (req, res) => {
       status: 'REGISTERED',
       custodyStatus: 'RETURNED_TO_OWNER',
       claimStatus: 'RETURNED',
+      surrenderStatus: null,
+      pendingSurrenderRef: null,
+      surrenderInfo: null,
       custodyLocation: null,
       lastReturnId: returnRecord.id,
       lastHandoverPhotoUrl: cleanPhotoUrl,
@@ -196,9 +199,11 @@ router.post('/return', authMiddleware, requireRole('osa_admin'), (req, res) => {
       linkUrl: '/student/#returns'
     });
 
+    const updatedGadget = db.findById('gadgets', gadgetId);
     return res.json({
       success: true,
       message: 'Gadget officially returned and receipt generated!',
+      gadget: updatedGadget,
       returnRecord
     });
   } catch (err) {
