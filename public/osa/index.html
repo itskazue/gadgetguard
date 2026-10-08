@@ -11,8 +11,8 @@
   <link rel="icon" type="image/png" href="/assets/ncst_logo.png">
   <link rel="stylesheet" href="/css/sweetalert2.min.css">
   <script src="/js/sweetalert2.all.min.js"></script>
-  <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="/osa/osa.css">
+  <link rel="stylesheet" href="/css/style.css?v=4.2">
+  <link rel="stylesheet" href="/osa/osa.css?v=4.2">
 </head>
 <body>
 
@@ -1098,40 +1098,35 @@
 
   <!-- Modal: Print Official QR Sticker -->
   <div id="print-sticker-modal" class="modal-overlay">
-    <div class="modal-box print-qr-target" style="max-width: 440px;">
+    <div class="modal-box" style="max-width: 400px;">
       <div class="modal-header">
         <h3 class="modal-title">🏷️ Print Official QR Sticker</h3>
         <button class="btn btn-secondary btn-icon" onclick="closeModal('print-sticker-modal')">&times;</button>
       </div>
-      <div class="modal-body text-center">
+      <div class="modal-body text-center" style="padding: 20px 24px;">
         <div class="official-qr-sticker" id="admin-print-sticker-box">
           <div class="sticker-header">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
-            <span>GadgetGuard Verified</span>
+            <span>GADGETGUARD VERIFIED</span>
           </div>
+          <div class="sticker-scan-me">SCAN ME</div>
           <img id="admin-sticker-qr-img" class="sticker-qr-img" src="" alt="QR Code">
-          <div>
+          <div class="sticker-token-wrap">
             <span class="sticker-token" id="admin-sticker-token">gg_dev_xxxx</span>
-          </div>
-          <div style="font-weight: 700; font-size: 0.85rem;" id="admin-sticker-device">-</div>
-          <div style="font-size: 0.725rem; color: #64748b;" id="admin-sticker-owner">-</div>
-          <div class="sticker-footer" style="margin-top: 8px;">
-            If found, scan QR or return to<br>
-            <strong>Office of Student Affairs (Room 1109)</strong>
           </div>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary btn-sm" onclick="closeModal('print-sticker-modal')">Close</button>
-        <button class="btn btn-primary btn-sm" onclick="window.print()">🖨️ Print Sticker</button>
+        <button class="btn btn-primary btn-sm" onclick="printOfficialQrSticker()">🖨️ Print Sticker</button>
       </div>
     </div>
   </div>
 
   <script src="/js/jsQR.min.js"></script>
   <script src="/js/scanner.js"></script>
-  <script src="/osa/osa.js?v=4.0"></script>
+  <script src="/osa/osa.js?v=4.2"></script>
 </body>
 </html>

@@ -960,17 +960,47 @@ async function handleOsaMarkMissingSubmit(event) {
   }
 }
 
-function openPrintStickerModal(gadgetId) {
-  const gadget = allGadgetsCache.find(g => g.id === gadgetId);
-  if (!gadget || !gadget.qrCodeDataUrl) return;
+async function openPrintStickerModal(gadgetId) {
+  let gadget = allGadgetsCache.find(g => g.id === gadgetId);
+  if (!gadget && typeof api !== 'undefined' && api.getGadget) {
+    try {
+      const res = await api.getGadget(gadgetId);
+      if (res && res.gadget) gadget = res.gadget;
+    } catch (_) {}
+  }
+  if (!gadget || !gadget.qrCodeDataUrl) {
+    if (typeof SwalHelper !== 'undefined') {
+      SwalHelper.toast('warning', 'Sticker Unavailable', 'QR code data is not yet generated for this device.');
+    }
+    return;
+  }
 
-  document.getElementById('admin-sticker-qr-img').src = gadget.qrCodeDataUrl;
-  document.getElementById('admin-sticker-token').textContent = gadget.secureToken;
-  document.getElementById('admin-sticker-device').textContent = `${gadget.brand} ${gadget.model}`;
-  document.getElementById('admin-sticker-owner').textContent = `${gadget.owner?.name || 'Owner'} • ${gadget.owner?.idNumber || 'ID'}`;
+  const qrImg = document.getElementById('admin-sticker-qr-img');
+  const tokenEl = document.getElementById('admin-sticker-token');
+  if (qrImg) qrImg.src = gadget.qrCodeDataUrl;
+  if (tokenEl) tokenEl.textContent = gadget.secureToken || 'gg_token';
 
-  document.getElementById('print-sticker-modal').classList.add('active');
+  const modal = document.getElementById('print-sticker-modal');
+  if (modal) modal.classList.add('active');
 }
+
+function printOfficialQrSticker() {
+  document.body.classList.add('printing-qr-sticker');
+  setTimeout(() => {
+    window.print();
+  }, 40);
+}
+
+window.addEventListener('afterprint', () => {
+  document.body.classList.remove('printing-qr-sticker');
+});
+
+window.addEventListener('beforeprint', () => {
+  const stickerModal = document.getElementById('print-sticker-modal');
+  if (stickerModal && stickerModal.classList.contains('active')) {
+    document.body.classList.add('printing-qr-sticker');
+  }
+});
 
 // 4. Missing Incidents Monitor
 let missingReportsCache = [];
@@ -2665,6 +2695,9 @@ async function handleResetDemoData() {
 function closeModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) modal.classList.remove('active');
+  if (modalId === 'print-sticker-modal') {
+    document.body.classList.remove('printing-qr-sticker');
+  }
 }
 
 function printExecutiveReport() {

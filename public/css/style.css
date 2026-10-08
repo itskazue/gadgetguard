@@ -559,24 +559,21 @@ textarea.form-control {
   gap: 10px;
 }
 
-/* Printable Official QR Sticker Sheet */
-@media print {
-  body * { visibility: hidden; }
-  .print-qr-target, .print-qr-target * { visibility: visible; }
-  .print-qr-target { position: absolute; left: 0; top: 0; width: 100%; }
-  .universal-switch-bar, .modal-footer, .modal-header .btn-icon { display: none !important; }
-}
-
+/* =========================================================================
+   OFFICIAL QR STICKER STYLING & COMPACT PRINT LAYOUT
+   ========================================================================= */
 .official-qr-sticker {
   background: #ffffff;
   color: #0f172a;
   border: 2px dashed #2563eb;
   border-radius: 14px;
-  padding: 18px;
+  padding: 16px 18px 18px;
   text-align: center;
-  max-width: 300px;
+  width: 250px;
+  max-width: 100%;
   margin: 0 auto;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08);
+  box-sizing: border-box;
 }
 
 .sticker-header {
@@ -584,40 +581,169 @@ textarea.form-control {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 800;
   color: #1d4ed8;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.sticker-scan-me {
+  display: inline-block;
+  font-size: 0.74rem;
+  font-weight: 900;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1.5px solid #bfdbfe;
+  padding: 2px 14px;
+  border-radius: 9999px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   margin-bottom: 10px;
 }
 
 .sticker-qr-img {
-  width: 180px;
-  height: 180px;
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
+  width: 175px;
+  height: 175px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
   padding: 4px;
   background: #ffffff;
-  margin: 0 auto 8px;
+  margin: 0 auto 10px;
+  display: block;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  object-fit: contain;
+  box-sizing: border-box;
+}
+
+.sticker-token-wrap {
+  margin: 0;
 }
 
 .sticker-token {
-  font-family: var(--font-mono);
-  font-size: 0.825rem;
-  font-weight: 700;
+  font-family: var(--font-mono, 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace);
+  font-size: 0.85rem;
+  font-weight: 800;
   background: #f1f5f9;
-  padding: 3px 8px;
-  border-radius: 5px;
+  border: 1px solid #e2e8f0;
+  padding: 3px 12px;
+  border-radius: 6px;
   display: inline-block;
-  margin-bottom: 6px;
-  color: #1e293b;
+  color: #0f172a;
+  letter-spacing: 0.03em;
 }
 
-.sticker-footer {
-  font-size: 0.725rem;
-  color: var(--text-muted);
-  line-height: 1.35;
+/* Printable Official QR Sticker Sheet */
+@media print {
+  @page {
+    size: portrait;
+    margin: 10mm;
+  }
+
+  html,
+  body.printing-qr-sticker,
+  body:has(#print-sticker-modal.active) {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body.printing-qr-sticker > *:not(#print-sticker-modal),
+  body:has(#print-sticker-modal.active) > *:not(#print-sticker-modal) {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body.printing-qr-sticker #print-sticker-modal,
+  body:has(#print-sticker-modal.active) #print-sticker-modal {
+    display: block !important;
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 6mm 0 0 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    overflow: visible !important;
+  }
+
+  body.printing-qr-sticker #print-sticker-modal .modal-box,
+  body:has(#print-sticker-modal.active) #print-sticker-modal .modal-box {
+    position: static !important;
+    width: auto !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+    overflow: visible !important;
+  }
+
+  body.printing-qr-sticker #print-sticker-modal .modal-header,
+  body.printing-qr-sticker #print-sticker-modal .modal-footer,
+  body:has(#print-sticker-modal.active) #print-sticker-modal .modal-header,
+  body:has(#print-sticker-modal.active) #print-sticker-modal .modal-footer {
+    display: none !important;
+  }
+
+  body.printing-qr-sticker #print-sticker-modal .modal-body,
+  body:has(#print-sticker-modal.active) #print-sticker-modal .modal-body {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+  }
+
+  body.printing-qr-sticker #admin-print-sticker-box,
+  body:has(#print-sticker-modal.active) #admin-print-sticker-box {
+    display: block !important;
+    margin: 0 auto !important;
+    box-shadow: none !important;
+    border: 2px dashed #2563eb !important;
+    border-radius: 14px !important;
+    background: #ffffff !important;
+    padding: 16px 18px 18px !important;
+    width: 250px !important;
+    max-width: 250px !important;
+    box-sizing: border-box !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+  }
+
+  body.printing-qr-sticker #admin-print-sticker-box *,
+  body:has(#print-sticker-modal.active) #admin-print-sticker-box * {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
 }
 
 /* Utilities */
