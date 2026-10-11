@@ -162,7 +162,7 @@ async function loadOsaDashboardStats() {
     // Sidebar badge counters
     updateSidebarBadge('badge-pending-count', s.pendingGadgets);
     updateSidebarBadge('badge-missing-count', s.missingGadgets);
-    updateSidebarBadge('badge-claims-count', s.inCustodyGadgets || s.pendingClaims);
+    updateSidebarBadge('badge-claims-count', (s.claimsBadgeCount !== undefined) ? s.claimsBadgeCount : (s.inCustodyGadgets || s.pendingClaims));
     updateSidebarBadge('badge-history-count', s.returnedGadgets);
   } catch (err) {
     console.warn('Error loading stats:', err);
@@ -873,7 +873,7 @@ function renderVaultTable(gadgets, hasFilter = false) {
                 ` : ''}
 
                 ${g.status === 'FOUND_IN_CUSTODY' ? `
-                  <button class="btn btn-primary btn-sm" onclick="navigateOsa('claims')" style="display:inline-flex; align-items:center; gap:5px;">
+                  <button class="btn btn-primary btn-sm" onclick="navigateToClaimsForGadget('${g.id}')" style="display:inline-flex; align-items:center; gap:5px;" title="Review and process claim for this gadget">
                     🤝 Review Claims
                   </button>
                 ` : ''}
@@ -1164,7 +1164,7 @@ function renderMissingTable(reports, hasFilter = false) {
                   </button>
                 ` : ''}
                 ${r.gadget?.status === 'FOUND_IN_CUSTODY' ? `
-                  <button class="btn btn-primary btn-sm" onclick="navigateOsa('claims')" style="display:inline-flex; align-items:center; gap:5px;">
+                  <button class="btn btn-primary btn-sm" onclick="navigateToClaimsForGadget('${r.gadgetId || r.gadget?.id}')" style="display:inline-flex; align-items:center; gap:5px;" title="Review and process claim for this gadget">
                     🤝 Review Claims
                   </button>
                 ` : ''}
@@ -1291,7 +1291,7 @@ function renderFoundCustodyTable(reports) {
                   ${isInCustody ? `
                     <div style="display:flex; flex-direction:column; align-items:flex-end; gap:3px;">
                       <span style="font-size:0.8rem; color:#047857; font-weight:700;">✓ In Vault Locker</span>
-                      <button class="btn btn-secondary btn-sm" onclick="navigateOsa('claims')" style="font-size:0.75rem; padding:3px 8px;">
+                      <button class="btn btn-secondary btn-sm" onclick="navigateToClaimsForGadget('${r.gadgetId || r.gadget?.id}')" style="font-size:0.75rem; padding:3px 8px;" title="Review and process claim for this gadget">
                         Review Claims
                       </button>
                     </div>
@@ -1383,6 +1383,30 @@ async function handleReceiveCustodySubmit(e) {
 // =========================================================================
 // 6. CLAIMS DESK — ACTIVE GADGETS IN OSA CUSTODY (READY FOR CLAIM)
 // =========================================================================
+function navigateToClaimsForGadget(gadgetId) {
+  navigateOsa('claims');
+  if (!gadgetId) return;
+
+  setTimeout(() => {
+    const searchInput = document.getElementById('claims-search-input');
+    if (searchInput) {
+      searchInput.value = gadgetId;
+    }
+    filterClaimsTable();
+
+    // Visual scroll and temporary highlight matching row
+    const rows = document.querySelectorAll('#claims-review-table tbody tr');
+    rows.forEach(tr => {
+      if (tr.textContent.includes(gadgetId)) {
+        tr.style.transition = 'background-color 0.4s ease';
+        tr.style.backgroundColor = '#ecfdf5';
+        tr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => { tr.style.backgroundColor = ''; }, 3500);
+      }
+    });
+  }, 120);
+}
+
 async function loadClaimsDesk() {
   const container = document.getElementById('claims-review-table');
   if (!container) return;
@@ -1392,12 +1416,34 @@ async function loadClaimsDesk() {
     const allClaims = res.claims || [];
     window._allClaimsData = allClaims;
 
-    // Filter to active gadgets currently: IN OSA CUSTODY / READY FOR CLAIM
-    const active = allClaims.filter(c => {
-      const isReturned = (c.status === 'RETURNED' || c.status === 'CLAIMED' || Boolean(c.returnRecord) || c.gadget?.status === 'RETURNED');
-      if (isReturned) return false;
-      return (c.status === 'IN_CUSTODY' || c.isInCustody || c.gadget?.status === 'FOUND_IN_CUSTODY' || c.status === 'APPROVED' || c.status === 'PENDING');
-    });
+    // Filter to distinct active gadgets currently: IN OSA CUSTODY / READY FOR CLAIM
+    const activeMap = new Map();
+    for (const c of allClaims) {
+      // Completed historical returns belong strictly in Returned History
+      if (c.status === 'RETURNED' || c.status === 'CLAIMED' || Boolean(c.returnRecord) || c.gadget?.status === 'RETURNED') {
+        continue;
+      }
+
+      // Check if this claim or gadget is actively actionable in custody or awaiting review
+      const isEligible = (
+        c.id?.startsWith('custody_') ||
+        c.isInCustody === true ||
+        c.status === 'IN_CUSTODY' ||
+        c.status === 'APPROVED' ||
+        c.status === 'PENDING' ||
+        c.gadget?.status === 'FOUND_IN_CUSTODY'
+      );
+
+      if (isEligible && (c.gadgetId || c.gadget?.id)) {
+        const gid = c.gadgetId || c.gadget?.id;
+        // If an explicit student claim exists alongside a synthetic custody_ entry, prioritize the student claim
+        if (!activeMap.has(gid) || (!c.id?.startsWith('custody_') && activeMap.get(gid)?.id?.startsWith('custody_'))) {
+          activeMap.set(gid, c);
+        }
+      }
+    }
+
+    const active = Array.from(activeMap.values());
 
     // Default arrangement: Prioritize the gadgets that have been waiting in OSA custody the longest (oldest dateReceivedByOsa first)
     active.sort((a, b) => {

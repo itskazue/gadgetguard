@@ -26,7 +26,19 @@ router.get('/stats', authMiddleware, requireRole('osa_admin'), (req, res) => {
     const studentUsers = users.filter(u => u.role === 'student').length;
     const facultyUsers = users.filter(u => u.role === 'faculty' || u.role === 'staff').length;
 
+    // Distinct actionable items: gadgets currently in custody + pending student claims not already in custody
+    const inCustodyGadgetIds = new Set(gadgets.filter(g => g.status === 'FOUND_IN_CUSTODY').map(g => g.id));
     const pendingClaims = claims.filter(c => c.status === 'PENDING').length;
+    const pendingClaimsForNonCustody = claims.filter(c => {
+      if (c.status !== 'PENDING') return false;
+      if (inCustodyGadgetIds.has(c.gadgetId)) return false;
+      const g = gadgets.find(x => x.id === c.gadgetId);
+      if (g && g.lastReturnedAt && new Date(c.createdAt).getTime() <= new Date(g.lastReturnedAt).getTime()) {
+        return false;
+      }
+      return true;
+    }).length;
+    const claimsBadgeCount = inCustodyGadgets + pendingClaimsForNonCustody;
     const totalScans = scans.length;
 
     // Recent 10 activities
@@ -45,6 +57,7 @@ router.get('/stats', authMiddleware, requireRole('osa_admin'), (req, res) => {
         studentUsers,
         facultyUsers,
         pendingClaims,
+        claimsBadgeCount,
         totalScans,
         activeMissingCases: missing.length,
         totalFoundReports: foundReports.length,
@@ -150,9 +163,13 @@ router.post('/return', authMiddleware, requireRole('osa_admin'), (req, res) => {
     });
 
     // Update or link claim record with status RETURNED and photo proof
-    let targetClaim = (claimId && !claimId.startsWith('custody_')) 
-      ? db.findById('claims', claimId) 
-      : db.findOne('claims', c => c.gadgetId === gadgetId);
+    let targetClaim = null;
+    if (claimId && !claimId.startsWith('custody_')) {
+      targetClaim = db.findById('claims', claimId);
+    } else {
+      // Find an active/unfinalized claim for this gadget from the current recovery cycle
+      targetClaim = db.findOne('claims', c => c.gadgetId === gadgetId && c.status !== 'RETURNED' && c.status !== 'CLAIMED');
+    }
     if (targetClaim) {
       db.update('claims', targetClaim.id, { 
         status: 'RETURNED',
@@ -179,6 +196,18 @@ router.post('/return', authMiddleware, requireRole('osa_admin'), (req, res) => {
         returnId: returnRecord.id
       });
     }
+
+    // Resolve any remaining open unfinalized claims for this gadget from this cycle
+    const resolvedClaimId = targetClaim ? targetClaim.id : null;
+    const otherOpenClaims = db.find('claims', c => c.gadgetId === gadgetId && c.id !== resolvedClaimId && c.status !== 'RETURNED' && c.status !== 'CLAIMED');
+    otherOpenClaims.forEach(oc => {
+      db.update('claims', oc.id, {
+        status: 'RESOLVED',
+        notes: (oc.notes || oc.claimProofDetails || '') + ' [Closed upon official gadget return handover]',
+        returnId: returnRecord.id,
+        returnedAt: returnDateIso
+      });
+    });
 
     db.addAuditLog({
       userId: req.user.id,

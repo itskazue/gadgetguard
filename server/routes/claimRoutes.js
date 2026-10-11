@@ -104,20 +104,51 @@ router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
     const allGadgets = db.get('gadgets') || [];
     const inCustodyGadgets = allGadgets.filter(g => g.status === 'FOUND_IN_CUSTODY');
 
-    const processedGadgetIds = new Set();
+    // Track which gadgets currently have an active (unfinalized) claim for the active recovery cycle
+    const activeClaimGadgetIds = new Set();
     const enrichedClaims = [];
 
     // 1. Process explicit claim submissions
     for (const c of claims) {
       const gadget = db.findById('gadgets', c.gadgetId);
       const user = db.findById('users', c.userId);
-      const returnRec = c.returnId ? db.findById('returns', c.returnId) : db.findOne('returns', r => r.gadgetId === c.gadgetId);
+      const isGadgetCurrentlyInCustody = Boolean(gadget && gadget.status === 'FOUND_IN_CUSTODY');
+
+      // Check if claim was created during/before a previous recovery cycle that already concluded
+      const isStaleFromPriorCycle = Boolean(
+        gadget && gadget.lastReturnedAt && new Date(c.createdAt).getTime() <= new Date(gadget.lastReturnedAt).getTime()
+      );
+
+      // Link return record only if explicitly tied to this claim, or if this claim was marked RETURNED / from a concluded cycle
+      let returnRec = c.returnId ? db.findById('returns', c.returnId) : null;
+      if (!returnRec) {
+        returnRec = db.findOne('returns', r => r.claimId === c.id);
+      }
+      if (!returnRec && (c.status === 'RETURNED' || c.status === 'CLAIMED' || isStaleFromPriorCycle)) {
+        // Find matching return for this claim by closest timestamp
+        const gadgetReturns = (returns || []).filter(r => r.gadgetId === c.gadgetId);
+        if (gadgetReturns.length === 1) {
+          returnRec = gadgetReturns[0];
+        } else if (gadgetReturns.length > 1) {
+          const targetTime = new Date(c.returnedAt || c.processedAt || c.createdAt).getTime();
+          returnRec = gadgetReturns.reduce((closest, r) => {
+            const rTime = new Date(r.returnDate || r.createdAt || 0).getTime();
+            const currDiff = Math.abs(rTime - targetTime);
+            const closestDiff = Math.abs(new Date(closest.returnDate || closest.createdAt || 0).getTime() - targetTime);
+            return currDiff < closestDiff ? r : closest;
+          }, gadgetReturns[0]);
+        }
+      }
+
       const admin = c.processedBy ? db.findById('users', c.processedBy) : null;
       const returnAdmin = returnRec?.returnedByOsaAdminId ? db.findById('users', returnRec.returnedByOsaAdminId) : null;
       const adminName = c.processedByName || admin?.name || returnAdmin?.name || returnRec?.returnedByOsaAdminName || 'OSA Staff';
       
-      const isReturned = (c.status === 'RETURNED' || c.status === 'CLAIMED' || Boolean(returnRec));
-      const isInCustody = (!isReturned && gadget && gadget.status === 'FOUND_IN_CUSTODY');
+      const isReturned = (c.status === 'RETURNED' || c.status === 'CLAIMED' || Boolean(returnRec) || isStaleFromPriorCycle);
+      
+      // An explicit claim is considered active in-custody only if it has not been returned,
+      // is not stale from a concluded cycle, and the physical device is currently confirmed in OSA custody
+      const isInCustody = (!isReturned && !isStaleFromPriorCycle && isGadgetCurrentlyInCustody);
 
       const foundReport = gadget ? db.findOne('found_reports', f => f.gadgetId === gadget.id) : null;
       const dateReceived = gadget?.receivedAtOsaDate || gadget?.custodyReceivedAt || foundReport?.receivedAtOsaDate || foundReport?.foundDate || gadget?.updatedAt || c.createdAt;
@@ -165,14 +196,15 @@ router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
         } : null)
       });
 
-      if (c.gadgetId) {
-        processedGadgetIds.add(c.gadgetId);
+      // Mark gadget as having an active actionable claim ONLY if not returned and not stale
+      if (c.gadgetId && !isReturned && !isStaleFromPriorCycle) {
+        activeClaimGadgetIds.add(c.gadgetId);
       }
     }
 
-    // 2. Add all gadgets currently held in OSA custody that do not yet have an active claim entry
+    // 2. Add all gadgets currently held in OSA custody that do not yet have an active unresolved claim entry
     for (const g of inCustodyGadgets) {
-      if (!processedGadgetIds.has(g.id)) {
+      if (!activeClaimGadgetIds.has(g.id)) {
         const owner = db.findById('users', g.userId);
         const foundReport = db.findOne('found_reports', f => f.gadgetId === g.id);
         const dateReceived = g.receivedAtOsaDate || g.custodyReceivedAt || foundReport?.receivedAtOsaDate || foundReport?.foundDate || g.updatedAt || g.createdAt;
@@ -221,13 +253,16 @@ router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
           } : null
         });
 
-        processedGadgetIds.add(g.id);
+        activeClaimGadgetIds.add(g.id);
       }
     }
 
-    // 3. Include any standalone completed returns from history
+    // 3. Include any completed returns from history not already represented in enrichedClaims
     returns.forEach(r => {
-      if (!processedGadgetIds.has(r.gadgetId) && !claims.some(c => c.returnId === r.id)) {
+      const alreadyRepresented = enrichedClaims.some(c => 
+        c.returnRecord?.id === r.id || c.returnId === r.id || c.id === 'clm_' + r.id
+      );
+      if (!alreadyRepresented) {
         const gadget = db.findById('gadgets', r.gadgetId);
         const user = db.findById('users', r.userId);
         const admin = db.findById('users', r.returnedByOsaAdminId);
@@ -277,7 +312,6 @@ router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
             idNumber: r.receivedByPersonId
           }
         });
-        processedGadgetIds.add(r.gadgetId);
       }
     });
 
