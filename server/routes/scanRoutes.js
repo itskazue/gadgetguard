@@ -53,28 +53,57 @@ router.get('/device/:token', async (req, res) => {
     const missingReport = (gadget.status === 'MISSING') ? 
       db.findOne('missing_reports', m => m.gadgetId === gadget.id && m.status === 'ACTIVE') : null;
 
+    // Check if scanner is an authenticated OSA Administrator
+    let isAuthorizedOsa = false;
+    let scannerAccountId = null;
+    try {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const decoded = jwt.verify(authHeader.substring(7), JWT_SECRET);
+        scannerAccountId = decoded.id;
+        const loggedUser = db.findById('users', decoded.id);
+        if (loggedUser && loggedUser.role === 'osa_admin') {
+          isAuthorizedOsa = true;
+        }
+      }
+    } catch (e) {}
+
     // Check for returning finder recovery session specifically linked to this gadget + active missing case
     let activeRecoveryChat = null;
     let pastRecoveryChat = null;
-    if (finderToken) {
+    if (finderToken && typeof finderToken === 'string' && finderToken.trim()) {
+      const cleanToken = finderToken.trim();
+      const isTokenRevoked = (c) => Array.isArray(c.revokedTokens) && c.revokedTokens.includes(cleanToken);
+      const isTokenExpiredOrInactive = (c) => {
+        const now = Date.now();
+        const createdAt = c.finderSessionCreatedAt ? new Date(c.finderSessionCreatedAt).getTime() : (c.createdAt ? new Date(c.createdAt).getTime() : now);
+        const expiresAt = c.finderSessionExpiresAt ? new Date(c.finderSessionExpiresAt).getTime() : (createdAt + 24 * 60 * 60 * 1000);
+        const lastActiveAt = c.finderSessionLastActiveAt ? new Date(c.finderSessionLastActiveAt).getTime() : createdAt;
+        return (now > expiresAt) || ((now - lastActiveAt) > (2 * 60 * 60 * 1000));
+      };
+
       if (gadget.status === 'MISSING' && missingReport) {
         activeRecoveryChat = db.findOne('recovery_chats', c => 
           c.gadgetId === gadget.id && 
           c.missingReportId === missingReport.id && 
-          c.finderSessionToken === finderToken &&
+          c.finderSessionToken === cleanToken &&
+          !isTokenRevoked(c) &&
+          !isTokenExpiredOrInactive(c) &&
           c.status === 'ACTIVE'
         );
         // For currently missing device, pastRecoveryChat must strictly belong to this active missing case
         pastRecoveryChat = db.findOne('recovery_chats', c => 
           c.gadgetId === gadget.id && 
           c.missingReportId === missingReport.id && 
-          c.finderSessionToken === finderToken
+          c.finderSessionToken === cleanToken &&
+          !isTokenRevoked(c)
         );
       } else {
         // Device is not missing (registered/recovered), pastRecoveryChat can represent historical completed recovery
         pastRecoveryChat = db.findOne('recovery_chats', c => 
           c.gadgetId === gadget.id && 
-          c.finderSessionToken === finderToken
+          c.finderSessionToken === cleanToken &&
+          !isTokenRevoked(c)
         );
       }
     }
@@ -85,24 +114,52 @@ router.get('/device/:token', async (req, res) => {
       : 'REGISTERED_DEVICE_SCANNED';
 
     // Check if finder decided to surrender or gadget is awaiting handover to OSA for current incident
+    // PRIVACY ENFORCEMENT: Never expose another finder's surrender information or reference to an unauthenticated public scanner
     const isSurrenderPending = (gadget.custodyStatus === 'PENDING_OSA_TURNOVER' || gadget.surrenderStatus === 'WILL_SURRENDER_TO_OSA');
     let surrenderDetails = null;
     if (isSurrenderPending) {
-      const surrenderReport = db.findOne('found_reports', f => 
-        f.gadgetId === gadget.id && 
-        (missingReport ? f.missingReportId === missingReport.id : true) &&
-        (f.turnInMethod === 'SUBMITTED_TO_OSA' || f.finderDecision === 'WILL_SURRENDER_TO_OSA') && 
-        f.status === 'PENDING_OSA_TURNOVER'
-      );
-      surrenderDetails = {
-        hasSurrender: true,
-        surrenderReference: (surrenderReport && surrenderReport.surrenderReference) || gadget.pendingSurrenderRef || 'SRF-PENDING',
-        finderName: (surrenderReport && surrenderReport.finderName) || (gadget.surrenderInfo && gadget.surrenderInfo.finderName) || 'Finder',
-        foundLocation: (surrenderReport && surrenderReport.foundLocation) || (gadget.surrenderInfo && gadget.surrenderInfo.foundLocation) || 'Campus',
-        foundDate: (surrenderReport && surrenderReport.foundDate) || (gadget.surrenderInfo && gadget.surrenderInfo.foundDate) || gadget.updatedAt,
-        status: 'AWAITING OSA HANDOVER',
-        notes: (surrenderReport && (surrenderReport.message || surrenderReport.notes)) || (gadget.surrenderInfo && gadget.surrenderInfo.notes) || ''
-      };
+      let matchingSurrenderReport = null;
+      if (isAuthorizedOsa) {
+        matchingSurrenderReport = db.findOne('found_reports', f => 
+          f.gadgetId === gadget.id && 
+          (missingReport ? f.missingReportId === missingReport.id : true) &&
+          (f.turnInMethod === 'SUBMITTED_TO_OSA' || f.finderDecision === 'WILL_SURRENDER_TO_OSA') && 
+          f.status === 'PENDING_OSA_TURNOVER'
+        );
+      } else if (finderToken && typeof finderToken === 'string' && finderToken.trim()) {
+        const surrChat = db.findOne('recovery_chats', c => 
+          c.gadgetId === gadget.id && 
+          (missingReport ? c.missingReportId === missingReport.id : true) &&
+          c.finderSessionToken === finderToken.trim() &&
+          (c.status === 'CLOSED' || c.closedReason === 'SURRENDERED_TO_OSA')
+        );
+        if (surrChat) {
+          matchingSurrenderReport = db.findById('found_reports', surrChat.foundReportId) || db.findOne('found_reports', f => 
+            f.gadgetId === gadget.id && 
+            (missingReport ? f.missingReportId === missingReport.id : true) &&
+            f.surrenderReference === gadget.pendingSurrenderRef
+          );
+        } else {
+          matchingSurrenderReport = db.findOne('found_reports', f => 
+            f.gadgetId === gadget.id && 
+            (missingReport ? f.missingReportId === missingReport.id : true) &&
+            f.finderSessionToken === finderToken.trim() &&
+            f.status === 'PENDING_OSA_TURNOVER'
+          );
+        }
+      }
+
+      if (matchingSurrenderReport || (isAuthorizedOsa && isSurrenderPending)) {
+        surrenderDetails = {
+          hasSurrender: true,
+          surrenderReference: (matchingSurrenderReport && matchingSurrenderReport.surrenderReference) || gadget.pendingSurrenderRef || 'SRF-PENDING',
+          finderName: (matchingSurrenderReport && matchingSurrenderReport.finderName) || (gadget.surrenderInfo && gadget.surrenderInfo.finderName) || 'Finder',
+          foundLocation: (matchingSurrenderReport && matchingSurrenderReport.foundLocation) || (gadget.surrenderInfo && gadget.surrenderInfo.foundLocation) || 'Campus',
+          foundDate: (matchingSurrenderReport && matchingSurrenderReport.foundDate) || (gadget.surrenderInfo && gadget.surrenderInfo.foundDate) || gadget.updatedAt,
+          status: 'AWAITING OSA HANDOVER',
+          notes: (matchingSurrenderReport && (matchingSurrenderReport.message || matchingSurrenderReport.notes)) || (gadget.surrenderInfo && gadget.surrenderInfo.notes) || ''
+        };
+      }
     }
 
     // Build active finder recovery session descriptor
@@ -143,21 +200,6 @@ router.get('/device/:token', async (req, res) => {
     const finalLocationNote = locResult.formattedLocation || 
       (approxLocation ? decodeURIComponent(approxLocation) : 
       (locationNote ? decodeURIComponent(locationNote) : 'Location unavailable'));
-
-    // Check if scanner is an authenticated OSA Administrator
-    let isAuthorizedOsa = false;
-    let scannerAccountId = null;
-    try {
-      const authHeader = req.headers.authorization;
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        const decoded = jwt.verify(authHeader.substring(7), JWT_SECRET);
-        scannerAccountId = decoded.id;
-        const loggedUser = db.findById('users', decoded.id);
-        if (loggedUser && loggedUser.role === 'osa_admin') {
-          isAuthorizedOsa = true;
-        }
-      }
-    } catch (e) {}
 
     // Record QR scan log with full location metadata
     const scanLog = db.insert('qr_scans', {

@@ -969,6 +969,157 @@
       }
     }
 
+    // Clear Finder Session and Surrender state from this device (Shared-device isolation)
+    function clearFinderSession(token, gadgetId = null, missingReportId = null) {
+      if (gadgetId && missingReportId) {
+        localStorage.removeItem('gg_finder_case_' + gadgetId + '_' + missingReportId);
+        localStorage.removeItem('gg_surrender_case_' + gadgetId + '_' + missingReportId);
+      }
+      if (gadgetId) {
+        localStorage.removeItem('gg_finder_session_gadget_' + gadgetId);
+        localStorage.removeItem('gg_surrender_ref_gadget_' + gadgetId);
+      }
+      if (token) {
+        localStorage.removeItem('gg_finder_session_token_' + token);
+        localStorage.removeItem('gg_finder_session_' + token);
+        localStorage.removeItem('gg_surrender_ref_' + token);
+      }
+      window.__activeFinderSession = null;
+    }
+
+    async function endFinderSessionOnDevice(skipConfirm = false) {
+      if (!skipConfirm) {
+        const result = await Swal.fire({
+          icon: 'question',
+          title: 'End Session on This Device?',
+          html: `
+            <div style="text-align: left; font-size: 0.88rem; color: #334155; line-height: 1.5;">
+              <p style="margin-bottom: 8px;">
+                Ending this session will revoke your session credentials on the server and clear saved recovery data from this browser.
+              </p>
+              <p style="margin: 0; font-size: 0.82rem; color: #64748b;">
+                Your conversation history remains safely recorded with the owner. Another finder can now safely use this device to submit a separate report.
+              </p>
+            </div>
+          `,
+          showCancelButton: true,
+          confirmButtonText: 'Yes, End Session',
+          cancelButtonText: 'Cancel',
+          confirmButtonColor: '#142a6d',
+          cancelButtonColor: '#64748b'
+        });
+
+        if (!result.isConfirmed) return;
+      }
+
+      const currentMissingId = currentGadgetData?.missingReport?.id || (window.__lastLookupRes && window.__lastLookupRes.missingReport?.id) || null;
+      const session = getFinderSession(scannedToken, currentGadgetData?.id, currentMissingId);
+
+      let serverRevocationConfirmed = false;
+      let networkOrOfflineFailure = false;
+
+      // Backend revocation: attempt to invalidate token on server
+      if (session && session.chatId && session.finderSessionToken) {
+        try {
+          const res = await api.endFinderSession(session.chatId, session.finderSessionToken);
+          serverRevocationConfirmed = Boolean(res && res.success);
+        } catch (e) {
+          console.warn('Server session revocation failed or device is offline:', e);
+          networkOrOfflineFailure = true;
+        }
+      }
+
+      // Always clear local device credentials
+      clearFinderSession(scannedToken, currentGadgetData?.id, currentMissingId);
+      window.__activeFinderSession = null;
+
+      renderMissingGadgetActions();
+
+      if (!skipConfirm) {
+        if (serverRevocationConfirmed) {
+          await Swal.fire({
+            icon: 'success',
+            title: 'Session Ended',
+            text: 'Session credential revoked on server and cleared from this device. You can now start a new report if needed.',
+            timer: 2000,
+            showConfirmButton: false
+          });
+        } else if (networkOrOfflineFailure) {
+          await Swal.fire({
+            icon: 'warning',
+            title: 'Session Cleared Locally (Device Offline)',
+            html: `
+              <div style="text-align: left; font-size: 0.86rem; color: #334155; line-height: 1.5;">
+                <p style="margin-bottom: 8px;">
+                  Saved session credentials have been <strong>cleared from this device</strong>.
+                </p>
+                <div style="color: #b45309; background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; padding: 8px 10px; font-size: 0.8rem; margin-bottom: 8px;">
+                  ⚠️ Server revocation could not be confirmed because this device appears to be offline.
+                </div>
+                <p style="margin: 0; font-size: 0.8rem; color: #64748b;">
+                  Server-side security: Any remaining token is strictly constrained by server-enforced inactivity and expiration timeouts.
+                </p>
+              </div>
+            `,
+            confirmButtonText: 'Understood',
+            confirmButtonColor: '#142a6d'
+          });
+        } else {
+          await Swal.fire({
+            icon: 'success',
+            title: 'Session Cleared',
+            text: 'Session data cleared from this device.',
+            timer: 1800,
+            showConfirmButton: false
+          });
+        }
+      }
+    }
+
+    // Starting a separate Finder session must NOT automatically revoke Finder A's backend session!
+    // Finder B simply starts fresh on this browser without accessing Finder A's private chat or credentials.
+    async function startSeparateFinderSession() {
+      const result = await Swal.fire({
+        icon: 'question',
+        title: 'Start Separate Finder Report?',
+        html: `
+          <div style="text-align: left; font-size: 0.88rem; color: #334155; line-height: 1.5;">
+            <p style="margin-bottom: 8px;">
+              Are you a <strong>different person</strong> who found this gadget?
+            </p>
+            <p style="margin-bottom: 8px; font-size: 0.82rem; color: #475569;">
+              This will safely detach the previous finder's session from this browser without revoking their backend report or exposing any private conversations.
+            </p>
+            <p style="margin: 0; font-size: 0.82rem; color: #0284c7; font-weight: 600;">
+              You can now submit your own independent report and start your own private chat with the owner.
+            </p>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Start Separate Report',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#142a6d',
+        cancelButtonColor: '#64748b'
+      });
+
+      if (!result.isConfirmed) return;
+
+      // DO NOT call backend revocation: Finder A's legitimate backend session is preserved!
+      const currentMissingId = currentGadgetData?.missingReport?.id || (window.__lastLookupRes && window.__lastLookupRes.missingReport?.id) || null;
+      clearFinderSession(scannedToken, currentGadgetData?.id, currentMissingId);
+      window.__activeFinderSession = null;
+
+      renderMissingGadgetActions();
+
+      await Swal.fire({
+        icon: 'info',
+        title: 'Ready for New Report',
+        text: 'Please select whether you will keep the gadget safe or surrender it to OSA.',
+        timer: 1800,
+        showConfirmButton: false
+      });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const queryToken = urlParams.get('token') || urlParams.get('t');
@@ -1252,23 +1403,17 @@
 
       const currentMissingId = currentGadgetData?.missingReport?.id || (window.__lastLookupRes && window.__lastLookupRes.missingReport?.id) || null;
 
-      // Check if finder already submitted intent to surrender for this recovery case
-      const isSurrenderPending = Boolean(
-        currentGadgetData && (currentGadgetData.custodyStatus === 'PENDING_OSA_TURNOVER' || currentGadgetData.surrenderStatus === 'WILL_SURRENDER_TO_OSA')
-      );
+      // Check if this finder already submitted intent to surrender on this device/browser
       const savedSurrender = getSurrenderSession(scannedToken, currentGadgetData?.id, currentMissingId);
-      if (isSurrenderPending || (savedSurrender && currentGadgetData?.status === 'MISSING' && (!savedSurrender.missingReportId || savedSurrender.missingReportId === currentMissingId))) {
-        const surrenderData = savedSurrender || {
-          surrenderReference: currentGadgetData?.pendingSurrenderRef || 'SRF-PENDING',
-          gadgetName: `${currentGadgetData?.brand || ''} ${currentGadgetData?.model || ''}`.trim() || 'Gadget',
-          gadgetId: currentGadgetData?.id || '',
-          studentIdNumber: currentGadgetData?.studentIdNumber || 'Registered Student',
-          foundLocation: currentGadgetData?.surrenderInfo?.foundLocation || 'Campus Grounds',
-          finderName: currentGadgetData?.surrenderInfo?.finderName || 'Finder',
-          notes: currentGadgetData?.surrenderInfo?.notes || '',
-          status: 'AWAITING OSA HANDOVER'
-        };
-        renderSurrenderReferenceCard(surrenderData);
+      const verifiedSurrender = (window.__lastLookupRes && window.__lastLookupRes.surrenderDetails && window.__lastLookupRes.surrenderDetails.hasSurrender) 
+        ? window.__lastLookupRes.surrenderDetails 
+        : null;
+
+      if (savedSurrender && currentGadgetData?.status === 'MISSING' && (!savedSurrender.missingReportId || savedSurrender.missingReportId === currentMissingId)) {
+        renderSurrenderReferenceCard(savedSurrender);
+        return;
+      } else if (verifiedSurrender && currentGadgetData?.status === 'MISSING') {
+        renderSurrenderReferenceCard(verifiedSurrender);
         return;
       }
 
@@ -1324,8 +1469,14 @@
               <div class="finder-closed-notice">
                 ✓ This gadget has been marked recovered or returned. Your conversation is closed and saved as read-only.
               </div>
-              <button type="button" class="btn-qr-action btn-qr-outline" style="margin-top: 12px; margin-bottom: 0;" onclick="resumeSavedFinderChat(true)">
+              <button type="button" class="btn-qr-action btn-qr-outline" style="margin-top: 12px; margin-bottom: 8px;" onclick="resumeSavedFinderChat(true)">
                 💬 View Closed Conversation (Read-Only)
+              </button>
+              <button type="button" class="btn-qr-action btn-qr-subtle" style="margin-bottom: 8px; font-size: 0.84rem; color: #1e3a8a; background: #f0f9ff; border: 1.5px dashed #7dd3fc; font-weight: 700;" onclick="startSeparateFinderSession()">
+                🆕 I am a Different Finder (Start Separate Report)
+              </button>
+              <button type="button" class="btn-qr-action btn-qr-subtle" style="margin-bottom: 0; font-size: 0.82rem; color: #64748b; background: transparent; border: 1px solid #cbd5e1;" onclick="endFinderSessionOnDevice()">
+                🚪 End / Leave Session on This Device
               </button>
             ` : `
               <div class="finder-active-notice">
@@ -1334,8 +1485,14 @@
               <button type="button" class="btn-qr-action btn-qr-emerald" style="margin-top: 12px; margin-bottom: 8px;" onclick="resumeSavedFinderChat(false)">
                 💬 Continue Conversation
               </button>
-              <button type="button" class="btn-qr-action btn-qr-subtle" style="margin-bottom: 0;" onclick="handleKeepSafeToSurrenderTransition()">
+              <button type="button" class="btn-qr-action btn-qr-subtle" style="margin-bottom: 8px;" onclick="handleKeepSafeToSurrenderTransition()">
                 🏢 I Will Surrender It to OSA Instead
+              </button>
+              <button type="button" class="btn-qr-action btn-qr-subtle" style="margin-bottom: 8px; font-size: 0.84rem; color: #1e3a8a; background: #f0f9ff; border: 1.5px dashed #7dd3fc; font-weight: 700;" onclick="startSeparateFinderSession()">
+                🆕 I am a Different Finder (Start Separate Session)
+              </button>
+              <button type="button" class="btn-qr-action btn-qr-subtle" style="margin-bottom: 0; font-size: 0.82rem; color: #64748b; background: transparent; border: 1px solid #cbd5e1;" onclick="endFinderSessionOnDevice()">
+                🚪 End / Leave Session on This Device
               </button>
             `}
           </div>
@@ -1725,6 +1882,12 @@
             <div>NCST Main Campus</div>
           </div>
 
+          <div style="margin-top: 14px; text-align: center;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="endFinderSessionOnDevice()" style="font-size: 0.8rem; padding: 6px 14px; display: inline-flex; align-items: center; gap: 6px;">
+              🚪 End Session on This Device
+            </button>
+          </div>
+
           <div style="margin-top: 12px; font-size: 0.76rem; color: #64748b; text-align: center;">
             🔒 Privacy Protected: Personal contact numbers and private account information are kept strictly confidential.
           </div>
@@ -1879,6 +2042,75 @@
         }
       } catch (e) {
         console.error('Error polling chat messages:', e);
+        if (e && (e.code === 'SESSION_INACTIVE' || (e.error && e.error.includes('inactivity'))) && (e.canRefresh !== false)) {
+          // Halting automatic background poll: inactivity rule cannot be bypassed indefinitely by timers
+          if (activeFinderChatInterval) {
+            clearInterval(activeFinderChatInterval);
+            activeFinderChatInterval = null;
+          }
+          const msgContainer = document.getElementById('finder-chat-messages');
+          if (msgContainer && !document.getElementById('finder-inactivity-banner')) {
+            const banner = document.createElement('div');
+            banner.id = 'finder-inactivity-banner';
+            banner.style.cssText = 'background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 10px; padding: 14px; margin: 12px auto; max-width: 90%; color: #92400e; font-size: 0.85rem; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.04);';
+            banner.innerHTML = `
+              <div style="font-size: 1.4rem; margin-bottom: 4px;">⏱️</div>
+              <div style="font-weight: 700; margin-bottom: 4px; color: #78350f;">Session Paused Due to Inactivity</div>
+              <div style="font-size: 0.8rem; color: #92400e; margin-bottom: 10px; line-height: 1.4;">
+                No activity detected for over 2 hours. Your conversation history is safely preserved.
+              </div>
+              <button type="button" class="btn btn-primary btn-sm" onclick="resumeInactiveFinderSession()" style="background: #142a6d; border: none; font-weight: 700; padding: 6px 14px; border-radius: 6px;">
+                🔑 Resume Conversation
+              </button>
+            `;
+            msgContainer.appendChild(banner);
+            msgContainer.scrollTop = msgContainer.scrollHeight;
+          }
+        } else if (e && (e.code === 'TOKEN_REVOKED' || e.code === 'SESSION_EXPIRED')) {
+          if (activeFinderChatInterval) {
+            clearInterval(activeFinderChatInterval);
+            activeFinderChatInterval = null;
+          }
+          closeFinderChatModal();
+          const currentMissingId = currentGadgetData?.missingReport?.id || null;
+          clearFinderSession(scannedToken, currentGadgetData?.id, currentMissingId);
+          renderMissingGadgetActions();
+          Swal.fire({
+            icon: 'info',
+            title: 'Session Ended',
+            text: e.message || e.error || 'Your finder session credential has ended or expired on this device.',
+            confirmButtonColor: '#142a6d'
+          });
+        }
+      }
+    }
+
+    async function resumeInactiveFinderSession() {
+      if (!activeFinderChatId || !activeFinderToken) return;
+      try {
+        await api.refreshFinderSession(activeFinderChatId, activeFinderToken);
+        const banner = document.getElementById('finder-inactivity-banner');
+        if (banner) banner.remove();
+        await SwalHelper.success('Session Resumed', 'Your recovery session has been refreshed.', 1400);
+        await loadFinderChatMessages();
+        if (!activeFinderChatInterval && !activeFinderIsClosed) {
+          activeFinderChatInterval = setInterval(loadFinderChatMessages, 3500);
+        }
+      } catch (err) {
+        if (err && (err.code === 'SESSION_EXPIRED' || err.canRefresh === false)) {
+          closeFinderChatModal();
+          await Swal.fire({
+            icon: 'warning',
+            title: 'Session Expired',
+            text: 'Maximum session duration (24 hours) reached. Please re-scan to start a new report if you still have this gadget.',
+            confirmButtonColor: '#142a6d'
+          });
+          const currentMissingId = currentGadgetData?.missingReport?.id || null;
+          clearFinderSession(scannedToken, currentGadgetData?.id, currentMissingId);
+          renderMissingGadgetActions();
+        } else {
+          await SwalHelper.error('Resume Failed', err.message || 'Could not resume session.');
+        }
       }
     }
 
@@ -1902,7 +2134,15 @@
         const msgContainer = document.getElementById('finder-chat-messages');
         if (msgContainer) msgContainer.scrollTop = msgContainer.scrollHeight;
       } catch (err) {
-        await SwalHelper.error('Message Not Sent', err.message || 'Could not send message.');
+        if (err && (err.code === 'SESSION_INACTIVE' || (err.error && err.error.includes('inactivity'))) && (err.canRefresh !== false)) {
+          try {
+            await api.refreshFinderSession(activeFinderChatId, activeFinderToken);
+            await api.sendRecoveryChatMessage(activeFinderChatId, text, activeFinderToken);
+            await loadFinderChatMessages();
+            return;
+          } catch (refErr) {}
+        }
+        await SwalHelper.error('Message Not Sent', err.message || err.error || 'Could not send message.');
       }
     }
 

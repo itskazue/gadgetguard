@@ -1022,37 +1022,44 @@ async function loadLostStatusScreen() {
         );
 
         let finderCardHtml = '';
-        if (g.finderInfo && !isAwaitingOsaHandover) {
-          const finderDisplayName = escapeHtml(g.finderInfo.finderName || 'Finder');
-          const foundLocationText = escapeHtml(g.finderInfo.foundLocation || 'Campus');
-          const deviceDisplayName = escapeHtml(`${g.brand} ${g.model}`);
-          const chatId = g.finderInfo.chatId || '';
+        const chatsList = (Array.isArray(g.finderChats) && g.finderChats.length > 0) 
+          ? g.finderChats 
+          : (g.finderInfo ? [g.finderInfo] : []);
 
-          finderCardHtml = `
-            <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 12px; padding: 16px; margin-top: 10px; text-align: left;">
-              <div style="font-weight: 800; color: #047857; font-size: 0.92rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <span>🌟</span> Someone Found Your Gadget!
-                </div>
-                <span style="background: #d1fae5; color: #065f46; font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; border: 1px solid #a7f3d0;">
-                  Keeping Gadget Safe
-                </span>
-              </div>
+        if (chatsList.length > 0) {
+          finderCardHtml = chatsList.map(fc => {
+            const finderDisplayName = escapeHtml(fc.finderName || 'Finder');
+            const foundLocationText = escapeHtml(fc.foundLocation || 'Campus');
+            const deviceDisplayName = escapeHtml(`${g.brand} ${g.model}`);
+            const chatId = fc.chatId || fc.id || '';
+            const btnLabel = chatsList.length > 1 ? `💬 Chat / Message ${finderDisplayName}` : '💬 Chat / Message Finder';
 
-              <!-- Finder Information (Section E: Strictly no contact number) -->
-              <div style="font-size: 0.84rem; color: #065f46; line-height: 1.6; background: #ffffff; border: 1px solid #d1fae5; border-radius: 10px; padding: 14px; margin-bottom: 0;">
-                <div>👤 <strong>Finder:</strong> ${finderDisplayName}</div>
-                <div>📍 <strong>Found Location:</strong> ${foundLocationText}</div>
-                <div>📋 <strong>Finder Action:</strong> Keeping Gadget Safe</div>
-                ${g.finderInfo.message ? `<div style="margin-top: 4px; font-style: italic; color: #475569;">📝 Notes: "${escapeHtml(g.finderInfo.message)}"</div>` : ''}
-                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #d1fae5;">
-                  <button class="btn btn-primary btn-sm" onclick="openOwnerRecoveryChat('${chatId}', '${g.id}', '${finderDisplayName}', '${deviceDisplayName}', '${foundLocationText}')" style="background: #142a6d; border-color: #142a6d; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; padding: 7px 15px;">
-                    💬 Chat / Message Finder
-                  </button>
+            return `
+              <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 12px; padding: 16px; margin-top: 10px; text-align: left;">
+                <div style="font-weight: 800; color: #047857; font-size: 0.92rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span>🌟</span> Someone Found Your Gadget!
+                  </div>
+                  <span style="background: #d1fae5; color: #065f46; font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; border: 1px solid #a7f3d0;">
+                    Keeping Gadget Safe
+                  </span>
+                </div>
+
+                <!-- Finder Information (Section E: Strictly no contact number) -->
+                <div style="font-size: 0.84rem; color: #065f46; line-height: 1.6; background: #ffffff; border: 1px solid #d1fae5; border-radius: 10px; padding: 14px; margin-bottom: 0;">
+                  <div>👤 <strong>Finder:</strong> ${finderDisplayName}</div>
+                  <div>📍 <strong>Found Location:</strong> ${foundLocationText}</div>
+                  <div>📋 <strong>Finder Action:</strong> Keeping Gadget Safe</div>
+                  ${fc.message ? `<div style="margin-top: 4px; font-style: italic; color: #475569;">📝 Notes: "${escapeHtml(fc.message)}"</div>` : ''}
+                  <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #d1fae5;">
+                    <button class="btn btn-primary btn-sm" onclick="openOwnerRecoveryChat('${chatId}', '${g.id}', '${finderDisplayName}', '${deviceDisplayName}', '${foundLocationText}')" style="background: #142a6d; border-color: #142a6d; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; padding: 7px 15px;">
+                      ${btnLabel}
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          `;
+            `;
+          }).join('');
         }
 
         let surrenderCardHtml = '';

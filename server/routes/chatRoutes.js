@@ -4,8 +4,14 @@ const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../auth');
 const db = require('../db');
 
+// Session Lifetime & Inactivity Limits (Requirement 3)
+const FINDER_SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours absolute maximum lifetime
+const FINDER_INACTIVITY_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 hours sliding inactivity timeout
+
 // Helper to authenticate chat participant (either Owner via JWT or Finder via temporary session token)
 function resolveChatParticipant(req, chat) {
+  req.finderAuthError = null;
+
   // 1. Check for logged in user (Owner or OSA Admin)
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -24,9 +30,60 @@ function resolveChatParticipant(req, chat) {
   }
 
   // 2. Check for Finder temporary session token
-  const finderToken = req.headers['x-finder-token'] || req.query.finderToken || req.body.finderToken;
-  if (finderToken && chat.finderSessionToken && finderToken === chat.finderSessionToken) {
-    return { role: 'FINDER', userId: null };
+  const finderToken = req.headers['x-finder-token'] || req.query.finderToken || (req.body && req.body.finderToken);
+  if (finderToken && typeof finderToken === 'string') {
+    const cleanToken = finderToken.trim();
+
+    // Check if token was explicitly revoked on this device (Requirement 1 & 2)
+    if (Array.isArray(chat.revokedTokens) && chat.revokedTokens.includes(cleanToken)) {
+      req.finderAuthError = {
+        status: 403,
+        error: 'Finder session credential was ended on this device and is no longer authorized.',
+        code: 'TOKEN_REVOKED',
+        canRefresh: false
+      };
+      return null;
+    }
+
+    // Check matching active token
+    if (chat.finderSessionToken && cleanToken === chat.finderSessionToken.trim()) {
+      const now = Date.now();
+      const createdAt = chat.finderSessionCreatedAt ? new Date(chat.finderSessionCreatedAt).getTime() : (chat.createdAt ? new Date(chat.createdAt).getTime() : now);
+      const expiresAt = chat.finderSessionExpiresAt ? new Date(chat.finderSessionExpiresAt).getTime() : (createdAt + FINDER_SESSION_MAX_AGE_MS);
+      const lastActiveAt = chat.finderSessionLastActiveAt ? new Date(chat.finderSessionLastActiveAt).getTime() : createdAt;
+
+      // Absolute max lifetime check
+      if (now > expiresAt) {
+        req.finderAuthError = {
+          status: 401,
+          error: 'Finder session has expired (max duration exceeded). Please start a new session.',
+          code: 'SESSION_EXPIRED',
+          canRefresh: false
+        };
+        return null;
+      }
+
+      // Sliding inactivity check
+      if ((now - lastActiveAt) > FINDER_INACTIVITY_TIMEOUT_MS) {
+        req.finderAuthError = {
+          status: 401,
+          error: 'Finder session timed out due to inactivity. Re-authentication / refresh required.',
+          code: 'SESSION_INACTIVE',
+          canRefresh: true
+        };
+        return null;
+      }
+
+      // INACTIVITY PROTECTION: Background polling (GET requests) must NOT touch or reset inactivity!
+      // Only active user actions (e.g. sending a message or explicit refresh) update lastActiveAt
+      if (req.method === 'POST') {
+        const nowIso = new Date(now).toISOString();
+        db.update('recovery_chats', chat.id, { finderSessionLastActiveAt: nowIso });
+        chat.finderSessionLastActiveAt = nowIso;
+      }
+
+      return { role: 'FINDER', userId: null };
+    }
   }
 
   return null;
@@ -44,18 +101,27 @@ router.get('/:chatId', (req, res) => {
 
     const participant = resolveChatParticipant(req, chat);
     if (!participant) {
+      if (req.finderAuthError) {
+        return res.status(req.finderAuthError.status).json({
+          success: false,
+          error: req.finderAuthError.error,
+          code: req.finderAuthError.code,
+          canRefresh: Boolean(req.finderAuthError.canRefresh)
+        });
+      }
       return res.status(403).json({ success: false, error: 'Unauthorized to view this private recovery conversation.' });
     }
 
     const gadget = db.findById('gadgets', chat.gadgetId);
     
     // Check if recovery is resolved, surrendered to OSA, or completed -> closed / read-only
-    const isSurrendered = Boolean(gadget && (gadget.custodyStatus === 'PENDING_OSA_TURNOVER' || gadget.surrenderStatus === 'WILL_SURRENDER_TO_OSA'));
-    const isGadgetClosed = !gadget || gadget.status !== 'MISSING' || isSurrendered;
-    const isClosed = chat.status === 'CLOSED' || isGadgetClosed;
+    const isCustodyClosed = Boolean(gadget && (gadget.custodyStatus === 'IN_OSA_CUSTODY' || gadget.status === 'FOUND_IN_CUSTODY' || gadget.status === 'RETURNED' || gadget.status === 'RESOLVED' || gadget.status === 'CLAIMED'));
+    const isChatSurrendered = (chat.status === 'CLOSED' && chat.closedReason === 'SURRENDERED_TO_OSA');
+    const isGadgetClosed = !gadget || gadget.status !== 'MISSING' || isCustodyClosed;
+    const isClosed = chat.status === 'CLOSED' || isChatSurrendered || isGadgetClosed;
 
     if (isGadgetClosed && chat.status !== 'CLOSED') {
-      const closedReason = isSurrendered ? 'SURRENDERED_TO_OSA' : 'GADGET_RECOVERED';
+      const closedReason = isCustodyClosed ? 'OSA_PHYSICAL_CUSTODY' : 'GADGET_RECOVERED';
       db.update('recovery_chats', chat.id, { status: 'CLOSED', closedReason });
       chat.status = 'CLOSED';
       chat.closedReason = closedReason;
@@ -130,18 +196,28 @@ router.post('/:chatId/message', (req, res) => {
 
     const participant = resolveChatParticipant(req, chat);
     if (!participant) {
+      if (req.finderAuthError) {
+        return res.status(req.finderAuthError.status).json({
+          success: false,
+          error: req.finderAuthError.error,
+          code: req.finderAuthError.code,
+          canRefresh: Boolean(req.finderAuthError.canRefresh)
+        });
+      }
       return res.status(403).json({ success: false, error: 'Unauthorized to post messages in this conversation.' });
     }
 
     const gadget = db.findById('gadgets', chat.gadgetId);
-    const isSurrendered = Boolean(gadget && (gadget.custodyStatus === 'PENDING_OSA_TURNOVER' || gadget.surrenderStatus === 'WILL_SURRENDER_TO_OSA'));
-    const isGadgetClosed = !gadget || gadget.status !== 'MISSING' || isSurrendered;
-    if (chat.status === 'CLOSED' || isGadgetClosed) {
+    const isCustodyClosed = Boolean(gadget && (gadget.custodyStatus === 'IN_OSA_CUSTODY' || gadget.status === 'FOUND_IN_CUSTODY' || gadget.status === 'RETURNED' || gadget.status === 'RESOLVED' || gadget.status === 'CLAIMED'));
+    const isChatSurrendered = (chat.status === 'CLOSED' && chat.closedReason === 'SURRENDERED_TO_OSA');
+    const isGadgetClosed = !gadget || gadget.status !== 'MISSING' || isCustodyClosed;
+
+    if (chat.status === 'CLOSED' || isChatSurrendered || isGadgetClosed) {
       if (isGadgetClosed && chat.status !== 'CLOSED') {
-        const closedReason = isSurrendered ? 'SURRENDERED_TO_OSA' : 'GADGET_RECOVERED';
+        const closedReason = isCustodyClosed ? 'OSA_PHYSICAL_CUSTODY' : 'GADGET_RECOVERED';
         db.update('recovery_chats', chat.id, { status: 'CLOSED', closedReason });
       }
-      const errorMsg = (isSurrendered || chat.closedReason === 'SURRENDERED_TO_OSA')
+      const errorMsg = (chat.closedReason === 'SURRENDERED_TO_OSA' || isChatSurrendered)
         ? 'The finder has decided to surrender your gadget to OSA. Awaiting physical handover.'
         : 'This recovery conversation is closed because the gadget has been marked recovered or returned.';
       return res.status(400).json({ 
@@ -211,6 +287,147 @@ router.post('/:chatId/message', (req, res) => {
   }
 });
 
+// POST /api/chat/:chatId/end-session - Explicitly revoke/invalidate finder session credential on backend (Requirement 1 & 2)
+router.post('/:chatId/end-session', (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const finderToken = req.headers['x-finder-token'] || req.body.finderToken || req.query.finderToken;
+
+    if (!finderToken || typeof finderToken !== 'string' || !finderToken.trim()) {
+      return res.status(400).json({ success: false, error: 'Finder session token is required to end session.' });
+    }
+
+    const chat = db.findById('recovery_chats', chatId);
+    if (!chat) {
+      return res.status(404).json({ success: false, error: 'Recovery chat conversation not found.' });
+    }
+
+    const cleanToken = finderToken.trim();
+    const isMatching = chat.finderSessionToken && chat.finderSessionToken.trim() === cleanToken;
+    const isAlreadyRevoked = Array.isArray(chat.revokedTokens) && chat.revokedTokens.includes(cleanToken);
+
+    if (!isMatching && !isAlreadyRevoked) {
+      return res.status(403).json({ success: false, error: 'Unauthorized: Invalid Finder token for this chat.' });
+    }
+
+    if (isMatching) {
+      const revokedTokens = Array.isArray(chat.revokedTokens) ? [...chat.revokedTokens] : [];
+      if (!revokedTokens.includes(cleanToken)) {
+        revokedTokens.push(cleanToken);
+      }
+      const nowIso = new Date().toISOString();
+      db.update('recovery_chats', chat.id, {
+        finderSessionToken: null,
+        revokedTokens,
+        finderSessionRevokedAt: nowIso
+      });
+      chat.finderSessionToken = null;
+      chat.revokedTokens = revokedTokens;
+      chat.finderSessionRevokedAt = nowIso;
+
+      // Also disconnect token from associated found report if linked
+      if (chat.foundReportId) {
+        const foundRep = db.findById('found_reports', chat.foundReportId);
+        if (foundRep && foundRep.finderSessionToken === cleanToken) {
+          db.update('found_reports', foundRep.id, { finderSessionToken: null });
+        }
+      }
+
+      db.addAuditLog({
+        userId: 'PUBLIC_FINDER',
+        userRole: 'public',
+        action: 'FINDER_SESSION_REVOKED',
+        targetType: 'recovery_chat',
+        targetId: chat.id,
+        details: `Finder session ended and credential invalidated on device (Chat ${chat.id})`,
+        ipAddress: req.ip
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Finder session credential successfully revoked and invalidated on server.',
+      chatId: chat.id
+    });
+  } catch (err) {
+    console.error('End session error:', err);
+    return res.status(500).json({ success: false, error: 'Server error ending session.' });
+  }
+});
+
+// POST /api/chat/session/revoke - Body-based alias for end-session
+router.post('/session/revoke', (req, res) => {
+  const chatId = req.body && req.body.chatId;
+  if (!chatId) {
+    return res.status(400).json({ success: false, error: 'chatId is required in request body.' });
+  }
+  req.params = { chatId };
+  return router.handle(req, res);
+});
+
+// POST /api/chat/:chatId/refresh-session - Re-authenticate / refresh legitimate inactive session (Requirement 3)
+router.post('/:chatId/refresh-session', (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const finderToken = req.headers['x-finder-token'] || req.body.finderToken || req.query.finderToken;
+
+    if (!finderToken || typeof finderToken !== 'string' || !finderToken.trim()) {
+      return res.status(400).json({ success: false, error: 'Finder session token is required to refresh session.' });
+    }
+
+    const chat = db.findById('recovery_chats', chatId);
+    if (!chat) {
+      return res.status(404).json({ success: false, error: 'Recovery chat conversation not found.' });
+    }
+
+    const cleanToken = finderToken.trim();
+
+    // Revoked tokens cannot be refreshed
+    if (Array.isArray(chat.revokedTokens) && chat.revokedTokens.includes(cleanToken)) {
+      return res.status(403).json({
+        success: false,
+        error: 'This session was revoked on this device. Re-authentication is not permitted.',
+        code: 'REVOKED'
+      });
+    }
+
+    if (!chat.finderSessionToken || chat.finderSessionToken.trim() !== cleanToken) {
+      return res.status(403).json({ success: false, error: 'Invalid finder token for this recovery chat.' });
+    }
+
+    const now = Date.now();
+    const createdAt = chat.finderSessionCreatedAt ? new Date(chat.finderSessionCreatedAt).getTime() : (chat.createdAt ? new Date(chat.createdAt).getTime() : now);
+    const expiresAt = chat.finderSessionExpiresAt ? new Date(chat.finderSessionExpiresAt).getTime() : (createdAt + FINDER_SESSION_MAX_AGE_MS);
+
+    if (now > expiresAt) {
+      return res.status(401).json({
+        success: false,
+        error: 'Maximum session lifetime reached (24 hours). Please start a new session.',
+        code: 'SESSION_EXPIRED',
+        canRefresh: false
+      });
+    }
+
+    // Reset sliding inactivity window
+    const nowIso = new Date(now).toISOString();
+    db.update('recovery_chats', chat.id, {
+      finderSessionLastActiveAt: nowIso
+    });
+    chat.finderSessionLastActiveAt = nowIso;
+
+    return res.json({
+      success: true,
+      message: 'Finder session refreshed successfully.',
+      chatId: chat.id,
+      lastActiveAt: nowIso,
+      expiresAt: chat.finderSessionExpiresAt
+    });
+  } catch (err) {
+    console.error('Refresh session error:', err);
+    return res.status(500).json({ success: false, error: 'Server error refreshing session.' });
+  }
+});
+
 // GET /api/chat/by-gadget/:gadgetId - Owner fetches active recovery chat for a gadget
 router.get('/by-gadget/:gadgetId', (req, res) => {
   try {
@@ -234,30 +451,42 @@ router.get('/by-gadget/:gadgetId', (req, res) => {
 
     if (gadget.userId !== decoded.id) {
       const user = db.findById('users', decoded.id);
-      if (!user || user.role !== 'osa_admin') {
+      if (!user || (user.role !== 'osa_admin' && user.role !== 'admin')) {
         return res.status(403).json({ success: false, error: 'Unauthorized.' });
       }
     }
 
-    // Find active chat or latest chat for this gadget
-    const allChats = db.find('recovery_chats', c => c.gadgetId === gadgetId);
+    const missingReport = db.findOne('missing_reports', m => m.gadgetId === gadgetId && m.status === 'ACTIVE');
+
+    // Find all chats for this gadget and active missing incident
+    const allChats = db.find('recovery_chats', c => 
+      c.gadgetId === gadgetId && 
+      (missingReport ? c.missingReportId === missingReport.id : true)
+    ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
     if (!allChats || allChats.length === 0) {
       return res.status(404).json({ success: false, error: 'No recovery chat found for this gadget.' });
     }
 
-    // Sort recent first
-    allChats.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    const activeChat = allChats.find(c => c.status === 'ACTIVE') || allChats[0];
+    const requestedChatId = req.query.chatId;
+    let selectedChat = null;
+    if (requestedChatId) {
+      selectedChat = allChats.find(c => c.id === requestedChatId);
+    }
+    if (!selectedChat) {
+      selectedChat = allChats.find(c => c.status === 'ACTIVE') || allChats[0];
+    }
 
-    const isSurrendered = Boolean(gadget && (gadget.custodyStatus === 'PENDING_OSA_TURNOVER' || gadget.surrenderStatus === 'WILL_SURRENDER_TO_OSA'));
-    const isGadgetClosed = gadget.status !== 'MISSING' || isSurrendered;
-    const isClosed = activeChat.status === 'CLOSED' || isGadgetClosed;
-    const closedReason = activeChat.closedReason || (isSurrendered ? 'SURRENDERED_TO_OSA' : (isGadgetClosed ? 'GADGET_RECOVERED' : null));
+    const isCustodyClosed = Boolean(gadget && (gadget.custodyStatus === 'IN_OSA_CUSTODY' || gadget.status === 'FOUND_IN_CUSTODY' || gadget.status === 'RETURNED' || gadget.status === 'RESOLVED' || gadget.status === 'CLAIMED'));
+    const isChatSurrendered = (selectedChat.status === 'CLOSED' && selectedChat.closedReason === 'SURRENDERED_TO_OSA');
+    const isGadgetClosed = gadget.status !== 'MISSING' || isCustodyClosed;
+    const isClosed = selectedChat.status === 'CLOSED' || isChatSurrendered || isGadgetClosed;
+    const closedReason = selectedChat.closedReason || (isChatSurrendered ? 'SURRENDERED_TO_OSA' : (isGadgetClosed ? 'GADGET_RECOVERED' : null));
 
-    const messages = (activeChat.messages || []).map(m => ({
+    const messages = (selectedChat.messages || []).map(m => ({
       id: m.id,
       senderRole: m.senderRole,
-      senderLabel: m.senderRole === 'OWNER' ? 'You' : (activeChat.finderName || 'Finder'),
+      senderLabel: m.senderRole === 'OWNER' ? 'You' : (selectedChat.finderName || 'Finder'),
       isMine: m.senderRole === 'OWNER',
       text: m.messageText,
       createdAt: m.createdAt
@@ -266,9 +495,9 @@ router.get('/by-gadget/:gadgetId', (req, res) => {
     return res.json({
       success: true,
       chat: {
-        id: activeChat.id,
-        gadgetId: activeChat.gadgetId,
-        missingReportId: activeChat.missingReportId,
+        id: selectedChat.id,
+        gadgetId: selectedChat.gadgetId,
+        missingReportId: selectedChat.missingReportId,
         gadget: {
           brand: gadget.brand,
           model: gadget.model,
@@ -277,15 +506,24 @@ router.get('/by-gadget/:gadgetId', (req, res) => {
           status: gadget.status
         },
         myRole: 'OWNER',
-        otherParticipant: activeChat.finderName || 'Finder',
-        finderName: activeChat.finderName || 'Finder',
-        foundLocation: activeChat.foundLocation,
-        status: activeChat.status,
+        otherParticipant: selectedChat.finderName || 'Finder',
+        finderName: selectedChat.finderName || 'Finder',
+        foundLocation: selectedChat.foundLocation,
+        status: selectedChat.status,
         isClosed,
         closedReason,
         messages,
-        createdAt: activeChat.createdAt
-      }
+        createdAt: selectedChat.createdAt
+      },
+      chats: allChats.map(c => ({
+        id: c.id,
+        finderName: c.finderName || 'Finder',
+        foundLocation: c.foundLocation || 'Campus',
+        status: c.status,
+        isClosed: c.status === 'CLOSED',
+        closedReason: c.closedReason,
+        createdAt: c.createdAt
+      }))
     });
   } catch (err) {
     console.error('Fetch chat by gadget error:', err);
@@ -299,24 +537,59 @@ router.get('/active-finder/:token', (req, res) => {
     const { token } = req.params;
     const finderToken = req.headers['x-finder-token'] || req.query.finderToken;
 
-    if (!finderToken) {
+    if (!finderToken || typeof finderToken !== 'string' || !finderToken.trim()) {
       return res.status(400).json({ success: false, error: 'Finder session token is required.' });
     }
 
+    const cleanToken = finderToken.trim();
     const gadget = db.findOne('gadgets', g => g.secureToken === token || g.id === token);
     if (!gadget) {
       return res.status(404).json({ success: false, error: 'Gadget not found.' });
     }
 
-    const chat = db.findOne('recovery_chats', c => c.gadgetId === gadget.id && c.finderSessionToken === finderToken);
+    // Check if token was explicitly revoked on this device (Requirement 1 & 2)
+    const revokedChat = db.findOne('recovery_chats', c => c.gadgetId === gadget.id && Array.isArray(c.revokedTokens) && c.revokedTokens.includes(cleanToken));
+    if (revokedChat) {
+      return res.status(403).json({
+        success: false,
+        error: 'Finder session was ended on this device and is no longer authorized.',
+        code: 'TOKEN_REVOKED'
+      });
+    }
+
+    const chat = db.findOne('recovery_chats', c => c.gadgetId === gadget.id && c.finderSessionToken === cleanToken);
     if (!chat) {
       return res.status(404).json({ success: false, error: 'Active recovery chat session not found.' });
     }
 
-    const isSurrendered = Boolean(gadget && (gadget.custodyStatus === 'PENDING_OSA_TURNOVER' || gadget.surrenderStatus === 'WILL_SURRENDER_TO_OSA'));
-    const isGadgetClosed = gadget.status !== 'MISSING' || isSurrendered;
-    const isClosed = chat.status === 'CLOSED' || isGadgetClosed;
-    const closedReason = chat.closedReason || (isSurrendered ? 'SURRENDERED_TO_OSA' : (isGadgetClosed ? 'GADGET_RECOVERED' : null));
+    const now = Date.now();
+    const createdAt = chat.finderSessionCreatedAt ? new Date(chat.finderSessionCreatedAt).getTime() : (chat.createdAt ? new Date(chat.createdAt).getTime() : now);
+    const expiresAt = chat.finderSessionExpiresAt ? new Date(chat.finderSessionExpiresAt).getTime() : (createdAt + FINDER_SESSION_MAX_AGE_MS);
+    const lastActiveAt = chat.finderSessionLastActiveAt ? new Date(chat.finderSessionLastActiveAt).getTime() : createdAt;
+
+    if (now > expiresAt) {
+      return res.status(401).json({
+        success: false,
+        error: 'Finder session has expired (max duration exceeded).',
+        code: 'SESSION_EXPIRED',
+        canRefresh: false
+      });
+    }
+
+    if ((now - lastActiveAt) > FINDER_INACTIVITY_TIMEOUT_MS) {
+      return res.status(401).json({
+        success: false,
+        error: 'Finder session timed out due to inactivity.',
+        code: 'SESSION_INACTIVE',
+        canRefresh: true
+      });
+    }
+
+    const isCustodyClosed = Boolean(gadget && (gadget.custodyStatus === 'IN_OSA_CUSTODY' || gadget.status === 'FOUND_IN_CUSTODY' || gadget.status === 'RETURNED' || gadget.status === 'RESOLVED' || gadget.status === 'CLAIMED'));
+    const isChatSurrendered = (chat.status === 'CLOSED' && chat.closedReason === 'SURRENDERED_TO_OSA');
+    const isGadgetClosed = gadget.status !== 'MISSING' || isCustodyClosed;
+    const isClosed = chat.status === 'CLOSED' || isChatSurrendered || isGadgetClosed;
+    const closedReason = chat.closedReason || (isChatSurrendered ? 'SURRENDERED_TO_OSA' : (isGadgetClosed ? 'GADGET_RECOVERED' : null));
 
     const messages = (chat.messages || []).map(m => ({
       id: m.id,

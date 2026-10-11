@@ -227,7 +227,12 @@ const api = {
         if (res.status === 401 && !endpoint.includes('/login') && !endpoint.includes('/register')) {
           console.warn('Session expired or unauthorized');
         }
-        throw new Error(data.error || `HTTP error ${res.status}`);
+        const err = new Error(data.error || `HTTP error ${res.status}`);
+        err.status = res.status;
+        err.code = data.code;
+        err.canRefresh = data.canRefresh;
+        err.data = data;
+        throw err;
       }
 
       return data;
@@ -432,13 +437,38 @@ const api = {
     });
   },
 
-  async getRecoveryChatByGadget(gadgetId) {
-    return await this.request(`/chat/by-gadget/${gadgetId}`);
+  async getRecoveryChatByGadget(gadgetId, chatId = null) {
+    const q = chatId ? `?chatId=${encodeURIComponent(chatId)}` : '';
+    return await this.request(`/chat/by-gadget/${gadgetId}${q}`);
   },
 
   async getActiveFinderChat(token, finderToken) {
     const headers = { 'x-finder-token': finderToken };
     return await this.request(`/chat/active-finder/${token}`, { headers });
+  },
+
+  async endFinderSession(chatId, finderToken) {
+    const headers = {};
+    if (finderToken) {
+      headers['x-finder-token'] = finderToken;
+    }
+    return await this.request(`/chat/${chatId}/end-session`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ finderToken })
+    });
+  },
+
+  async refreshFinderSession(chatId, finderToken) {
+    const headers = {};
+    if (finderToken) {
+      headers['x-finder-token'] = finderToken;
+    }
+    return await this.request(`/chat/${chatId}/refresh-session`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ finderToken })
+    });
   },
 
   // Claims

@@ -153,36 +153,35 @@ router.get('/my', authMiddleware, (req, res) => {
       }
       const latestClaim = db.findOne('claims', c => c.gadgetId === g.id);
 
-      // If a finder reported finding the gadget and chose to keep it safe (suppressed if finder surrendered to OSA)
-      let finderInfo = null;
       const isSurrenderPending = (g.custodyStatus === 'PENDING_OSA_TURNOVER' || g.surrenderStatus === 'WILL_SURRENDER_TO_OSA');
 
-      if (g.status === 'MISSING' && !isSurrenderPending) {
-        const foundReport = db.findOne('found_reports', f => 
-          f.gadgetId === g.id && 
-          (missingReport ? f.missingReportId === missingReport.id : true) &&
-          f.status !== 'PROCESSED_BY_OSA' && f.status !== 'RETURNED' && f.status !== 'RESOLVED' && f.status !== 'CANCELLED'
-        );
-        if (foundReport && (foundReport.turnInMethod === 'KEPT_SAFE' || foundReport.turnInMethod === 'KEPT_SAFE_CONTACT_ME' || foundReport.turnInMethod === 'FINDER_HOLDING')) {
-          const activeChat = db.findOne('recovery_chats', c => 
-            c.gadgetId === g.id && 
-            (missingReport ? c.missingReportId === missingReport.id : true) &&
-            c.status === 'ACTIVE'
-          );
-          if (activeChat) {
-            finderInfo = {
-              id: foundReport.id,
-              finderName: foundReport.finderName || 'Finder',
-              foundLocation: foundReport.foundLocation,
-              action: 'Keeping Gadget Safe',
-              turnInMethod: 'KEPT_SAFE',
-              foundDate: foundReport.foundDate,
-              message: foundReport.message || foundReport.notes || '',
-              chatId: activeChat.id
-            };
-          }
-        }
-      }
+      // Find all recovery chats for this gadget and current missing incident
+      const incidentChats = (g.status === 'MISSING') ? db.find('recovery_chats', c => 
+        c.gadgetId === g.id && 
+        (missingReport ? c.missingReportId === missingReport.id : true)
+      ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) : [];
+
+      const activeIncidentChats = incidentChats.filter(c => c.status === 'ACTIVE');
+      const closedIncidentChats = incidentChats.filter(c => c.status === 'CLOSED');
+
+      const finderChats = activeIncidentChats.map(c => {
+        const foundReport = db.findById('found_reports', c.foundReportId) || 
+          db.findOne('found_reports', f => f.gadgetId === g.id && f.missingReportId === c.missingReportId);
+        return {
+          id: foundReport ? foundReport.id : c.id,
+          chatId: c.id,
+          finderName: c.finderName || 'Finder',
+          foundLocation: c.foundLocation || 'Campus',
+          action: 'Keeping Gadget Safe',
+          turnInMethod: 'KEPT_SAFE',
+          foundDate: foundReport?.foundDate || c.createdAt,
+          message: foundReport?.message || foundReport?.notes || '',
+          createdAt: c.createdAt
+        };
+      });
+
+      // Backward-compatible finderInfo pointing to primary active chat if no surrender pending
+      let finderInfo = (!isSurrenderPending && finderChats.length > 0) ? finderChats[0] : null;
 
       // If a finder reported finding the gadget and chose to surrender to OSA
       let surrenderInfo = null;
@@ -205,7 +204,7 @@ router.get('/my', authMiddleware, (req, res) => {
       }
 
       // Check for closed recovery chat for this gadget / incident to preserve closed history
-      const latestClosedChat = db.find('recovery_chats', c => 
+      const latestClosedChat = closedIncidentChats.length > 0 ? closedIncidentChats[0] : db.find('recovery_chats', c => 
         c.gadgetId === g.id && 
         (missingReport ? c.missingReportId === missingReport.id : true) &&
         c.status === 'CLOSED'
@@ -219,14 +218,25 @@ router.get('/my', authMiddleware, (req, res) => {
         missingReportId: latestClosedChat.missingReportId
       } : null;
 
+      const closedChatsList = closedIncidentChats.map(c => ({
+        chatId: c.id,
+        closedReason: c.closedReason,
+        finderName: c.finderName || 'Finder',
+        foundLocation: c.foundLocation || 'Campus',
+        missingReportId: c.missingReportId,
+        createdAt: c.createdAt
+      }));
+
       return {
         ...g,
         missingReport: missingReport || null,
         scanCount,
         latestClaim: latestClaim || null,
         finderInfo,
+        finderChats,
         surrenderInfo,
-        closedChatInfo
+        closedChatInfo,
+        closedChatsList
       };
     });
 

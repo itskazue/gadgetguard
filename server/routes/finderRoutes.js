@@ -39,34 +39,43 @@ router.post('/report', (req, res) => {
     const activeMissing = db.findOne('missing_reports', m => m.gadgetId === targetGadget.id && m.status === 'ACTIVE');
 
     // If finder is keeping gadget and already has an active chat session for this gadget, reconnect without duplicate
-    if (isKeeping && (clientFinderToken || clientChatId)) {
-      const existingChat = db.findOne('recovery_chats', c => 
+    // SECURITY: Reconnection requires a valid matching finderSessionToken. Chat ID alone without token is strictly rejected.
+    let existingChat = null;
+    if (clientFinderToken && typeof clientFinderToken === 'string' && clientFinderToken.trim()) {
+      const cleanToken = clientFinderToken.trim();
+      existingChat = db.findOne('recovery_chats', c => 
         c.gadgetId === targetGadget.id && 
         (activeMissing ? c.missingReportId === activeMissing.id : true) &&
-        (c.finderSessionToken === clientFinderToken || c.id === clientChatId) &&
+        c.finderSessionToken === cleanToken &&
+        (!Array.isArray(c.revokedTokens) || !c.revokedTokens.includes(cleanToken)) &&
+        (!c.finderSessionExpiresAt || Date.now() <= new Date(c.finderSessionExpiresAt).getTime()) &&
         c.status === 'ACTIVE'
       );
-      if (existingChat && targetGadget.status === 'MISSING') {
-        return res.status(200).json({
-          success: true,
-          message: 'Active finder recovery session already exists. Reconnecting to your existing chat.',
-          isExistingSession: true,
-          chat: {
-            id: existingChat.id,
-            finderSessionToken: existingChat.finderSessionToken,
-            finderName: existingChat.finderName || 'Finder',
-            foundLocation: existingChat.foundLocation,
-            missingReportId: existingChat.missingReportId,
-            status: existingChat.status,
-            isClosed: false,
-            gadget: {
-              id: targetGadget.id,
-              brand: targetGadget.brand,
-              model: targetGadget.model
-            }
+    }
+
+    if (isKeeping && existingChat && targetGadget.status === 'MISSING') {
+      const nowIso = new Date().toISOString();
+      db.update('recovery_chats', existingChat.id, { finderSessionLastActiveAt: nowIso });
+      existingChat.finderSessionLastActiveAt = nowIso;
+      return res.status(200).json({
+        success: true,
+        message: 'Active finder recovery session already exists. Reconnecting to your existing chat.',
+        isExistingSession: true,
+        chat: {
+          id: existingChat.id,
+          finderSessionToken: existingChat.finderSessionToken,
+          finderName: existingChat.finderName || 'Finder',
+          foundLocation: existingChat.foundLocation,
+          missingReportId: existingChat.missingReportId,
+          status: existingChat.status,
+          isClosed: false,
+          gadget: {
+            id: targetGadget.id,
+            brand: targetGadget.brand,
+            model: targetGadget.model
           }
-        });
-      }
+        }
+      });
     }
 
     // Found Location is REQUIRED (manually entered by the finder)
@@ -95,26 +104,26 @@ router.post('/report', (req, res) => {
       effectiveFinderContact = finderContact.trim().substring(0, 30);
     }
 
-    // Find any existing active recovery chat or found report for this gadget and current missing incident to avoid duplicate cases
-    const existingActiveChat = db.findOne('recovery_chats', c => 
-      c.gadgetId === targetGadget.id && 
-      (activeMissing ? c.missingReportId === activeMissing.id : true) &&
-      ((clientFinderToken && c.finderSessionToken === clientFinderToken) || (clientChatId && c.id === clientChatId) || (activeMissing && c.status === 'ACTIVE'))
-    );
-    const existingFoundReport = existingActiveChat 
-      ? db.findById('found_reports', existingActiveChat.foundReportId) 
-      : (activeMissing 
-          ? db.findOne('found_reports', f => f.gadgetId === targetGadget.id && f.missingReportId === activeMissing.id && f.status !== 'RETURNED' && f.status !== 'RESOLVED' && f.status !== 'CANCELLED')
-          : db.findOne('found_reports', f => f.gadgetId === targetGadget.id && f.status !== 'RETURNED' && f.status !== 'RESOLVED' && f.status !== 'CANCELLED')
-        );
+    // Check if updating the current finder's existing report, or creating a new independent report
+    let existingFoundReport = null;
+    if (existingChat) {
+      existingFoundReport = db.findById('found_reports', existingChat.foundReportId);
+    } else if (clientFinderToken && typeof clientFinderToken === 'string' && clientFinderToken.trim()) {
+      existingFoundReport = db.findOne('found_reports', f => 
+        f.gadgetId === targetGadget.id && 
+        (activeMissing ? f.missingReportId === activeMissing.id : true) &&
+        f.finderSessionToken === clientFinderToken.trim() &&
+        f.status !== 'RETURNED' && f.status !== 'RESOLVED' && f.status !== 'CANCELLED'
+      );
+    }
 
     const surrenderRef = (existingFoundReport && existingFoundReport.surrenderReference) || 
-      ('SRF-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase());
+      ('SRF-' + Date.now().toString(36).toUpperCase() + '-' + crypto.randomBytes(3).toString('hex').toUpperCase());
 
     let report = null;
 
     if (existingFoundReport) {
-      // Update existing found report instead of creating another duplicate case
+      // Update existing found report for this specific finder
       report = db.update('found_reports', existingFoundReport.id, {
         surrenderReference: surrenderRef,
         missingReportId: activeMissing ? activeMissing.id : existingFoundReport.missingReportId,
@@ -129,9 +138,9 @@ router.post('/report', (req, res) => {
         finderDecision: isKeeping ? 'KEPT_SAFE' : 'WILL_SURRENDER_TO_OSA'
       });
     } else {
-      // Insert new Found Report record
+      // Insert new independent Found Report record for this finder
       report = db.insert('found_reports', {
-        id: 'fnd_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
+        id: 'fnd_' + Date.now().toString(36) + crypto.randomBytes(3).toString('hex'),
         surrenderReference: surrenderRef,
         gadgetId: targetGadget.id,
         missingReportId: activeMissing ? activeMissing.id : null,
@@ -144,7 +153,8 @@ router.post('/report', (req, res) => {
         turnInMethod: effectiveTurnInMethod,
         message: message ? message.trim() : '',
         status: isKeeping ? 'REPORTED' : 'PENDING_OSA_TURNOVER',
-        finderDecision: isKeeping ? 'KEPT_SAFE' : 'WILL_SURRENDER_TO_OSA'
+        finderDecision: isKeeping ? 'KEPT_SAFE' : 'WILL_SURRENDER_TO_OSA',
+        finderSessionToken: clientFinderToken || null
       });
     }
 
@@ -161,12 +171,15 @@ router.post('/report', (req, res) => {
     let recoveryChat = null;
 
     if (isKeeping) {
-      // Create secure temporary recovery chat if none exists
-      if (existingActiveChat && existingActiveChat.status === 'ACTIVE') {
-        recoveryChat = existingActiveChat;
+      // Create secure temporary recovery chat if none exists for this finder
+      if (existingChat && existingChat.status === 'ACTIVE') {
+        recoveryChat = existingChat;
       } else {
-        const finderSessionToken = 'fnd_sec_' + crypto.randomBytes(16).toString('hex');
-        const chatId = 'cht_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+        const finderSessionToken = 'fnd_sec_' + crypto.randomBytes(24).toString('hex');
+        const chatId = 'cht_' + Date.now().toString(36) + crypto.randomBytes(6).toString('hex');
+        const now = Date.now();
+        const nowIso = new Date(now).toISOString();
+        const expiresIso = new Date(now + 24 * 60 * 60 * 1000).toISOString();
 
         recoveryChat = db.insert('recovery_chats', {
           id: chatId,
@@ -179,8 +192,16 @@ router.post('/report', (req, res) => {
           ownerUserId: targetGadget.userId,
           status: 'ACTIVE',
           messages: [],
-          createdAt: new Date().toISOString()
+          revokedTokens: [],
+          finderSessionCreatedAt: nowIso,
+          finderSessionExpiresAt: expiresIso,
+          finderSessionLastActiveAt: nowIso,
+          createdAt: nowIso
         });
+
+        if (report && !report.finderSessionToken) {
+          db.update('found_reports', report.id, { finderSessionToken });
+        }
       }
 
       // Update Owner Notification: Title "Someone Found Your Gadget" + Safety Notice
@@ -229,12 +250,18 @@ router.post('/report', (req, res) => {
       // =========================================================================
       // FINDER CHOOSES OR TRANSITIONS TO "I WILL SURRENDER IT TO OSA"
       // =========================================================================
-      // Close or make any existing recovery chats read-only for this recovery case (do not delete chat history)
-      const chatsToClose = db.find('recovery_chats', c => 
-        c.gadgetId === targetGadget.id && 
-        (activeMissing ? c.missingReportId === activeMissing.id : true) && 
-        c.status !== 'CLOSED'
-      );
+      // Close or make read-only ONLY this specific finder's recovery chat(s) (do not close other finders' chats)
+      let chatsToClose = [];
+      if (clientFinderToken && typeof clientFinderToken === 'string') {
+        chatsToClose = db.find('recovery_chats', c => 
+          c.gadgetId === targetGadget.id && 
+          (activeMissing ? c.missingReportId === activeMissing.id : true) && 
+          c.finderSessionToken === clientFinderToken.trim() &&
+          c.status !== 'CLOSED'
+        );
+      } else if (existingChat) {
+        chatsToClose = [existingChat];
+      }
       chatsToClose.forEach(c => {
         const currentMessages = Array.isArray(c.messages) ? [...c.messages] : [];
         currentMessages.push({
@@ -334,8 +361,8 @@ router.post('/report', (req, res) => {
         studentIdNumber,
         status: 'AWAITING OSA HANDOVER',
         recoveryStatus: 'SURRENDER TO OSA / AWAITING HANDOVER',
-        chat: existingActiveChat ? {
-          id: existingActiveChat.id,
+        chat: (chatsToClose.length > 0 ? chatsToClose[0] : existingChat) ? {
+          id: (chatsToClose.length > 0 ? chatsToClose[0] : existingChat).id,
           status: 'CLOSED',
           isClosed: true,
           closedReason: 'SURRENDERED_TO_OSA'
