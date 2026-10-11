@@ -419,6 +419,107 @@ function sortGadgetsList(items, sortOption, getOwnerFn, getDateFn) {
   });
 }
 
+// Unified custom calendar toggle for date range filters
+function toggleCustomDateInputs(prefix) {
+  const select = document.getElementById(`${prefix}-date-filter`);
+  const wrap = document.getElementById(`${prefix}-custom-date-wrap`);
+  if (!select || !wrap) return;
+  wrap.style.display = (select.value === 'CUSTOM') ? 'flex' : 'none';
+}
+
+// Unified Philippine Time (Asia/Manila, UTC+8) Date Range Matcher
+function matchesPhtDateRange(dateInput, rangeType, fromDateStr, toDateStr) {
+  if (!rangeType || rangeType === 'ALL') return true;
+  if (!dateInput) return false;
+
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return false;
+  const timeMs = d.getTime();
+
+  // Philippine Time is UTC+8: 28,800,000 ms
+  const PHT_OFFSET_MS = 8 * 60 * 60 * 1000;
+  const nowUtc = Date.now();
+  const nowPht = new Date(nowUtc + PHT_OFFSET_MS);
+  const nowYear = nowPht.getUTCFullYear();
+  const nowMonth = nowPht.getUTCMonth();
+  const nowDate = nowPht.getUTCDate();
+
+  // Start & end of today in PHT converted to UTC timestamp
+  const startTodayUtcMs = Date.UTC(nowYear, nowMonth, nowDate) - PHT_OFFSET_MS;
+  const endTodayUtcMs = startTodayUtcMs + (24 * 60 * 60 * 1000) - 1;
+
+  if (rangeType === 'TODAY') {
+    return timeMs >= startTodayUtcMs && timeMs <= endTodayUtcMs;
+  }
+
+  if (rangeType === 'WEEK') {
+    // 7-day rolling window ending at end of today in PHT
+    const startWeekUtcMs = startTodayUtcMs - (6 * 24 * 60 * 60 * 1000);
+    return timeMs >= startWeekUtcMs && timeMs <= endTodayUtcMs;
+  }
+
+  if (rangeType === 'MONTH') {
+    // Current calendar month in PHT
+    const startMonthUtcMs = Date.UTC(nowYear, nowMonth, 1) - PHT_OFFSET_MS;
+    const endMonthUtcMs = Date.UTC(nowYear, nowMonth + 1, 1) - PHT_OFFSET_MS - 1;
+    return timeMs >= startMonthUtcMs && timeMs <= endMonthUtcMs;
+  }
+
+  if (rangeType === 'CUSTOM') {
+    let match = true;
+    if (fromDateStr) {
+      const parts = fromDateStr.split('-');
+      if (parts.length === 3) {
+        const fromUtcMs = Date.UTC(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10)) - PHT_OFFSET_MS;
+        if (timeMs < fromUtcMs) match = false;
+      }
+    }
+    if (toDateStr) {
+      const parts = toDateStr.split('-');
+      if (parts.length === 3) {
+        // Inclusive end of day: 23:59:59.999 PHT
+        const toUtcMs = Date.UTC(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10)) - PHT_OFFSET_MS + (24 * 60 * 60 * 1000) - 1;
+        if (timeMs > toUtcMs) match = false;
+      }
+    }
+    return match;
+  }
+
+  return true;
+}
+
+// Unified Sorting Pipeline for General Item Collections
+function sortItemsList(items, sortOption, getOwnerFn, getDateFn) {
+  const opt = sortOption || 'NEWEST';
+  return [...items].sort((a, b) => {
+    if (opt === 'SURNAME_ASC' || opt === 'SURNAME_DESC') {
+      const ownerA = getOwnerFn ? getOwnerFn(a) : {};
+      const ownerB = getOwnerFn ? getOwnerFn(b) : {};
+      const surnameA = getStudentSurname(ownerA?.name || '').toLowerCase();
+      const surnameB = getStudentSurname(ownerB?.name || '').toLowerCase();
+      const sCmp = surnameA.localeCompare(surnameB);
+      if (sCmp !== 0) return opt === 'SURNAME_ASC' ? sCmp : -sCmp;
+      const firstA = (ownerA?.name || '').toLowerCase();
+      const firstB = (ownerB?.name || '').toLowerCase();
+      const fCmp = firstA.localeCompare(firstB);
+      if (fCmp !== 0) return opt === 'SURNAME_ASC' ? fCmp : -fCmp;
+      const idA = (ownerA?.idNumber || '').toLowerCase();
+      const idB = (ownerB?.idNumber || '').toLowerCase();
+      return idA.localeCompare(idB);
+    }
+
+    const dateA = new Date(getDateFn ? getDateFn(a) : 0).getTime() || 0;
+    const dateB = new Date(getDateFn ? getDateFn(b) : 0).getTime() || 0;
+
+    if (opt === 'OLDEST') {
+      return dateA - dateB;
+    }
+
+    // Default: NEWEST
+    return dateB - dateA;
+  });
+}
+
 // 2. Gadget Approvals Full Queue (Registration Requests)
 let approvalsQueueCache = [];
 
@@ -1204,18 +1305,103 @@ async function loadFoundCustodyVault() {
     });
 
     window._foundReportsList = reports;
-    renderFoundCustodyTable(reports);
+    filterFoundCustodyTable();
   } catch (e) {
     console.error('Error loading custody vault:', e);
   }
 }
 
-function renderFoundCustodyTable(reports) {
+function filterFoundCustodyTable() {
+  const query = (document.getElementById('found-search-input')?.value || document.getElementById('found-custody-search-input')?.value || '').toLowerCase().trim();
+  const statusFilter = document.getElementById('found-status-filter')?.value || 'ALL';
+  const typeFilter = document.getElementById('found-type-filter')?.value || 'ALL';
+  const sortOption = document.getElementById('found-sort-filter')?.value || 'NEWEST';
+
+  if (!window._foundReportsList) return;
+
+  let filtered = window._foundReportsList;
+
+  // 1. Turnover Status Filter
+  if (statusFilter !== 'ALL') {
+    filtered = filtered.filter(r => {
+      const isInCustody = (r.status === 'IN_OSA_CUSTODY' || r.gadget?.custodyStatus === 'IN_OSA_CUSTODY' || r.gadget?.status === 'FOUND_IN_CUSTODY');
+      const isPendingTurnover = (r.turnInMethod === 'SUBMITTED_TO_OSA' || r.finderDecision === 'WILL_SURRENDER_TO_OSA' || r.status === 'PENDING_OSA_TURNOVER');
+
+      if (statusFilter === 'FINDER_HOLDING') return !isInCustody && !isPendingTurnover;
+      if (statusFilter === 'AWAITING_OSA_HANDOVER') return !isInCustody && isPendingTurnover;
+      if (statusFilter === 'IN_OSA_CUSTODY' || statusFilter === 'READY_FOR_CLAIM') return isInCustody;
+      return true;
+    });
+  }
+
+  // 2. Device Type Filter
+  if (typeFilter !== 'ALL') {
+    filtered = filtered.filter(r => matchesDeviceCategory(r.gadget?.category, typeFilter));
+  }
+
+  // 3. Search Filter: Surrender Reference, Case ID, Gadget ID, QR Token, Owner Name, Student ID
+  if (query) {
+    filtered = filtered.filter(r => {
+      const ref = (r.surrenderReference || '').toLowerCase();
+      const caseId = (r.id || '').toLowerCase();
+      const missingId = (r.missingReportId || '').toLowerCase();
+      const gadgetId = (r.gadgetId || r.gadget?.id || '').toLowerCase();
+      const token = (r.gadget?.secureToken || '').toLowerCase();
+      const brand = (r.gadget?.brand || '').toLowerCase();
+      const model = (r.gadget?.model || '').toLowerCase();
+      const ownerName = (r.owner?.name || r.gadget?.owner?.name || '').toLowerCase();
+      const studentId = (r.owner?.idNumber || r.gadget?.owner?.idNumber || '').toLowerCase();
+      const finderName = (r.finderName || '').toLowerCase();
+      const foundLocation = (r.foundLocation || '').toLowerCase();
+
+      return ref.includes(query) || caseId.includes(query) || missingId.includes(query) ||
+             gadgetId.includes(query) || token.includes(query) || brand.includes(query) ||
+             model.includes(query) || ownerName.includes(query) || studentId.includes(query) ||
+             finderName.includes(query) || foundLocation.includes(query);
+    });
+  }
+
+  // 4. Sort By: Newest First, Oldest First, Surname A–Z, Surname Z–A
+  const sorted = sortItemsList(
+    filtered,
+    sortOption,
+    r => r.owner || r.gadget?.owner,
+    r => r.foundDate || r.createdAt
+  );
+
+  const hasFilter = Boolean(query || statusFilter !== 'ALL' || typeFilter !== 'ALL' || sortOption !== 'NEWEST');
+  renderFoundCustodyTable(sorted, hasFilter);
+}
+
+function clearFoundFilters() {
+  const sInput = document.getElementById('found-search-input');
+  const legacyInput = document.getElementById('found-custody-search-input');
+  const stSelect = document.getElementById('found-status-filter');
+  const typeSelect = document.getElementById('found-type-filter');
+  const sortSelect = document.getElementById('found-sort-filter');
+
+  if (sInput) sInput.value = '';
+  if (legacyInput) legacyInput.value = '';
+  if (stSelect) stSelect.value = 'ALL';
+  if (typeSelect) typeSelect.value = 'ALL';
+  if (sortSelect) sortSelect.value = 'NEWEST';
+
+  filterFoundCustodyTable();
+}
+
+function renderFoundCustodyTable(reports, hasFilter = false) {
   const container = document.getElementById('found-custody-table');
   if (!container) return;
 
   if (!reports || reports.length === 0) {
-    container.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted);">No active surrendered or found devices matching criteria.</div>`;
+    container.innerHTML = `
+      <div style="padding: 40px 24px; text-align: center; color: var(--text-muted);">
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">📦</div>
+        <div style="font-weight: 700; font-size: 1rem; color: #334155;">No found reports match criteria.</div>
+        <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">Active surrendered or found device reports will appear here.</div>
+        ${hasFilter ? `<button class="btn btn-secondary btn-sm" onclick="clearFoundFilters()" style="margin-top: 12px;">↺ Reset Filters</button>` : ''}
+      </div>
+    `;
     return;
   }
 
@@ -1308,30 +1494,6 @@ function renderFoundCustodyTable(reports) {
       </tbody>
     </table>
   `;
-}
-
-function filterFoundCustodyTable() {
-  const query = (document.getElementById('found-custody-search-input')?.value || '').toLowerCase().trim();
-  if (!window._foundReportsList) return;
-  if (!query) {
-    renderFoundCustodyTable(window._foundReportsList);
-    return;
-  }
-  const filtered = window._foundReportsList.filter(r => {
-    const ref = (r.surrenderReference || '').toLowerCase();
-    const gId = (r.gadgetId || r.gadget?.id || '').toLowerCase();
-    const token = (r.gadget?.secureToken || '').toLowerCase();
-    const gBrand = (r.gadget?.brand || '').toLowerCase();
-    const gModel = (r.gadget?.model || '').toLowerCase();
-    const ownerName = (r.owner?.name || '').toLowerCase();
-    const ownerId = (r.owner?.idNumber || '').toLowerCase();
-    const finder = (r.finderName || '').toLowerCase();
-    const fLoc = (r.foundLocation || '').toLowerCase();
-    return ref.includes(query) || gId.includes(query) || token.includes(query) ||
-      gBrand.includes(query) || gModel.includes(query) || ownerName.includes(query) ||
-      ownerId.includes(query) || finder.includes(query) || fLoc.includes(query);
-  });
-  renderFoundCustodyTable(filtered);
 }
 
 function openReceiveCustodyModal(reportIdOrGadgetId, deviceName = '', ownerName = '', studentIdNumber = '', surrenderRef = '', gadgetId = '') {
@@ -1463,30 +1625,77 @@ async function loadClaimsDesk() {
 
 function filterClaimsTable() {
   const query = (document.getElementById('claims-search-input')?.value || '').toLowerCase().trim();
+  const statusFilter = document.getElementById('claims-status-filter')?.value || 'ALL';
+  const typeFilter = document.getElementById('claims-type-filter')?.value || 'ALL';
+  const sortOption = document.getElementById('claims-sort-filter')?.value || 'NEWEST';
+
   if (!window._claimsList) return;
 
-  if (!query) {
-    renderClaimsTable(window._claimsList);
-    return;
+  let filtered = window._claimsList;
+
+  // 1. Claim Status Filter
+  if (statusFilter !== 'ALL') {
+    filtered = filtered.filter(c => {
+      if (statusFilter === 'PENDING') return c.status === 'PENDING';
+      if (statusFilter === 'APPROVED') return c.status === 'APPROVED';
+      if (statusFilter === 'IN_OSA_CUSTODY' || statusFilter === 'READY_FOR_CLAIM') {
+        return c.id?.startsWith('custody_') || c.isInCustody === true || c.status === 'IN_CUSTODY' || c.gadget?.status === 'FOUND_IN_CUSTODY' || c.status === 'APPROVED' || c.status === 'PENDING';
+      }
+      return true;
+    });
   }
 
-  const filtered = window._claimsList.filter(c => {
-    const ownerName = (c.user?.name || c.gadget?.owner?.name || '').toLowerCase();
-    const studentId = (c.user?.idNumber || c.gadget?.owner?.idNumber || c.verificationIdNumber || '').toLowerCase();
-    const brand = (c.gadget?.brand || '').toLowerCase();
-    const model = (c.gadget?.model || '').toLowerCase();
-    const gadgetId = (c.gadgetId || c.gadget?.id || '').toLowerCase();
-    const serial = (c.gadget?.serialNumber || '').toLowerCase();
+  // 2. Device Type Filter
+  if (typeFilter !== 'ALL') {
+    filtered = filtered.filter(c => matchesDeviceCategory(c.gadget?.category, typeFilter));
+  }
 
-    return ownerName.includes(query) || studentId.includes(query) ||
-           gadgetId.includes(query) || brand.includes(query) ||
-           model.includes(query) || serial.includes(query);
-  });
+  // 3. Search: Owner Name, Student ID, Gadget Name, Gadget ID, Serial Number, QR Token
+  if (query) {
+    filtered = filtered.filter(c => {
+      const ownerName = (c.user?.name || c.gadget?.owner?.name || '').toLowerCase();
+      const studentId = (c.user?.idNumber || c.gadget?.owner?.idNumber || c.verificationIdNumber || '').toLowerCase();
+      const brand = (c.gadget?.brand || '').toLowerCase();
+      const model = (c.gadget?.model || '').toLowerCase();
+      const brandModel = `${brand} ${model}`;
+      const gadgetId = (c.gadgetId || c.gadget?.id || '').toLowerCase();
+      const serial = (c.gadget?.serialNumber || '').toLowerCase();
+      const token = (c.gadget?.secureToken || '').toLowerCase();
 
-  renderClaimsTable(filtered);
+      return ownerName.includes(query) || studentId.includes(query) ||
+             gadgetId.includes(query) || brand.includes(query) ||
+             model.includes(query) || brandModel.includes(query) ||
+             serial.includes(query) || token.includes(query);
+    });
+  }
+
+  // 4. Sort By: Newest First, Oldest First, Surname A–Z, Surname Z–A
+  const sorted = sortItemsList(
+    filtered,
+    sortOption,
+    c => c.user || c.gadget?.owner,
+    c => c.dateReceivedByOsa || c.createdAt
+  );
+
+  const hasFilter = Boolean(query || statusFilter !== 'ALL' || typeFilter !== 'ALL' || sortOption !== 'NEWEST');
+  renderClaimsTable(sorted, hasFilter);
 }
 
-function renderClaimsTable(claims) {
+function clearClaimsFilters() {
+  const sInput = document.getElementById('claims-search-input');
+  const stSelect = document.getElementById('claims-status-filter');
+  const typeSelect = document.getElementById('claims-type-filter');
+  const sortSelect = document.getElementById('claims-sort-filter');
+
+  if (sInput) sInput.value = '';
+  if (stSelect) stSelect.value = 'ALL';
+  if (typeSelect) typeSelect.value = 'ALL';
+  if (sortSelect) sortSelect.value = 'NEWEST';
+
+  filterClaimsTable();
+}
+
+function renderClaimsTable(claims, hasFilter = false) {
   const container = document.getElementById('claims-review-table');
   if (!container) return;
 
@@ -1494,8 +1703,9 @@ function renderClaimsTable(claims) {
     container.innerHTML = `
       <div style="padding: 48px 24px; text-align: center; color: var(--text-muted);">
         <div style="font-size: 2.2rem; margin-bottom: 8px;">📦</div>
-        <div style="font-weight: 700; font-size: 1rem; color: #334155;">No gadgets currently ready for claim.</div>
+        <div style="font-weight: 700; font-size: 1rem; color: #334155;">No claims match criteria.</div>
         <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">Items physically received and confirmed by OSA will automatically appear here.</div>
+        ${hasFilter ? `<button class="btn btn-secondary btn-sm" onclick="clearClaimsFilters()" style="margin-top: 12px;">↺ Reset Filters</button>` : ''}
       </div>
     `;
     return;
@@ -1675,36 +1885,79 @@ async function loadReturnedHistory() {
 function filterReturnedHistoryTable() {
   const query = (document.getElementById('history-search-input')?.value || '').toLowerCase().trim();
   const dateFilter = document.getElementById('history-date-filter')?.value || 'ALL';
+  const fromDate = document.getElementById('history-date-from')?.value || '';
+  const toDate = document.getElementById('history-date-to')?.value || '';
+  const typeFilter = document.getElementById('history-type-filter')?.value || 'ALL';
+  const sortOption = document.getElementById('history-sort-filter')?.value || 'NEWEST';
+
   if (!window._historyList) return;
 
-  const filtered = window._historyList.filter(c => {
-    // 1. Date filter
-    const returnDate = c.returnDate || c.returnedAt || c.processedAt || c.createdAt;
-    if (!matchesHistoryDateFilter(returnDate, dateFilter)) {
-      return false;
-    }
+  let filtered = window._historyList;
 
-    // 2. Text search
-    if (!query) return true;
-    const ownerName = (c.user?.name || c.returnRecord?.receivedByPersonName || '').toLowerCase();
-    const studentId = (c.user?.idNumber || c.verificationIdNumber || c.returnRecord?.receivedByPersonId || '').toLowerCase();
-    const brand = (c.gadget?.brand || '').toLowerCase();
-    const model = (c.gadget?.model || '').toLowerCase();
-    const brandModel = `${brand} ${model}`;
-    const gadgetId = (c.gadgetId || c.gadget?.id || '').toLowerCase();
-    const serial = (c.gadget?.serialNumber || '').toLowerCase();
-    const returnRef = (c.returnReference || c.returnRecord?.id || c.returnId || c.id || '').toLowerCase();
+  // 1. Date filter (Asia/Manila inclusive boundaries)
+  if (dateFilter !== 'ALL') {
+    filtered = filtered.filter(c => {
+      const returnDate = c.returnDate || c.returnedAt || c.processedAt || c.createdAt;
+      return matchesPhtDateRange(returnDate, dateFilter, fromDate, toDate);
+    });
+  }
 
-    return ownerName.includes(query) || studentId.includes(query) ||
-           gadgetId.includes(query) || brand.includes(query) ||
-           model.includes(query) || brandModel.includes(query) ||
-           serial.includes(query) || returnRef.includes(query);
-  });
+  // 2. Device Type filter
+  if (typeFilter !== 'ALL') {
+    filtered = filtered.filter(c => matchesDeviceCategory(c.gadget?.category, typeFilter));
+  }
 
-  renderReturnedHistoryTable(filtered);
+  // 3. Search: Owner Name, Student ID, Gadget ID, Brand/Model, Serial Number, Return Reference
+  if (query) {
+    filtered = filtered.filter(c => {
+      const ownerName = (c.user?.name || c.returnRecord?.receivedByPersonName || c.gadget?.owner?.name || '').toLowerCase();
+      const studentId = (c.user?.idNumber || c.verificationIdNumber || c.returnRecord?.receivedByPersonId || c.gadget?.owner?.idNumber || '').toLowerCase();
+      const brand = (c.gadget?.brand || '').toLowerCase();
+      const model = (c.gadget?.model || '').toLowerCase();
+      const brandModel = `${brand} ${model}`;
+      const gadgetId = (c.gadgetId || c.gadget?.id || '').toLowerCase();
+      const serial = (c.gadget?.serialNumber || '').toLowerCase();
+      const returnRef = (c.returnReference || c.returnRecord?.id || c.returnId || c.id || '').toLowerCase();
+
+      return ownerName.includes(query) || studentId.includes(query) ||
+             gadgetId.includes(query) || brand.includes(query) ||
+             model.includes(query) || brandModel.includes(query) ||
+             serial.includes(query) || returnRef.includes(query);
+    });
+  }
+
+  // 4. Sort By: Newest First, Oldest First, Surname A–Z, Surname Z–A
+  const sorted = sortItemsList(
+    filtered,
+    sortOption,
+    c => ({ name: c.user?.name || c.returnRecord?.receivedByPersonName || c.gadget?.owner?.name || '', idNumber: c.user?.idNumber || c.verificationIdNumber || c.returnRecord?.receivedByPersonId || c.gadget?.owner?.idNumber || '' }),
+    c => c.returnDate || c.returnedAt || c.processedAt || c.createdAt
+  );
+
+  const hasFilter = Boolean(query || dateFilter !== 'ALL' || typeFilter !== 'ALL' || sortOption !== 'NEWEST');
+  renderReturnedHistoryTable(sorted, hasFilter);
 }
 
-function renderReturnedHistoryTable(records) {
+function clearHistoryFilters() {
+  const sInput = document.getElementById('history-search-input');
+  const dSelect = document.getElementById('history-date-filter');
+  const dFrom = document.getElementById('history-date-from');
+  const dTo = document.getElementById('history-date-to');
+  const typeSelect = document.getElementById('history-type-filter');
+  const sortSelect = document.getElementById('history-sort-filter');
+
+  if (sInput) sInput.value = '';
+  if (dSelect) dSelect.value = 'ALL';
+  if (dFrom) dFrom.value = '';
+  if (dTo) dTo.value = '';
+  if (typeSelect) typeSelect.value = 'ALL';
+  if (sortSelect) sortSelect.value = 'NEWEST';
+
+  toggleCustomDateInputs('history');
+  filterReturnedHistoryTable();
+}
+
+function renderReturnedHistoryTable(records, hasFilter = false) {
   const container = document.getElementById('returned-history-table');
   if (!container) return;
 
@@ -1712,8 +1965,9 @@ function renderReturnedHistoryTable(records) {
     container.innerHTML = `
       <div style="padding: 48px 24px; text-align: center; color: var(--text-muted);">
         <div style="font-size: 2.2rem; margin-bottom: 8px;">📜</div>
-        <div style="font-weight: 700; font-size: 1rem; color: #334155;">No returned gadget records yet.</div>
+        <div style="font-weight: 700; font-size: 1rem; color: #334155;">No returned gadget records match criteria.</div>
         <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">Completed handover transactions and signed turnover photo proofs will appear here.</div>
+        ${hasFilter ? `<button class="btn btn-secondary btn-sm" onclick="clearHistoryFilters()" style="margin-top: 12px;">↺ Reset Filters</button>` : ''}
       </div>
     `;
     return;
@@ -2303,55 +2557,151 @@ async function loadUserAccounts() {
     const users = res.users || [];
     allUsersCache = users;
 
+    // Dynamically populate Department filter from actual departments in data
+    const deptSelect = document.getElementById('users-dept-filter');
+    if (deptSelect) {
+      const currentDept = deptSelect.value || 'ALL';
+      const depts = Array.from(new Set(users.map(u => (u.department || '').trim()).filter(Boolean))).sort();
+      deptSelect.innerHTML = `<option value="ALL">All Departments</option>` + depts.map(d => `
+        <option value="${escapeHtml(d)}" ${currentDept === d ? 'selected' : ''}>${escapeHtml(d)}</option>
+      `).join('');
+    }
+
+    filterUsersTable();
+  } catch (e) {
+    console.error('Error loading users:', e);
+    container.innerHTML = `<div style="padding: 30px; text-align: center; color: #ef4444;">Error loading user accounts: ${escapeHtml(e.message || 'Server error')}</div>`;
+  }
+}
+
+function filterUsersTable() {
+  const query = (document.getElementById('users-search-input')?.value || '').toLowerCase().trim();
+  const roleFilter = document.getElementById('users-role-filter')?.value || 'ALL';
+  const deptFilter = document.getElementById('users-dept-filter')?.value || 'ALL';
+  const statusFilter = document.getElementById('users-status-filter')?.value || 'ALL';
+  const sortOption = document.getElementById('users-sort-filter')?.value || 'SURNAME_ASC';
+
+  if (!allUsersCache) return;
+
+  let filtered = allUsersCache;
+
+  // 1. Role Filter
+  if (roleFilter !== 'ALL') {
+    filtered = filtered.filter(u => u.role === roleFilter);
+  }
+
+  // 2. Department Filter
+  if (deptFilter !== 'ALL') {
+    filtered = filtered.filter(u => (u.department || '').trim().toLowerCase() === deptFilter.toLowerCase());
+  }
+
+  // 3. Status Filter
+  if (statusFilter !== 'ALL') {
+    filtered = filtered.filter(u => (u.status || 'ACTIVE').toUpperCase() === statusFilter.toUpperCase());
+  }
+
+  // 4. Search Filter: Full Name, Student/Employee ID, School Email
+  if (query) {
+    filtered = filtered.filter(u => {
+      const name = (u.name || '').toLowerCase();
+      const idNum = (u.idNumber || '').toLowerCase();
+      const email = (u.email || '').toLowerCase();
+      return name.includes(query) || idNum.includes(query) || email.includes(query);
+    });
+  }
+
+  // 5. Sort By: Surname A–Z, Surname Z–A, Newest First, Oldest First
+  const sorted = sortItemsList(
+    filtered,
+    sortOption,
+    u => ({ name: u.name, idNumber: u.idNumber }),
+    u => u.createdAt || 0
+  );
+
+  const hasFilter = Boolean(query || roleFilter !== 'ALL' || deptFilter !== 'ALL' || statusFilter !== 'ALL' || sortOption !== 'SURNAME_ASC');
+  renderUsersTable(sorted, hasFilter);
+}
+
+function clearUsersFilters() {
+  const sInput = document.getElementById('users-search-input');
+  const roleSelect = document.getElementById('users-role-filter');
+  const deptSelect = document.getElementById('users-dept-filter');
+  const statusSelect = document.getElementById('users-status-filter');
+  const sortSelect = document.getElementById('users-sort-filter');
+
+  if (sInput) sInput.value = '';
+  if (roleSelect) roleSelect.value = 'ALL';
+  if (deptSelect) deptSelect.value = 'ALL';
+  if (statusSelect) statusSelect.value = 'ALL';
+  if (sortSelect) sortSelect.value = 'SURNAME_ASC';
+
+  filterUsersTable();
+}
+
+function renderUsersTable(users, hasFilter = false) {
+  const container = document.getElementById('users-accounts-table');
+  if (!container) return;
+
+  if (!users || users.length === 0) {
     container.innerHTML = `
-      <table class="clean-table">
-        <thead>
-          <tr>
-            <th>Name & ID</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Department</th>
-            <th>Phone</th>
-            <th>Registered Devices</th>
-            <th>Status</th>
-            <th class="text-right">Access Control</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${users.map(u => `
-            <tr>
-              <td>
-                <div class="table-primary-title">${escapeHtml(u.name)}</div>
-                <div class="font-mono" style="font-size: 0.775rem; color: var(--primary); font-weight: 600;">${escapeHtml(u.idNumber)}</div>
-              </td>
-              <td style="font-size: 0.85rem; color: #475569;">${escapeHtml(u.email)}</td>
-              <td><span class="status-badge" style="background:#f1f5f9; color:#334155; font-size:0.75rem; padding:4px 10px;">${u.role}</span></td>
-              <td style="font-size: 0.825rem; color: #64748b;">${escapeHtml(u.department || '-')}</td>
-              <td class="font-mono" style="font-size: 0.825rem; color: #334155;">${escapeHtml(u.contactNumber || '-')}</td>
-              <td>
-                <span style="font-weight: 800; font-size: 0.95rem; color: #047857; background: #ecfdf5; padding: 4px 12px; border-radius: 6px; border: 1px solid #a7f3d0; display: inline-block;">
-                  ${u.gadgetCount || 0}
-                </span>
-              </td>
-              <td><span class="status-badge ${u.status === 'ACTIVE' ? 'REGISTERED' : 'MISSING'}">${u.status}</span></td>
-              <td class="text-right">
-                <div class="table-action-btns">
-                  ${u.role !== 'osa_admin' ? `
-                    <button class="btn btn-secondary btn-sm" onclick="resendApprovalEmail('${u.id}', '${escapeHtml(u.email)}')">
-                      📧 Resend Email
-                    </button>
-                    <button class="btn btn-secondary btn-sm" onclick="toggleUserStatus('${u.id}', '${u.status}')">
-                      ${u.status === 'ACTIVE' ? '🚫 Suspend' : '✓ Activate'}
-                    </button>
-                  ` : '<span class="text-muted" style="font-size:0.75rem;">Admin</span>'}
-                </div>
-              </td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
+      <div style="padding: 48px 24px; text-align: center; color: var(--text-muted);">
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">👥</div>
+        <div style="font-weight: 700; font-size: 1rem; color: #334155;">No user accounts match criteria.</div>
+        <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">Registered campus user accounts will appear here.</div>
+        ${hasFilter ? `<button class="btn btn-secondary btn-sm" onclick="clearUsersFilters()" style="margin-top: 12px;">↺ Reset Filters</button>` : ''}
+      </div>
     `;
-  } catch (e) {}
+    return;
+  }
+
+  container.innerHTML = `
+    <table class="clean-table">
+      <thead>
+        <tr>
+          <th>Name & ID</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Department</th>
+          <th>Phone</th>
+          <th>Registered Devices</th>
+          <th>Status</th>
+          <th class="text-right">Access Control</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${users.map(u => `
+          <tr>
+            <td>
+              <div class="table-primary-title">${escapeHtml(u.name)}</div>
+              <div class="font-mono" style="font-size: 0.775rem; color: var(--primary); font-weight: 600;">${escapeHtml(u.idNumber)}</div>
+            </td>
+            <td style="font-size: 0.85rem; color: #475569;">${escapeHtml(u.email)}</td>
+            <td><span class="status-badge" style="background:#f1f5f9; color:#334155; font-size:0.75rem; padding:4px 10px;">${u.role}</span></td>
+            <td style="font-size: 0.825rem; color: #64748b;">${escapeHtml(u.department || '-')}</td>
+            <td class="font-mono" style="font-size: 0.825rem; color: #334155;">${escapeHtml(u.contactNumber || '-')}</td>
+            <td>
+              <span style="font-weight: 800; font-size: 0.95rem; color: #047857; background: #ecfdf5; padding: 4px 12px; border-radius: 6px; border: 1px solid #a7f3d0; display: inline-block;">
+                ${u.gadgetCount || 0}
+              </span>
+            </td>
+            <td><span class="status-badge ${u.status === 'ACTIVE' ? 'REGISTERED' : 'MISSING'}">${u.status}</span></td>
+            <td class="text-right">
+              <div class="table-action-btns">
+                ${u.role !== 'osa_admin' ? `
+                  <button class="btn btn-secondary btn-sm" onclick="resendApprovalEmail('${u.id}', '${escapeHtml(u.email)}')">
+                    📧 Resend Email
+                  </button>
+                  <button class="btn btn-secondary btn-sm" onclick="toggleUserStatus('${u.id}', '${u.status}')">
+                    ${u.status === 'ACTIVE' ? '🚫 Suspend' : '✓ Activate'}
+                  </button>
+                ` : '<span class="text-muted" style="font-size:0.75rem;">Admin</span>'}
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
 }
 
 async function resendApprovalEmail(userId, email) {
@@ -2408,6 +2758,24 @@ async function toggleUserStatus(userId, currentStatus) {
 }
 
 // 10. QR Scan Telemetry Logs
+function classifyScannerDevice(deviceInfo) {
+  if (!deviceInfo) return 'UNAVAILABLE';
+  const str = deviceInfo.toLowerCase();
+  if (str.includes('ipad') || (str.includes('tablet') && !str.includes('desktop'))) return 'TABLET';
+  if (str.includes('macos') || str.includes('macintosh') || str.includes('windows') || str.includes('linux') || str.includes('desktop')) return 'DESKTOP';
+  if (str.includes('iphone') || str.includes('android') || str.includes('mobile')) return 'MOBILE';
+  return 'OTHER';
+}
+
+function normalizeDisplayDeviceInfo(deviceInfo) {
+  if (!deviceInfo) return 'Device unavailable';
+  // Accurately correct historical "Mobile Device — Chrome (macOS)" anomaly to "Desktop — Chrome (macOS)"
+  if (/^mobile device/i.test(deviceInfo) && /(macos|macintosh|windows)/i.test(deviceInfo)) {
+    return deviceInfo.replace(/^Mobile Device/i, 'Desktop');
+  }
+  return deviceInfo;
+}
+
 async function loadScanTelemetry() {
   const container = document.getElementById('scans-telemetry-table');
   if (!container) return;
@@ -2415,27 +2783,139 @@ async function loadScanTelemetry() {
   try {
     const res = await api.getAllScanHistory();
     const scans = res.scans || [];
+    window._allScansData = scans;
+    filterScansTable();
+  } catch (e) {
+    console.error('Error loading scan telemetry:', e);
+    container.innerHTML = `<div style="padding: 30px; text-align: center; color: #ef4444;">Error loading scan telemetry: ${escapeHtml(e.message || 'Server error')}</div>`;
+  }
+}
 
-    if (scans.length === 0) {
-      container.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted);">No scan events recorded.</div>`;
-      return;
-    }
+function filterScansTable() {
+  const query = (document.getElementById('scans-search-input')?.value || '').toLowerCase().trim();
+  const statusFilter = document.getElementById('scans-status-filter')?.value || 'ALL';
+  const dateFilter = document.getElementById('scans-date-filter')?.value || 'ALL';
+  const fromDate = document.getElementById('scans-date-from')?.value || '';
+  const toDate = document.getElementById('scans-date-to')?.value || '';
+  const locationFilter = document.getElementById('scans-location-source-filter')?.value || 'ALL';
+  const deviceFilter = document.getElementById('scans-device-type-filter')?.value || 'ALL';
+  const sortOption = document.getElementById('scans-sort-filter')?.value || 'NEWEST';
 
+  if (!window._allScansData) return;
+
+  let filtered = window._allScansData;
+
+  // 1. Scan Status Filter
+  if (statusFilter !== 'ALL') {
+    filtered = filtered.filter(s => (s.scanStatus || 'REGISTERED_DEVICE_SCANNED') === statusFilter);
+  }
+
+  // 2. Date Range Filter (PHT inclusive boundaries)
+  if (dateFilter !== 'ALL') {
+    filtered = filtered.filter(s => matchesPhtDateRange(s.scannedAt, dateFilter, fromDate, toDate));
+  }
+
+  // 3. Location Source Filter
+  if (locationFilter !== 'ALL') {
+    filtered = filtered.filter(s => {
+      if (locationFilter === 'GPS') return s.locationSource === 'GPS';
+      if (locationFilter === 'IP') return s.locationSource === 'IP';
+      if (locationFilter === 'UNAVAILABLE') {
+        return !s.locationSource || s.locationSource === 'UNAVAILABLE' || (s.scanLocationNote && s.scanLocationNote.toLowerCase().includes('unavailable'));
+      }
+      return true;
+    });
+  }
+
+  // 4. Scanner Device Filter
+  if (deviceFilter !== 'ALL') {
+    filtered = filtered.filter(s => classifyScannerDevice(s.deviceInfo) === deviceFilter);
+  }
+
+  // 5. Search Filter: Gadget Name, Gadget ID, QR Token, Owner Name, Student ID
+  if (query) {
+    filtered = filtered.filter(s => {
+      const brand = (s.gadget?.brand || '').toLowerCase();
+      const model = (s.gadget?.model || '').toLowerCase();
+      const brandModel = `${brand} ${model}`;
+      const gadgetId = (s.gadgetId || s.gadget?.id || '').toLowerCase();
+      const token = (s.scannedToken || '').toLowerCase();
+      const ownerName = (s.owner?.name || '').toLowerCase();
+      const studentId = (s.owner?.idNumber || '').toLowerCase();
+
+      return brand.includes(query) || model.includes(query) || brandModel.includes(query) ||
+             gadgetId.includes(query) || token.includes(query) ||
+             ownerName.includes(query) || studentId.includes(query);
+    });
+  }
+
+  // 6. Sort By: Newest First, Oldest First
+  const sorted = [...filtered].sort((a, b) => {
+    const dateA = new Date(a.scannedAt || 0).getTime();
+    const dateB = new Date(b.scannedAt || 0).getTime();
+    return sortOption === 'OLDEST' ? dateA - dateB : dateB - dateA;
+  });
+
+  const hasFilter = Boolean(query || statusFilter !== 'ALL' || dateFilter !== 'ALL' || locationFilter !== 'ALL' || deviceFilter !== 'ALL' || sortOption !== 'NEWEST');
+  renderScansTable(sorted, hasFilter);
+}
+
+function clearScansFilters() {
+  const sInput = document.getElementById('scans-search-input');
+  const stSelect = document.getElementById('scans-status-filter');
+  const dSelect = document.getElementById('scans-date-filter');
+  const dFrom = document.getElementById('scans-date-from');
+  const dTo = document.getElementById('scans-date-to');
+  const locSelect = document.getElementById('scans-location-source-filter');
+  const devSelect = document.getElementById('scans-device-type-filter');
+  const sortSelect = document.getElementById('scans-sort-filter');
+
+  if (sInput) sInput.value = '';
+  if (stSelect) stSelect.value = 'ALL';
+  if (dSelect) dSelect.value = 'ALL';
+  if (dFrom) dFrom.value = '';
+  if (dTo) dTo.value = '';
+  if (locSelect) locSelect.value = 'ALL';
+  if (devSelect) devSelect.value = 'ALL';
+  if (sortSelect) sortSelect.value = 'NEWEST';
+
+  toggleCustomDateInputs('scans');
+  filterScansTable();
+}
+
+function renderScansTable(scans, hasFilter = false) {
+  const container = document.getElementById('scans-telemetry-table');
+  if (!container) return;
+
+  if (!scans || scans.length === 0) {
     container.innerHTML = `
-      <table class="clean-table">
-        <thead>
-          <tr>
-            <th>Scanned Device</th>
-            <th>Registered Owner</th>
-            <th>Scan Status</th>
-            <th>Approximate Location</th>
-            <th>Scanner Device / OS</th>
-            <th>Audit IP</th>
-            <th class="text-right">Timestamp</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${scans.map(s => `
+      <div style="padding: 48px 24px; text-align: center; color: var(--text-muted);">
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">📡</div>
+        <div style="font-weight: 700; font-size: 1rem; color: #334155;">No scan telemetry records match criteria.</div>
+        <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">Real-time QR scan telemetry events will automatically appear here.</div>
+        ${hasFilter ? `<button class="btn btn-secondary btn-sm" onclick="clearScansFilters()" style="margin-top: 12px;">↺ Reset Filters</button>` : ''}
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <table class="clean-table">
+      <thead>
+        <tr>
+          <th>Scanned Device</th>
+          <th>Registered Owner</th>
+          <th>Scan Status</th>
+          <th>Approximate Location</th>
+          <th>Scanner Device / OS</th>
+          <th>Audit IP</th>
+          <th class="text-right">Timestamp</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${scans.map(s => {
+          const displayDev = normalizeDisplayDeviceInfo(s.deviceInfo);
+          return `
             <tr>
               <td>
                 <div style="font-weight: 700;">${escapeHtml(s.gadget?.brand)} ${escapeHtml(s.gadget?.model)}</div>
@@ -2454,15 +2934,15 @@ async function loadScanTelemetry() {
                 📍 ${escapeHtml(s.scanLocationNote || 'Location unavailable')}
                 ${s.locationSource === 'GPS' ? '<span class="badge" style="background:#ecfdf5; color:#047857; font-size:0.68rem; font-weight:700; border:1px solid #a7f3d0; border-radius:4px; padding:1px 5px; margin-left:4px;">GPS</span>' : (s.locationSource === 'IP' ? '<span class="badge" style="background:#eff6ff; color:#1e40af; font-size:0.68rem; font-weight:700; border:1px solid #bfdbfe; border-radius:4px; padding:1px 5px; margin-left:4px;">IP</span>' : '')}
               </td>
-              <td style="font-size: 0.775rem; color: var(--text-secondary);">${escapeHtml(s.deviceInfo || 'Device unavailable')}</td>
+              <td style="font-size: 0.775rem; color: var(--text-secondary);">${escapeHtml(displayDev)}</td>
               <td class="font-mono" style="font-size: 0.75rem; color: var(--text-dim);">${escapeHtml(s.scannerIp)}</td>
               <td class="text-right" style="font-size: 0.75rem; color: var(--text-muted);">${formatDate(s.scannedAt)}</td>
             </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
-  } catch (e) {}
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
 }
 
 // 11. Reports Screen
@@ -2571,21 +3051,144 @@ async function loadAuditLogs() {
   try {
     const res = await api.getAuditLogs();
     const logs = res.logs || [];
+    window._allAuditLogs = logs;
 
+    // Dynamically populate Action Type dropdown from actual recorded audit actions
+    const actionSelect = document.getElementById('audit-action-filter');
+    if (actionSelect) {
+      const currentAction = actionSelect.value || 'ALL';
+      const actions = Array.from(new Set(logs.map(l => (l.action || '').trim()).filter(Boolean))).sort();
+      actionSelect.innerHTML = `<option value="ALL">All Actions</option>` + actions.map(a => `
+        <option value="${escapeHtml(a)}" ${currentAction === a ? 'selected' : ''}>${escapeHtml(a)}</option>
+      `).join('');
+    }
+
+    // Dynamically populate User Role dropdown from actual roles present in logs
+    const roleSelect = document.getElementById('audit-role-filter');
+    if (roleSelect) {
+      const currentRole = roleSelect.value || 'ALL';
+      const roles = Array.from(new Set(logs.map(l => (l.userRole || '').trim()).filter(Boolean))).sort();
+      roleSelect.innerHTML = `<option value="ALL">All Roles</option>` + roles.map(r => `
+        <option value="${escapeHtml(r)}" ${currentRole === r ? 'selected' : ''}>${escapeHtml(r)}</option>
+      `).join('');
+    }
+
+    filterAuditLogsTable();
+  } catch (e) {
+    console.error('Error loading audit logs:', e);
+    container.innerHTML = `<div style="padding: 30px; text-align: center; color: #ef4444;">Error loading audit logs: ${escapeHtml(e.message || 'Server error')}</div>`;
+  }
+}
+
+function filterAuditLogsTable() {
+  const query = (document.getElementById('audit-search-input')?.value || '').toLowerCase().trim();
+  const actionFilter = document.getElementById('audit-action-filter')?.value || 'ALL';
+  const roleFilter = document.getElementById('audit-role-filter')?.value || 'ALL';
+  const dateFilter = document.getElementById('audit-date-filter')?.value || 'ALL';
+  const fromDate = document.getElementById('audit-date-from')?.value || '';
+  const toDate = document.getElementById('audit-date-to')?.value || '';
+  const sortOption = document.getElementById('audit-sort-filter')?.value || 'NEWEST';
+
+  if (!window._allAuditLogs) return;
+
+  let filtered = window._allAuditLogs;
+
+  // 1. Action Type Filter
+  if (actionFilter !== 'ALL') {
+    filtered = filtered.filter(l => (l.action || '').trim() === actionFilter);
+  }
+
+  // 2. User Role Filter
+  if (roleFilter !== 'ALL') {
+    filtered = filtered.filter(l => (l.userRole || '').trim() === roleFilter);
+  }
+
+  // 3. Date Range Filter (PHT inclusive boundaries)
+  if (dateFilter !== 'ALL') {
+    filtered = filtered.filter(l => matchesPhtDateRange(l.timestamp, dateFilter, fromDate, toDate));
+  }
+
+  // 4. Search Filter: Log ID, Actor Name/ID, Student ID, Details, Audit IP
+  if (query) {
+    filtered = filtered.filter(l => {
+      const logId = (l.id || '').toLowerCase();
+      const actorId = (l.userId || '').toLowerCase();
+      const actorName = (l.userName || '').toLowerCase();
+      const studentId = (l.userStudentId || '').toLowerCase();
+      const details = (l.details || '').toLowerCase();
+      const ip = (l.ipAddress || '').toLowerCase();
+      const action = (l.action || '').toLowerCase();
+
+      return logId.includes(query) || actorId.includes(query) ||
+             actorName.includes(query) || studentId.includes(query) ||
+             details.includes(query) || ip.includes(query) || action.includes(query);
+    });
+  }
+
+  // 5. Sort By: Newest First, Oldest First
+  const sorted = [...filtered].sort((a, b) => {
+    const dateA = new Date(a.timestamp || 0).getTime();
+    const dateB = new Date(b.timestamp || 0).getTime();
+    return sortOption === 'OLDEST' ? dateA - dateB : dateB - dateA;
+  });
+
+  const hasFilter = Boolean(query || actionFilter !== 'ALL' || roleFilter !== 'ALL' || dateFilter !== 'ALL' || sortOption !== 'NEWEST');
+  renderAuditLogsTable(sorted, hasFilter);
+}
+
+function clearAuditFilters() {
+  const sInput = document.getElementById('audit-search-input');
+  const actSelect = document.getElementById('audit-action-filter');
+  const roleSelect = document.getElementById('audit-role-filter');
+  const dSelect = document.getElementById('audit-date-filter');
+  const dFrom = document.getElementById('audit-date-from');
+  const dTo = document.getElementById('audit-date-to');
+  const sortSelect = document.getElementById('audit-sort-filter');
+
+  if (sInput) sInput.value = '';
+  if (actSelect) actSelect.value = 'ALL';
+  if (roleSelect) roleSelect.value = 'ALL';
+  if (dSelect) dSelect.value = 'ALL';
+  if (dFrom) dFrom.value = '';
+  if (dTo) dTo.value = '';
+  if (sortSelect) sortSelect.value = 'NEWEST';
+
+  toggleCustomDateInputs('audit');
+  filterAuditLogsTable();
+}
+
+function renderAuditLogsTable(logs, hasFilter = false) {
+  const container = document.getElementById('audit-full-table');
+  if (!container) return;
+
+  if (!logs || logs.length === 0) {
     container.innerHTML = `
-      <table class="clean-table">
-        <thead>
-          <tr>
-            <th>Log ID</th>
-            <th>Action Code</th>
-            <th>Details</th>
-            <th>Actor</th>
-            <th>Audit IP</th>
-            <th class="text-right">Timestamp</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${logs.map(l => `
+      <div style="padding: 48px 24px; text-align: center; color: var(--text-muted);">
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">🛡️</div>
+        <div style="font-weight: 700; font-size: 1rem; color: #334155;">No audit log records match criteria.</div>
+        <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">Institutional security events and administrator activities will appear here.</div>
+        ${hasFilter ? `<button class="btn btn-secondary btn-sm" onclick="clearAuditFilters()" style="margin-top: 12px;">↺ Reset Filters</button>` : ''}
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <table class="clean-table">
+      <thead>
+        <tr>
+          <th>Log ID</th>
+          <th>Action Code</th>
+          <th>Details</th>
+          <th>Actor</th>
+          <th>Audit IP</th>
+          <th class="text-right">Timestamp</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${logs.map(l => {
+          const actorDisplay = l.userName ? `${escapeHtml(l.userName)} <span class="font-mono" style="font-size:0.75rem; color:#142a6d; font-weight:700;">(${escapeHtml(l.userStudentId || l.userId)})</span>` : escapeHtml(l.userId);
+          return `
             <tr>
               <td class="font-mono" style="font-size: 0.775rem; color: #94a3b8;">${escapeHtml(l.id)}</td>
               <td>
@@ -2595,17 +3198,17 @@ async function loadAuditLogs() {
               </td>
               <td style="font-size: 0.875rem; max-width: 360px; line-height: 1.45; color: #1e293b;">${escapeHtml(l.details)}</td>
               <td>
-                <div style="font-weight: 700; font-size: 0.85rem; color: #0f172a; margin-bottom: 2px;">${escapeHtml(l.userId)}</div>
-                <div style="font-size: 0.75rem; color: #64748b;">Role: ${escapeHtml(l.userRole)}</div>
+                <div style="font-weight: 700; font-size: 0.85rem; color: #0f172a; margin-bottom: 2px;">${actorDisplay}</div>
+                <div style="font-size: 0.75rem; color: #64748b;">Role: <span style="font-weight:600;">${escapeHtml(l.userRole || 'system')}</span></div>
               </td>
-              <td class="font-mono" style="font-size: 0.775rem; color: #64748b;">${escapeHtml(l.ipAddress)}</td>
+              <td class="font-mono" style="font-size: 0.775rem; color: #64748b;">${escapeHtml(l.ipAddress || '-')}</td>
               <td class="text-right" style="font-size: 0.8rem; color: #64748b; white-space: nowrap;">${formatDate(l.timestamp)}</td>
             </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
-  } catch (e) {}
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
 }
 
 // 13. Notifications Feed

@@ -435,13 +435,54 @@
         <!-- ================= SCREEN 5: FOUND GADGETS (CUSTODY VAULT) ================= -->
         <section id="osa-screen-found" class="osa-screen">
           <div class="table-container-card">
-            <div class="table-title-bar" style="flex-wrap: wrap; gap: 12px;">
+            <div class="table-title-bar">
               <div>
                 <h3 style="font-weight: 800; font-size: 1.1rem; color: #142a6d;">📦 Custody Vault & Finder Intake</h3>
                 <div style="font-size: 0.8rem; color: var(--text-muted);">Match surrendered gadgets by Surrender Reference, Gadget ID, QR Code, or Student ID Number</div>
               </div>
-              <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                <input type="text" id="found-custody-search-input" class="form-control form-control-sm" placeholder="🔍 Search Ref, Gadget ID, Student ID..." style="max-width: 280px;" oninput="filterFoundCustodyTable()">
+            </div>
+            <!-- Filter & Search Toolbar -->
+            <div class="osa-toolbar-filter-grid">
+              <div class="osa-filter-item grow">
+                <label class="osa-filter-label" for="found-search-input">🔍 Search Found Reports</label>
+                <input type="text" id="found-search-input" class="form-control osa-filter-input" placeholder="Search Surrender Ref, Case ID, Gadget ID, QR Token, Owner, Student ID..." oninput="filterFoundCustodyTable()">
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="found-status-filter">📋 Turnover Status</label>
+                <select id="found-status-filter" class="form-control osa-filter-select" onchange="filterFoundCustodyTable()">
+                  <option value="ALL">All Statuses</option>
+                  <option value="FINDER_HOLDING">Finder Holding</option>
+                  <option value="AWAITING_OSA_HANDOVER">Awaiting OSA Handover</option>
+                  <option value="IN_OSA_CUSTODY">In OSA Custody</option>
+                  <option value="READY_FOR_CLAIM">Ready for Claim</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="found-type-filter">💻 Device Type</label>
+                <select id="found-type-filter" class="form-control osa-filter-select" onchange="filterFoundCustodyTable()">
+                  <option value="ALL">All Devices</option>
+                  <option value="Smartphone">Smartphone</option>
+                  <option value="Laptop">Laptop</option>
+                  <option value="Tablet">Tablet</option>
+                  <option value="Smartwatch">Smartwatch</option>
+                  <option value="Earbuds">Earbuds / Headphones</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="found-sort-filter">↕️ Sort By</label>
+                <select id="found-sort-filter" class="form-control osa-filter-select" onchange="filterFoundCustodyTable()">
+                  <option value="NEWEST" selected>Newest First</option>
+                  <option value="OLDEST">Oldest First</option>
+                  <option value="SURNAME_ASC">Surname A–Z</option>
+                  <option value="SURNAME_DESC">Surname Z–A</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label">&nbsp;</label>
+                <button class="btn btn-secondary btn-sm" onclick="clearFoundFilters()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset to default table view">
+                  ↺ Reset Filters
+                </button>
               </div>
             </div>
             <div class="table-responsive-wrapper" id="found-custody-table">
@@ -453,13 +494,54 @@
         <!-- ================= SCREEN 6: CLAIMS (ACTIVE / READY FOR CLAIM) ================= -->
         <section id="osa-screen-claims" class="osa-screen">
           <div class="table-container-card">
-            <div class="table-title-bar" style="flex-wrap: wrap; gap: 12px;">
+            <div class="table-title-bar">
               <div>
                 <h3 style="font-weight: 800; font-size: 1.1rem; color: #142a6d;">📋 Claims — Ready for Claim</h3>
                 <div style="font-size: 0.8rem; color: var(--text-muted);">Active gadgets currently held in OSA custody vault waiting for verified student handover</div>
               </div>
-              <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                <input type="text" id="claims-search-input" class="form-control form-control-sm" placeholder="🔍 Search Owner, ID, Brand, Model, S/N..." style="max-width: 320px;" oninput="filterClaimsTable()">
+            </div>
+            <!-- Filter & Search Toolbar -->
+            <div class="osa-toolbar-filter-grid">
+              <div class="osa-filter-item grow">
+                <label class="osa-filter-label" for="claims-search-input">🔍 Claims Search</label>
+                <input type="text" id="claims-search-input" class="form-control osa-filter-input" placeholder="Search Owner, Student ID, Gadget, Gadget ID, Serial No., QR Token..." oninput="filterClaimsTable()">
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="claims-status-filter">📋 Claim Status</label>
+                <select id="claims-status-filter" class="form-control osa-filter-select" onchange="filterClaimsTable()">
+                  <option value="ALL">All Statuses</option>
+                  <option value="IN_OSA_CUSTODY">In OSA Custody</option>
+                  <option value="READY_FOR_CLAIM">Ready for Claim</option>
+                  <option value="PENDING">Pending Claim</option>
+                  <option value="APPROVED">Approved Claim</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="claims-type-filter">💻 Device Type</label>
+                <select id="claims-type-filter" class="form-control osa-filter-select" onchange="filterClaimsTable()">
+                  <option value="ALL">All Devices</option>
+                  <option value="Smartphone">Smartphone</option>
+                  <option value="Laptop">Laptop</option>
+                  <option value="Tablet">Tablet</option>
+                  <option value="Smartwatch">Smartwatch</option>
+                  <option value="Earbuds">Earbuds / Headphones</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="claims-sort-filter">↕️ Sort By</label>
+                <select id="claims-sort-filter" class="form-control osa-filter-select" onchange="filterClaimsTable()">
+                  <option value="NEWEST" selected>Newest First</option>
+                  <option value="OLDEST">Oldest First</option>
+                  <option value="SURNAME_ASC">Surname A–Z</option>
+                  <option value="SURNAME_DESC">Surname Z–A</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label">&nbsp;</label>
+                <button class="btn btn-secondary btn-sm" onclick="clearClaimsFilters()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset to default table view">
+                  ↺ Reset Filters
+                </button>
               </div>
             </div>
             <div class="table-responsive-wrapper" id="claims-review-table">
@@ -471,19 +553,62 @@
         <!-- ================= SCREEN: RETURNED HISTORY ================= -->
         <section id="osa-screen-history" class="osa-screen">
           <div class="table-container-card">
-            <div class="table-title-bar" style="flex-wrap: wrap; gap: 12px;">
+            <div class="table-title-bar">
               <div>
                 <h3 style="font-weight: 800; font-size: 1.1rem; color: #142a6d;">📜 Official Returned Gadgets History</h3>
                 <div style="font-size: 0.8rem; color: var(--text-muted);">Gadgets successfully returned to verified owners with photo proofs, audit timestamps, and receipts</div>
               </div>
-              <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                <input type="text" id="history-search-input" class="form-control form-control-sm" placeholder="🔍 Search Owner, ID, Brand, S/N, Receipt Ref..." style="max-width: 300px;" oninput="filterReturnedHistoryTable()">
-                <select id="history-date-filter" class="form-control form-control-sm" style="max-width: 140px;" onchange="filterReturnedHistoryTable()">
-                  <option value="ALL">All Time</option>
+            </div>
+            <!-- Filter & Search Toolbar -->
+            <div class="osa-toolbar-filter-grid">
+              <div class="osa-filter-item grow">
+                <label class="osa-filter-label" for="history-search-input">🔍 Search Returns</label>
+                <input type="text" id="history-search-input" class="form-control osa-filter-input" placeholder="Search Owner, Student ID, Gadget ID, Brand/Model, S/N, Receipt Ref..." oninput="filterReturnedHistoryTable()">
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="history-date-filter">📅 Date Range</label>
+                <select id="history-date-filter" class="form-control osa-filter-select" onchange="toggleCustomDateInputs('history'); filterReturnedHistoryTable()">
+                  <option value="ALL" selected>All Time</option>
                   <option value="TODAY">Today</option>
-                  <option value="WEEK">Last 7 Days</option>
+                  <option value="WEEK">This Week</option>
                   <option value="MONTH">This Month</option>
+                  <option value="CUSTOM">Custom Range</option>
                 </select>
+              </div>
+              <div class="osa-filter-item" id="history-custom-date-wrap" style="display: none;">
+                <label class="osa-filter-label">📆 From – To</label>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                  <input type="date" id="history-date-from" class="form-control osa-filter-input" style="width: 135px;" onchange="filterReturnedHistoryTable()">
+                  <span style="color: #64748b; font-size: 0.8rem;">–</span>
+                  <input type="date" id="history-date-to" class="form-control osa-filter-input" style="width: 135px;" onchange="filterReturnedHistoryTable()">
+                </div>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="history-type-filter">💻 Device Type</label>
+                <select id="history-type-filter" class="form-control osa-filter-select" onchange="filterReturnedHistoryTable()">
+                  <option value="ALL">All Devices</option>
+                  <option value="Smartphone">Smartphone</option>
+                  <option value="Laptop">Laptop</option>
+                  <option value="Tablet">Tablet</option>
+                  <option value="Smartwatch">Smartwatch</option>
+                  <option value="Earbuds">Earbuds / Headphones</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="history-sort-filter">↕️ Sort By</label>
+                <select id="history-sort-filter" class="form-control osa-filter-select" onchange="filterReturnedHistoryTable()">
+                  <option value="NEWEST" selected>Newest First</option>
+                  <option value="OLDEST">Oldest First</option>
+                  <option value="SURNAME_ASC">Surname A–Z</option>
+                  <option value="SURNAME_DESC">Surname Z–A</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label">&nbsp;</label>
+                <button class="btn btn-secondary btn-sm" onclick="clearHistoryFilters()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset to default table view">
+                  ↺ Reset Filters
+                </button>
               </div>
             </div>
             <div class="table-responsive-wrapper" id="returned-history-table">
@@ -506,6 +631,52 @@
               <div>
                 <h3 style="font-weight: 800; font-size: 1.1rem;">👥 Registered Campus User Accounts</h3>
                 <div style="font-size: 0.8rem; color: var(--text-muted);">Manage student, faculty, and staff access permissions</div>
+              </div>
+            </div>
+            <!-- Filter & Search Toolbar -->
+            <div class="osa-toolbar-filter-grid">
+              <div class="osa-filter-item grow">
+                <label class="osa-filter-label" for="users-search-input">🔍 User Search</label>
+                <input type="text" id="users-search-input" class="form-control osa-filter-input" placeholder="Search Full Name, Student/Employee ID, School Email..." oninput="filterUsersTable()">
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="users-role-filter">👤 Role</label>
+                <select id="users-role-filter" class="form-control osa-filter-select" onchange="filterUsersTable()">
+                  <option value="ALL">All Roles</option>
+                  <option value="student">Student</option>
+                  <option value="faculty">Faculty</option>
+                  <option value="staff">Staff</option>
+                  <option value="osa_admin">OSA Admin</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="users-dept-filter">🏛️ Department</label>
+                <select id="users-dept-filter" class="form-control osa-filter-select" onchange="filterUsersTable()">
+                  <option value="ALL">All Departments</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="users-status-filter">📋 Account Status</label>
+                <select id="users-status-filter" class="form-control osa-filter-select" onchange="filterUsersTable()">
+                  <option value="ALL">All Statuses</option>
+                  <option value="ACTIVE">Active</option>
+                  <option value="SUSPENDED">Suspended</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="users-sort-filter">↕️ Sort By</label>
+                <select id="users-sort-filter" class="form-control osa-filter-select" onchange="filterUsersTable()">
+                  <option value="SURNAME_ASC" selected>Surname A–Z</option>
+                  <option value="SURNAME_DESC">Surname Z–A</option>
+                  <option value="NEWEST">Newest First</option>
+                  <option value="OLDEST">Oldest First</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label">&nbsp;</label>
+                <button class="btn btn-secondary btn-sm" onclick="clearUsersFilters()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset to default table view">
+                  ↺ Reset Filters
+                </button>
               </div>
             </div>
             <div class="table-responsive-wrapper" id="users-accounts-table">
@@ -533,6 +704,71 @@
                 <div style="font-size: 0.8rem; color: var(--text-muted);">
                   Telemetry audit with scan status, approximate location, device type, browser/OS, and audit IP.
                 </div>
+              </div>
+            </div>
+            <!-- Filter & Search Toolbar -->
+            <div class="osa-toolbar-filter-grid">
+              <div class="osa-filter-item grow">
+                <label class="osa-filter-label" for="scans-search-input">🔍 Search Scans</label>
+                <input type="text" id="scans-search-input" class="form-control osa-filter-input" placeholder="Search Gadget Name, Gadget ID, QR Token, Owner, Student ID..." oninput="filterScansTable()">
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="scans-status-filter">📋 Scan Status</label>
+                <select id="scans-status-filter" class="form-control osa-filter-select" onchange="filterScansTable()">
+                  <option value="ALL">All Scan Statuses</option>
+                  <option value="REGISTERED_DEVICE_SCANNED">Registered Gadget Scan</option>
+                  <option value="MISSING_DEVICE_SCANNED">Missing Gadget Scan</option>
+                  <option value="RETURNING_FINDER_SCANNED">Returning Finder Scan</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="scans-date-filter">📅 Date Range</label>
+                <select id="scans-date-filter" class="form-control osa-filter-select" onchange="toggleCustomDateInputs('scans'); filterScansTable()">
+                  <option value="ALL" selected>All Time</option>
+                  <option value="TODAY">Today</option>
+                  <option value="WEEK">This Week</option>
+                  <option value="MONTH">This Month</option>
+                  <option value="CUSTOM">Custom Range</option>
+                </select>
+              </div>
+              <div class="osa-filter-item" id="scans-custom-date-wrap" style="display: none;">
+                <label class="osa-filter-label">📆 From – To</label>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                  <input type="date" id="scans-date-from" class="form-control osa-filter-input" style="width: 135px;" onchange="filterScansTable()">
+                  <span style="color: #64748b; font-size: 0.8rem;">–</span>
+                  <input type="date" id="scans-date-to" class="form-control osa-filter-input" style="width: 135px;" onchange="filterScansTable()">
+                </div>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="scans-location-source-filter">📍 Location Source</label>
+                <select id="scans-location-source-filter" class="form-control osa-filter-select" onchange="filterScansTable()">
+                  <option value="ALL">All Sources</option>
+                  <option value="GPS">GPS High Accuracy</option>
+                  <option value="IP">IP-Based Estimated</option>
+                  <option value="UNAVAILABLE">Location Unavailable</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="scans-device-type-filter">📱 Scanner Device</label>
+                <select id="scans-device-type-filter" class="form-control osa-filter-select" onchange="filterScansTable()">
+                  <option value="ALL">All Devices</option>
+                  <option value="MOBILE">Mobile</option>
+                  <option value="DESKTOP">Desktop</option>
+                  <option value="TABLET">Tablet</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="scans-sort-filter">↕️ Sort By</label>
+                <select id="scans-sort-filter" class="form-control osa-filter-select" onchange="filterScansTable()">
+                  <option value="NEWEST" selected>Newest First</option>
+                  <option value="OLDEST">Oldest First</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label">&nbsp;</label>
+                <button class="btn btn-secondary btn-sm" onclick="clearScansFilters()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset to default table view">
+                  ↺ Reset Filters
+                </button>
               </div>
             </div>
             <div class="table-responsive-wrapper" id="scans-telemetry-table">
@@ -741,8 +977,60 @@
           <div class="table-container-card">
             <div class="table-title-bar">
               <div>
-                <h3 style="font-weight: 800; font-size: 1.1rem;">🛡️ Complete System Security Audit Logs</h3>
-                <div style="font-size: 0.8rem; color: var(--text-muted);">Immutable audit records for compliance and campus security review</div>
+                <h3 style="font-weight: 800; font-size: 1.1rem; color: #142a6d;">🛡️ Complete System Security Audit Logs</h3>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">
+                  Immutable, read-only audit log tracking security events, role-based operations, and administrative actions.
+                </div>
+              </div>
+            </div>
+            <!-- Filter & Search Toolbar -->
+            <div class="osa-toolbar-filter-grid">
+              <div class="osa-filter-item grow">
+                <label class="osa-filter-label" for="audit-search-input">🔍 Search Audit Logs</label>
+                <input type="text" id="audit-search-input" class="form-control osa-filter-input" placeholder="Search Log ID, Actor Name/ID, Student ID, Details, Audit IP..." oninput="filterAuditLogsTable()">
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="audit-action-filter">⚡ Action Type</label>
+                <select id="audit-action-filter" class="form-control osa-filter-select" onchange="filterAuditLogsTable()">
+                  <option value="ALL">All Actions</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="audit-role-filter">👤 User Role</label>
+                <select id="audit-role-filter" class="form-control osa-filter-select" onchange="filterAuditLogsTable()">
+                  <option value="ALL">All Roles</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="audit-date-filter">📅 Date Range</label>
+                <select id="audit-date-filter" class="form-control osa-filter-select" onchange="toggleCustomDateInputs('audit'); filterAuditLogsTable()">
+                  <option value="ALL" selected>All Time</option>
+                  <option value="TODAY">Today</option>
+                  <option value="WEEK">This Week</option>
+                  <option value="MONTH">This Month</option>
+                  <option value="CUSTOM">Custom Range</option>
+                </select>
+              </div>
+              <div class="osa-filter-item" id="audit-custom-date-wrap" style="display: none;">
+                <label class="osa-filter-label">📆 From – To</label>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                  <input type="date" id="audit-date-from" class="form-control osa-filter-input" style="width: 135px;" onchange="filterAuditLogsTable()">
+                  <span style="color: #64748b; font-size: 0.8rem;">–</span>
+                  <input type="date" id="audit-date-to" class="form-control osa-filter-input" style="width: 135px;" onchange="filterAuditLogsTable()">
+                </div>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label" for="audit-sort-filter">↕️ Sort By</label>
+                <select id="audit-sort-filter" class="form-control osa-filter-select" onchange="filterAuditLogsTable()">
+                  <option value="NEWEST" selected>Newest First</option>
+                  <option value="OLDEST">Oldest First</option>
+                </select>
+              </div>
+              <div class="osa-filter-item">
+                <label class="osa-filter-label">&nbsp;</label>
+                <button class="btn btn-secondary btn-sm" onclick="clearAuditFilters()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset to default table view">
+                  ↺ Reset Filters
+                </button>
               </div>
             </div>
             <div class="table-responsive-wrapper" id="audit-full-table">

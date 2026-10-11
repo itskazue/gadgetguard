@@ -8,22 +8,32 @@ const locationService = require('../services/locationService');
 // Helper to format scanner user-agent into clean device info
 function parseScannerDeviceInfo(ua) {
   if (!ua || ua === 'Unknown Device') return 'Device information unavailable';
-  let deviceType = 'Desktop';
-  if (/mobile/i.test(ua)) deviceType = 'Mobile Device';
-  else if (/tablet|ipad/i.test(ua)) deviceType = 'Tablet Device';
-
-  let browser = 'Web Browser';
-  if (/chrome|crios/i.test(ua) && !/edge|edg|opr|opera/i.test(ua)) browser = 'Chrome';
-  else if (/safari/i.test(ua) && !/chrome|crios/i.test(ua)) browser = 'Safari';
-  else if (/firefox|fxios/i.test(ua)) browser = 'Firefox';
-  else if (/edge|edg/i.test(ua)) browser = 'Edge';
 
   let os = 'Unknown OS';
   if (/windows/i.test(ua)) os = 'Windows';
+  else if (/ipad/i.test(ua)) os = 'iPadOS';
+  else if (/iphone|ipod/i.test(ua)) os = 'iOS';
   else if (/macintosh|mac os/i.test(ua)) os = 'macOS';
-  else if (/iphone|ipad|ipod/i.test(ua)) os = 'iOS';
   else if (/android/i.test(ua)) os = 'Android';
   else if (/linux/i.test(ua)) os = 'Linux';
+
+  let deviceType = 'Desktop';
+  if (/tablet|ipad/i.test(ua) || (os === 'Android' && !/mobile/i.test(ua))) {
+    deviceType = 'Tablet Device';
+  } else if (/mobile|phone|iphone|ipod/i.test(ua) || (os === 'Android' && /mobile/i.test(ua))) {
+    if (os === 'macOS' || os === 'Windows') {
+      deviceType = 'Desktop';
+    } else {
+      deviceType = 'Mobile Device';
+    }
+  }
+
+  let browser = 'Web Browser';
+  if (/edg|edge/i.test(ua)) browser = 'Edge';
+  else if (/opr|opera/i.test(ua)) browser = 'Opera';
+  else if (/chrome|crios/i.test(ua)) browser = 'Chrome';
+  else if (/safari/i.test(ua)) browser = 'Safari';
+  else if (/firefox|fxios/i.test(ua)) browser = 'Firefox';
 
   return `${deviceType} – ${browser} (${os})`;
 }

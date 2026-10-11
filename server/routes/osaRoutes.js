@@ -288,7 +288,18 @@ router.get('/audit-logs', authMiddleware, requireRole('osa_admin'), (req, res) =
   try {
     const logs = db.get('audit_logs');
     logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    return res.json({ success: true, logs });
+    const users = db.get('users');
+    const userMap = new Map((users || []).map(u => [u.id, u]));
+    const enriched = logs.map(l => {
+      const u = userMap.get(l.userId);
+      return {
+        ...l,
+        userName: u ? u.name : (l.userId === 'PUBLIC_FINDER' ? 'Public Finder' : (l.userId === 'SYSTEM' ? 'System' : l.userId)),
+        userStudentId: u ? u.idNumber : null,
+        userRole: l.userRole || (u ? u.role : 'system')
+      };
+    });
+    return res.json({ success: true, logs: enriched });
   } catch (err) {
     return res.status(500).json({ success: false, error: 'Error fetching audit logs.' });
   }
