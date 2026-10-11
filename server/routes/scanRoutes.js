@@ -64,11 +64,19 @@ router.get('/device/:token', async (req, res) => {
           c.finderSessionToken === finderToken &&
           c.status === 'ACTIVE'
         );
+        // For currently missing device, pastRecoveryChat must strictly belong to this active missing case
+        pastRecoveryChat = db.findOne('recovery_chats', c => 
+          c.gadgetId === gadget.id && 
+          c.missingReportId === missingReport.id && 
+          c.finderSessionToken === finderToken
+        );
+      } else {
+        // Device is not missing (registered/recovered), pastRecoveryChat can represent historical completed recovery
+        pastRecoveryChat = db.findOne('recovery_chats', c => 
+          c.gadgetId === gadget.id && 
+          c.finderSessionToken === finderToken
+        );
       }
-      pastRecoveryChat = db.findOne('recovery_chats', c => 
-        c.gadgetId === gadget.id && 
-        c.finderSessionToken === finderToken
-      );
     }
     const isReturningFinder = Boolean(activeRecoveryChat);
 
@@ -76,12 +84,13 @@ router.get('/device/:token', async (req, res) => {
       ? (isReturningFinder ? 'RETURNING_FINDER_SCANNED' : 'MISSING_DEVICE_SCANNED') 
       : 'REGISTERED_DEVICE_SCANNED';
 
-    // Check if finder decided to surrender or gadget is awaiting handover to OSA
+    // Check if finder decided to surrender or gadget is awaiting handover to OSA for current incident
     const isSurrenderPending = (gadget.custodyStatus === 'PENDING_OSA_TURNOVER' || gadget.surrenderStatus === 'WILL_SURRENDER_TO_OSA');
     let surrenderDetails = null;
     if (isSurrenderPending) {
       const surrenderReport = db.findOne('found_reports', f => 
         f.gadgetId === gadget.id && 
+        (missingReport ? f.missingReportId === missingReport.id : true) &&
         (f.turnInMethod === 'SUBMITTED_TO_OSA' || f.finderDecision === 'WILL_SURRENDER_TO_OSA') && 
         f.status === 'PENDING_OSA_TURNOVER'
       );
@@ -287,6 +296,7 @@ router.get('/device/:token', async (req, res) => {
       },
       owner: null, // Strictly protected
       missingReport: isMissing && missingReport ? {
+        id: missingReport.id,
         lastSeenLocation: missingReport.lastSeenLocation,
         lastSeenDate: missingReport.lastSeenDate,
         details: missingReport.details

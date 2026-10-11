@@ -1040,7 +1040,7 @@ async function loadLostStatusScreen() {
               </div>
 
               <!-- Finder Information (Section E: Strictly no contact number) -->
-              <div style="font-size: 0.84rem; color: #065f46; line-height: 1.6; background: #ffffff; border: 1px solid #d1fae5; border-radius: 10px; padding: 14px; margin-bottom: 12px;">
+              <div style="font-size: 0.84rem; color: #065f46; line-height: 1.6; background: #ffffff; border: 1px solid #d1fae5; border-radius: 10px; padding: 14px; margin-bottom: 0;">
                 <div>👤 <strong>Finder:</strong> ${finderDisplayName}</div>
                 <div>📍 <strong>Found Location:</strong> ${foundLocationText}</div>
                 <div>📋 <strong>Finder Action:</strong> Keeping Gadget Safe</div>
@@ -1050,28 +1050,6 @@ async function loadLostStatusScreen() {
                     💬 Chat / Message Finder
                   </button>
                 </div>
-              </div>
-
-              <!-- Safety & Liability Notice (Section G & H) -->
-              <div style="background: #fffbeb; border: 1px solid #fef3c7; border-left: 3.5px solid #f59e0b; border-radius: 6px; padding: 10px 12px; font-size: 0.74rem; color: #92400e; line-height: 1.5;">
-                <div style="font-weight: 800; color: #b45309; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
-                  <span>⚠️</span> Safety &amp; Liability Notice
-                </div>
-                <p style="margin-bottom: 4px;">
-                  Please prioritize your safety when arranging the return of a missing gadget.
-                </p>
-                <p style="margin-bottom: 4px;">
-                  GadgetGuard and the school/OSA provide this platform to facilitate communication between the gadget owner and finder. Any personal meetup or arrangement outside the school/OSA is the responsibility of the individuals involved.
-                </p>
-                <p style="margin-bottom: 4px;">
-                  The school/OSA is not responsible for incidents, injuries, losses, or other circumstances arising from personal meetups conducted outside official school premises or OSA-supervised procedures.
-                </p>
-                <p style="margin-bottom: 4px;">
-                  For your safety, we strongly recommend arranging the return through the <strong>Office of Student Affairs (OSA – Room 1109)</strong>.
-                </p>
-                <p style="margin-bottom: 0;">
-                  If a personal meetup is necessary, choose a safe and public location, such as a police station or busy mall, and inform someone you trust.
-                </p>
               </div>
             </div>
           `;
@@ -1086,7 +1064,7 @@ async function loadLostStatusScreen() {
               <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <span style="font-size: 1.25rem;">🏢</span>
-                  <strong style="color: #1e40af; font-size: 0.96rem;">Finder Will Surrender Your Gadget to OSA</strong>
+                  <strong style="color: #1e40af; font-size: 0.96rem;">Finder Surrender in Progress</strong>
                 </div>
                 <span style="background: #fef3c7; color: #92400e; font-size: 0.74rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; border: 1px solid #fde68a; text-transform: uppercase; letter-spacing: 0.03em;">
                   AWAITING OSA HANDOVER
@@ -1094,7 +1072,7 @@ async function loadLostStatusScreen() {
               </div>
               <div style="font-size: 0.85rem; color: #1e3a8a; line-height: 1.6; background: #ffffff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 14px;">
                 <p style="margin: 0 0 8px; font-weight: 600; font-size: 0.88rem; color: #1e40af;">
-                  The finder has chosen to surrender your gadget to OSA Room 1109. Please wait for confirmation once OSA receives it.
+                  The finder has decided to surrender your gadget to OSA. Awaiting physical handover.
                 </p>
                 <div style="display: grid; gap: 6px; font-size: 0.82rem; color: #334155; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #cbd5e1;">
                   <div>📍 <strong>Found Location:</strong> ${sLoc}</div>
@@ -1104,6 +1082,13 @@ async function loadLostStatusScreen() {
                     Once OSA physically receives and confirms possession of the gadget, its status will be updated to IN OSA CUSTODY / READY FOR CLAIM.
                   </div>
                 </div>
+                ${g.closedChatInfo ? `
+                  <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #cbd5e1;">
+                    <button class="btn btn-secondary btn-sm" onclick="openOwnerRecoveryChat('${g.closedChatInfo.chatId}', '${g.id}', '${escapeHtml(g.closedChatInfo.finderName || 'Finder')}', '${escapeHtml(g.brand + ' ' + g.model)}', '${escapeHtml(g.closedChatInfo.foundLocation || 'Campus')}')" style="font-size: 0.78rem; display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; font-weight: 600;">
+                      💬 View Closed Conversation (Read-Only)
+                    </button>
+                  </div>
+                ` : ''}
               </div>
             </div>
           `;
@@ -1700,8 +1685,23 @@ async function loadOwnerChatMessages() {
     if (!msgContainer) return;
 
     if (chat.isClosed) {
-      if (closedBanner) closedBanner.style.display = 'block';
+      if (closedBanner) {
+        closedBanner.style.display = 'block';
+        const isSurrendered = Boolean(
+          chat.closedReason === 'SURRENDERED_TO_OSA' || 
+          (chat.gadget && (chat.gadget.custodyStatus === 'PENDING_OSA_TURNOVER' || chat.gadget.surrenderStatus === 'WILL_SURRENDER_TO_OSA'))
+        );
+        if (isSurrendered) {
+          closedBanner.innerHTML = '🔒 The finder has decided to surrender your gadget to OSA. Awaiting physical handover.';
+        } else {
+          closedBanner.innerHTML = '🔒 This recovery conversation is closed because the gadget has been marked recovered or returned.';
+        }
+      }
       if (chatForm) chatForm.style.display = 'none';
+      if (activeOwnerChatInterval) {
+        clearInterval(activeOwnerChatInterval);
+        activeOwnerChatInterval = null;
+      }
     } else {
       if (closedBanner) closedBanner.style.display = 'none';
       if (chatForm) chatForm.style.display = 'flex';

@@ -813,6 +813,12 @@
           💡 <strong>Safety Recommendation:</strong> For everyone's security, arrange device returns through the <strong>Office of Student Affairs (OSA – Room 1109)</strong> whenever possible.
         </div>
 
+        <div id="finder-chat-surrender-option" style="margin-top: 8px;">
+          <button type="button" class="btn btn-sm" style="width: 100%; border: 1.5px solid #93c5fd; background: #eff6ff; color: #1e40af; border-radius: 8px; padding: 6px 10px; font-weight: 700; cursor: pointer; text-align: center; font-size: 0.78rem;" onclick="handleKeepSafeToSurrenderTransition()">
+            🏢 I Will Surrender It to OSA Instead
+          </button>
+        </div>
+
         <div class="finder-chat-container">
           <div id="finder-chat-messages" class="finder-chat-messages">
             <!-- Messages loaded dynamically -->
@@ -875,9 +881,10 @@
         if (raw) {
           try {
             const p = JSON.parse(raw);
-            if (p && p.chatId && p.finderSessionToken) return p;
+            if (p && p.chatId && p.finderSessionToken && (!p.missingReportId || p.missingReportId === missingReportId)) return p;
           } catch (e) {}
         }
+        return null; // When querying for an active missing incident, do not fall back to older cycle keys
       }
       if (gadgetId) {
         const raw = localStorage.getItem('gg_finder_session_gadget_' + gadgetId);
@@ -915,16 +922,17 @@
       }
     }
 
-    // Surrender Session Helpers
+    // Surrender Session Helpers (strictly scoped to gadget ID & missing case ID)
     function getSurrenderSession(token, gadgetId, missingReportId = null) {
       if (gadgetId && missingReportId) {
         const raw = localStorage.getItem('gg_surrender_case_' + gadgetId + '_' + missingReportId);
         if (raw) {
           try {
             const p = JSON.parse(raw);
-            if (p && p.surrenderReference) return p;
+            if (p && p.surrenderReference && (!p.missingReportId || p.missingReportId === missingReportId)) return p;
           } catch (e) {}
         }
+        return null; // When querying for an active missing incident, do not fall back to older cycle keys
       }
       if (gadgetId) {
         const raw = localStorage.getItem('gg_surrender_ref_gadget_' + gadgetId);
@@ -993,6 +1001,10 @@
 
         const res = await api.lookupDeviceQR(token, lookupParams);
         currentGadgetData = res.gadget;
+        if (currentGadgetData) {
+          currentGadgetData.missingReport = res.missingReport || null;
+        }
+        window.__lastLookupRes = res;
         if (res.gadget && res.gadget.secureToken) {
           scannedToken = res.gadget.secureToken;
         }
@@ -1001,18 +1013,27 @@
 
         // Persist and synchronize verified active recovery session
         if (res.activeFinderSession && res.activeFinderSession.hasSession) {
-          window.__activeFinderSession = {
-            ...res.activeFinderSession,
-            gadgetId: res.gadget?.id,
-            gadgetToken: res.gadget?.secureToken || token
-          };
-          saveFinderSession(window.__activeFinderSession);
-        } else if (res.gadget && res.gadget.status === 'MISSING') {
-          // Check if local session exists specifically for this gadget + missing report
-          const sessionByGadget = getFinderSession(token, res.gadget.id, currentMissingId);
-          if (sessionByGadget && sessionByGadget.gadgetId === res.gadget.id && !sessionByGadget.isClosed) {
-            window.__activeFinderSession = sessionByGadget;
+          if (!currentMissingId || res.activeFinderSession.missingReportId === currentMissingId) {
+            window.__activeFinderSession = {
+              ...res.activeFinderSession,
+              gadgetId: res.gadget?.id,
+              gadgetToken: res.gadget?.secureToken || token,
+              missingReportId: currentMissingId || res.activeFinderSession.missingReportId
+            };
+            saveFinderSession(window.__activeFinderSession);
+          } else {
+            window.__activeFinderSession = null;
           }
+        } else if (res.gadget && res.gadget.status === 'MISSING') {
+          // Check if local session exists specifically for this gadget + current missing report
+          const sessionByGadget = getFinderSession(token, res.gadget.id, currentMissingId);
+          if (sessionByGadget && sessionByGadget.gadgetId === res.gadget.id && !sessionByGadget.isClosed && (!sessionByGadget.missingReportId || sessionByGadget.missingReportId === currentMissingId)) {
+            window.__activeFinderSession = sessionByGadget;
+          } else {
+            window.__activeFinderSession = null;
+          }
+        } else {
+          window.__activeFinderSession = null;
         }
 
         // Check if surrender is active or pending
@@ -1229,12 +1250,14 @@
         return;
       }
 
-      // Check if finder already submitted intent to surrender
+      const currentMissingId = currentGadgetData?.missingReport?.id || (window.__lastLookupRes && window.__lastLookupRes.missingReport?.id) || null;
+
+      // Check if finder already submitted intent to surrender for this recovery case
       const isSurrenderPending = Boolean(
         currentGadgetData && (currentGadgetData.custodyStatus === 'PENDING_OSA_TURNOVER' || currentGadgetData.surrenderStatus === 'WILL_SURRENDER_TO_OSA')
       );
-      const savedSurrender = getSurrenderSession(scannedToken, currentGadgetData?.id);
-      if (isSurrenderPending || (savedSurrender && currentGadgetData?.status === 'MISSING')) {
+      const savedSurrender = getSurrenderSession(scannedToken, currentGadgetData?.id, currentMissingId);
+      if (isSurrenderPending || (savedSurrender && currentGadgetData?.status === 'MISSING' && (!savedSurrender.missingReportId || savedSurrender.missingReportId === currentMissingId))) {
         const surrenderData = savedSurrender || {
           surrenderReference: currentGadgetData?.pendingSurrenderRef || 'SRF-PENDING',
           gadgetName: `${currentGadgetData?.brand || ''} ${currentGadgetData?.model || ''}`.trim() || 'Gadget',
@@ -1251,10 +1274,13 @@
 
       let session = explicitSession || 
         (window.__activeFinderSession && window.__activeFinderSession.hasSession ? window.__activeFinderSession : null) || 
-        getFinderSession(scannedToken, currentGadgetData?.id);
+        getFinderSession(scannedToken, currentGadgetData?.id, currentMissingId);
 
-      // Verify that this session actually belongs to the current gadget
+      // Verify that this session actually belongs to the current gadget and current missing case
       if (session && session.gadgetId && currentGadgetData && session.gadgetId !== currentGadgetData.id) {
+        session = null;
+      }
+      if (session && currentMissingId && session.missingReportId && session.missingReportId !== currentMissingId) {
         session = null;
       }
 
@@ -1308,7 +1334,7 @@
               <button type="button" class="btn-qr-action btn-qr-emerald" style="margin-top: 12px; margin-bottom: 8px;" onclick="resumeSavedFinderChat(false)">
                 💬 Continue Conversation
               </button>
-              <button type="button" class="btn-qr-action btn-qr-subtle" style="margin-bottom: 0;" onclick="openSurrenderOsaModal()">
+              <button type="button" class="btn-qr-action btn-qr-subtle" style="margin-bottom: 0;" onclick="handleKeepSafeToSurrenderTransition()">
                 🏢 I Will Surrender It to OSA Instead
               </button>
             `}
@@ -1339,7 +1365,8 @@
 
     function openSurrenderOsaModal() {
       // Pre-fill existing finder details if transitioning from Keep Safe chat
-      const existingSession = window.__activeFinderSession || getFinderSession(scannedToken, currentGadgetData?.id);
+      const currentMissingId = currentGadgetData?.missingReport?.id || null;
+      const existingSession = window.__activeFinderSession || getFinderSession(scannedToken, currentGadgetData?.id, currentMissingId);
       if (existingSession) {
         const nameInput = document.getElementById('osa-finder-name');
         const locInput = document.getElementById('osa-found-location');
@@ -1358,111 +1385,73 @@
       if (modal) modal.classList.remove('active');
     }
 
-    // Handle "I Will Keep the Gadget Safe"
-    async function handleKeepSafeSubmit(e) {
-      e.preventDefault();
-      const finderName = document.getElementById('keepsafe-finder-name').value.trim();
-      const foundLocation = document.getElementById('keepsafe-found-location').value.trim();
-
-      if (!foundLocation) {
-        await SwalHelper.warning('Found Location Required', 'Please specify where you found this gadget.');
-        return;
-      }
-
-      if (finderName) {
-        const nameRegex = /^[a-zA-ZñÑ\s\.\,\-]+$/;
-        if (!nameRegex.test(finderName)) {
-          await SwalHelper.warning('Invalid Name', 'Finder Name must only contain letters and spaces.');
-          return;
-        }
-      }
-
-      try {
-        const existingSession = window.__activeFinderSession || getFinderSession(scannedToken, currentGadgetData?.id);
-        const payload = {
-          token: scannedToken,
-          secureToken: scannedToken,
-          gadgetId: currentGadgetData?.id,
-          finderName,
-          foundLocation,
-          turnInMethod: 'KEPT_SAFE'
-        };
-        if (existingSession && existingSession.finderSessionToken) {
-          payload.finderSessionToken = existingSession.finderSessionToken;
-          payload.chatId = existingSession.chatId;
-        }
-
-        const res = await api.reportFoundGadget(scannedToken, payload);
-
-        closeModal('keep-safe-modal');
-
-        if (res.chat) {
-          const sessionObj = {
-            chatId: res.chat.id,
-            finderSessionToken: res.chat.finderSessionToken,
-            finderName: res.chat.finderName,
-            foundLocation: res.chat.foundLocation,
-            missingReportId: res.chat.missingReportId,
-            gadgetId: currentGadgetData?.id,
-            gadgetToken: currentGadgetData?.secureToken || scannedToken,
-            isClosed: Boolean(res.chat.isClosed),
-            status: res.chat.status || 'ACTIVE'
-          };
-          window.__activeFinderSession = sessionObj;
-          saveFinderSession(sessionObj);
-
-          renderMissingGadgetActions(sessionObj);
-
-          await SwalHelper.success(
-            'Connected to Safe Chat! 🛡️',
-            'You are now connected with the gadget owner. You can coordinate the return safely.',
-            2200
-          );
-
-          openFinderChatModal(res.chat.id, res.chat.finderSessionToken, res.chat.foundLocation, false);
-        } else {
-          renderMissingGadgetActions();
-          await SwalHelper.success('Report Logged', 'Thank you for keeping this gadget safe!');
-        }
-      } catch (err) {
-        await SwalHelper.error('Submission Failed', err.message || 'Could not submit report.');
-      }
+    // Confirmation warning dialog when a finder who chose Keep Safe decides to Surrender to OSA
+    async function confirmSurrenderTransition() {
+      const result = await Swal.fire({
+        icon: 'warning',
+        title: 'Surrender to OSA?',
+        html: `
+          <div style="text-align: left; font-size: 0.88rem; color: #334155; line-height: 1.5;">
+            <p style="margin-bottom: 8px;">
+              You previously chose to keep this gadget safe and communicate directly with the owner.
+            </p>
+            <div style="background: #fff1f2; border: 1.5px solid #fecdd3; border-radius: 8px; padding: 10px 12px; color: #9f1239; font-size: 0.82rem; margin-bottom: 10px; line-height: 1.45;">
+              <strong>⚠️ Important Notice:</strong> Deciding to surrender this gadget to OSA will <strong>permanently close your conversation</strong> with the owner for this recovery case.
+            </div>
+            <p style="margin: 0; font-size: 0.82rem; color: #64748b;">
+              If you confirm, the private recovery chat will close and the recovery status will be recorded as <strong>AWAITING OSA HANDOVER</strong>.
+            </p>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Confirm Surrender',
+        cancelButtonText: 'Cancel (Keep Chat Active)',
+        confirmButtonColor: '#142a6d',
+        cancelButtonColor: '#64748b',
+        reverseButtons: true
+      });
+      return Boolean(result.isConfirmed);
     }
 
-    // Handle "I Will Surrender It to OSA"
-    async function handleSurrenderOsaSubmit(e) {
-      e.preventDefault();
-      const finderNameInput = document.getElementById('osa-finder-name').value.trim();
-      const contactNumber = document.getElementById('osa-finder-contact') ? document.getElementById('osa-finder-contact').value.trim() : '';
-      const foundLocation = document.getElementById('osa-found-location').value.trim();
-      const notes = document.getElementById('osa-finder-notes').value.trim();
+    // Direct transition from active Keep Safe state to Surrender
+    async function handleKeepSafeToSurrenderTransition() {
+      const currentMissingId = currentGadgetData?.missingReport?.id || null;
+      const existingSession = window.__activeFinderSession || getFinderSession(scannedToken, currentGadgetData?.id, currentMissingId);
 
-      // Found Location is the ONLY required field
-      if (!foundLocation) {
-        await SwalHelper.warning('Found Location Required', 'Please specify where you found this gadget.');
+      // Display confirmation warning explaining that the conversation will close permanently
+      const confirmed = await confirmSurrenderTransition();
+      if (!confirmed) {
+        // Cancel must leave the existing chat unchanged!
         return;
       }
 
-      if (finderNameInput) {
-        const nameRegex = /^[a-zA-ZñÑ\s\.\,\-]+$/;
-        if (!nameRegex.test(finderNameInput)) {
-          await SwalHelper.warning('Invalid Name', 'Finder Name must only contain letters and spaces.');
-          return;
-        }
-      }
+      // Confirm must close the chat and record AWAITING OSA HANDOVER
+      const finderName = (existingSession && existingSession.finderName) || 'Finder';
+      const foundLocation = (existingSession && existingSession.foundLocation) || 'Campus Grounds';
+      await executeSurrenderToOsaSubmission({
+        finderName,
+        contactNumber: '',
+        foundLocation,
+        notes: ''
+      });
+    }
 
-      const effectiveFinderName = finderNameInput || 'Finder';
+    // Shared execution logic for surrendering to OSA
+    async function executeSurrenderToOsaSubmission({ finderName, contactNumber = '', foundLocation, notes = '' }) {
+      const effectiveFinderName = finderName || 'Finder';
+      const cleanFoundLocation = foundLocation || 'Campus Grounds';
+      const currentMissingId = currentGadgetData?.missingReport?.id || null;
+      const existingSession = window.__activeFinderSession || getFinderSession(scannedToken, currentGadgetData?.id, currentMissingId);
 
       try {
-        const existingSession = window.__activeFinderSession || getFinderSession(scannedToken, currentGadgetData?.id);
         const reportPayload = {
           token: scannedToken,
           secureToken: scannedToken,
           gadgetId: currentGadgetData?.id,
           finderName: effectiveFinderName,
           finderContact: contactNumber,
-          contactNumber: contactNumber,
-          foundLocation,
+          contactNumber,
+          foundLocation: cleanFoundLocation,
           turnInMethod: 'SUBMITTED_TO_OSA',
           notes,
           message: notes
@@ -1476,10 +1465,7 @@
         const res = await api.submitFoundReport(reportPayload);
 
         closeModal('surrender-osa-modal');
-
-        if (activeFinderChatId) {
-          closeFinderChatModal();
-        }
+        closeFinderChatModal();
 
         const surrenderRef = res.surrenderReference || res.report?.surrenderReference || ('SRF-' + Date.now().toString(36).toUpperCase());
         const gadgetName = res.gadgetName || `${currentGadgetData?.brand || ''} ${currentGadgetData?.model || ''}`.trim() || 'Gadget';
@@ -1490,9 +1476,9 @@
           surrenderReference: surrenderRef,
           gadgetName,
           gadgetId,
-          missingReportId: currentGadgetData?.missingReport?.id || null,
+          missingReportId: currentMissingId,
           studentIdNumber,
-          foundLocation,
+          foundLocation: cleanFoundLocation,
           finderName: effectiveFinderName,
           notes,
           submittedAt: new Date().toISOString(),
@@ -1529,6 +1515,7 @@
               </div>
             </div>
             <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; font-size:0.8rem; text-align:left; color:#475569;">
+              🏢 <strong>Status:</strong> AWAITING OSA HANDOVER<br>
               🏢 <strong>Destination:</strong> Room 1109, NCST Main Campus
             </div>
           `,
@@ -1540,6 +1527,118 @@
       } catch (err) {
         await SwalHelper.error('Submission Failed', err.message || 'Could not submit surrender report.');
       }
+    }
+
+    // Handle "I Will Keep the Gadget Safe"
+    async function handleKeepSafeSubmit(e) {
+      e.preventDefault();
+      const finderName = document.getElementById('keepsafe-finder-name').value.trim();
+      const foundLocation = document.getElementById('keepsafe-found-location').value.trim();
+
+      if (!foundLocation) {
+        await SwalHelper.warning('Found Location Required', 'Please specify where you found this gadget.');
+        return;
+      }
+
+      if (finderName) {
+        const nameRegex = /^[a-zA-ZñÑ\s\.\,\-]+$/;
+        if (!nameRegex.test(finderName)) {
+          await SwalHelper.warning('Invalid Name', 'Finder Name must only contain letters and spaces.');
+          return;
+        }
+      }
+
+      try {
+        const currentMissingId = currentGadgetData?.missingReport?.id || null;
+        const existingSession = window.__activeFinderSession || getFinderSession(scannedToken, currentGadgetData?.id, currentMissingId);
+        const payload = {
+          token: scannedToken,
+          secureToken: scannedToken,
+          gadgetId: currentGadgetData?.id,
+          finderName,
+          foundLocation,
+          turnInMethod: 'KEPT_SAFE'
+        };
+        if (existingSession && existingSession.finderSessionToken) {
+          payload.finderSessionToken = existingSession.finderSessionToken;
+          payload.chatId = existingSession.chatId;
+        }
+
+        const res = await api.reportFoundGadget(scannedToken, payload);
+
+        closeModal('keep-safe-modal');
+
+        if (res.chat) {
+          const sessionObj = {
+            chatId: res.chat.id,
+            finderSessionToken: res.chat.finderSessionToken,
+            finderName: res.chat.finderName,
+            foundLocation: res.chat.foundLocation,
+            missingReportId: res.chat.missingReportId || currentMissingId,
+            gadgetId: currentGadgetData?.id,
+            gadgetToken: currentGadgetData?.secureToken || scannedToken,
+            isClosed: Boolean(res.chat.isClosed),
+            status: res.chat.status || 'ACTIVE'
+          };
+          window.__activeFinderSession = sessionObj;
+          saveFinderSession(sessionObj);
+
+          renderMissingGadgetActions(sessionObj);
+
+          await SwalHelper.success(
+            'Connected to Safe Chat! 🛡️',
+            'You are now connected with the gadget owner. You can coordinate the return safely.',
+            2200
+          );
+
+          openFinderChatModal(res.chat.id, res.chat.finderSessionToken, res.chat.foundLocation, false);
+        } else {
+          renderMissingGadgetActions();
+          await SwalHelper.success('Report Logged', 'Thank you for keeping this gadget safe!');
+        }
+      } catch (err) {
+        await SwalHelper.error('Submission Failed', err.message || 'Could not submit report.');
+      }
+    }
+
+    // Handle "I Will Surrender It to OSA" Modal Form Submit
+    async function handleSurrenderOsaSubmit(e) {
+      e.preventDefault();
+      const finderNameInput = document.getElementById('osa-finder-name').value.trim();
+      const contactNumber = document.getElementById('osa-finder-contact') ? document.getElementById('osa-finder-contact').value.trim() : '';
+      const foundLocation = document.getElementById('osa-found-location').value.trim();
+      const notes = document.getElementById('osa-finder-notes').value.trim();
+
+      // Found Location is the ONLY required field
+      if (!foundLocation) {
+        await SwalHelper.warning('Found Location Required', 'Please specify where you found this gadget.');
+        return;
+      }
+
+      if (finderNameInput) {
+        const nameRegex = /^[a-zA-ZñÑ\s\.\,\-]+$/;
+        if (!nameRegex.test(finderNameInput)) {
+          await SwalHelper.warning('Invalid Name', 'Finder Name must only contain letters and spaces.');
+          return;
+        }
+      }
+
+      const currentMissingId = currentGadgetData?.missingReport?.id || null;
+      const existingSession = window.__activeFinderSession || getFinderSession(scannedToken, currentGadgetData?.id, currentMissingId);
+      if (existingSession && !existingSession.isClosed) {
+        const confirmed = await confirmSurrenderTransition();
+        if (!confirmed) {
+          // Cancel leaves existing chat unchanged!
+          return;
+        }
+      }
+
+      await executeSurrenderToOsaSubmission({
+        finderName: finderNameInput || 'Finder',
+        contactNumber,
+        foundLocation,
+        notes
+      });
     }
 
     // Render Surrender Reference Card (Section D & E)
@@ -1675,12 +1774,15 @@
         locEl.textContent = location || 'Campus';
       }
 
+      const surrenderOpt = document.getElementById('finder-chat-surrender-option');
       if (activeFinderIsClosed) {
         if (closedBanner) closedBanner.style.display = 'block';
         if (chatForm) chatForm.style.display = 'none';
+        if (surrenderOpt) surrenderOpt.style.display = 'none';
       } else {
         if (closedBanner) closedBanner.style.display = 'none';
         if (chatForm) chatForm.style.display = 'flex';
+        if (surrenderOpt) surrenderOpt.style.display = 'block';
       }
 
       document.getElementById('finder-chat-modal').classList.add('active');
@@ -1730,6 +1832,8 @@
             }
           }
           if (chatForm) chatForm.style.display = 'none';
+          const surrenderOpt = document.getElementById('finder-chat-surrender-option');
+          if (surrenderOpt) surrenderOpt.style.display = 'none';
           if (activeFinderChatInterval) {
             clearInterval(activeFinderChatInterval);
             activeFinderChatInterval = null;
@@ -1745,6 +1849,8 @@
           activeFinderIsClosed = false;
           if (closedBanner) closedBanner.style.display = 'none';
           if (chatForm) chatForm.style.display = 'flex';
+          const surrenderOpt = document.getElementById('finder-chat-surrender-option');
+          if (surrenderOpt) surrenderOpt.style.display = 'block';
         }
 
         if (!chat.messages || chat.messages.length === 0) {

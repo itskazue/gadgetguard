@@ -36,10 +36,13 @@ router.post('/report', (req, res) => {
     const isKeeping = (turnInMethod === 'KEPT_SAFE' || turnInMethod === 'KEPT_SAFE_CONTACT_ME' || turnInMethod === 'FINDER_HOLDING');
     const effectiveTurnInMethod = isKeeping ? 'KEPT_SAFE' : 'SUBMITTED_TO_OSA';
 
+    const activeMissing = db.findOne('missing_reports', m => m.gadgetId === targetGadget.id && m.status === 'ACTIVE');
+
     // If finder is keeping gadget and already has an active chat session for this gadget, reconnect without duplicate
     if (isKeeping && (clientFinderToken || clientChatId)) {
       const existingChat = db.findOne('recovery_chats', c => 
         c.gadgetId === targetGadget.id && 
+        (activeMissing ? c.missingReportId === activeMissing.id : true) &&
         (c.finderSessionToken === clientFinderToken || c.id === clientChatId) &&
         c.status === 'ACTIVE'
       );
@@ -92,16 +95,18 @@ router.post('/report', (req, res) => {
       effectiveFinderContact = finderContact.trim().substring(0, 30);
     }
 
-    const activeMissing = db.findOne('missing_reports', m => m.gadgetId === targetGadget.id && m.status === 'ACTIVE');
-
-    // Find any existing active recovery chat or found report for this gadget to avoid duplicate cases
+    // Find any existing active recovery chat or found report for this gadget and current missing incident to avoid duplicate cases
     const existingActiveChat = db.findOne('recovery_chats', c => 
       c.gadgetId === targetGadget.id && 
-      (c.finderSessionToken === clientFinderToken || c.id === clientChatId || (activeMissing && c.missingReportId === activeMissing.id && c.status === 'ACTIVE'))
+      (activeMissing ? c.missingReportId === activeMissing.id : true) &&
+      ((clientFinderToken && c.finderSessionToken === clientFinderToken) || (clientChatId && c.id === clientChatId) || (activeMissing && c.status === 'ACTIVE'))
     );
     const existingFoundReport = existingActiveChat 
       ? db.findById('found_reports', existingActiveChat.foundReportId) 
-      : db.findOne('found_reports', f => f.gadgetId === targetGadget.id && f.status !== 'RETURNED' && f.status !== 'RESOLVED' && f.status !== 'CANCELLED');
+      : (activeMissing 
+          ? db.findOne('found_reports', f => f.gadgetId === targetGadget.id && f.missingReportId === activeMissing.id && f.status !== 'RETURNED' && f.status !== 'RESOLVED' && f.status !== 'CANCELLED')
+          : db.findOne('found_reports', f => f.gadgetId === targetGadget.id && f.status !== 'RETURNED' && f.status !== 'RESOLVED' && f.status !== 'CANCELLED')
+        );
 
     const surrenderRef = (existingFoundReport && existingFoundReport.surrenderReference) || 
       ('SRF-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase());
@@ -224,8 +229,12 @@ router.post('/report', (req, res) => {
       // =========================================================================
       // FINDER CHOOSES OR TRANSITIONS TO "I WILL SURRENDER IT TO OSA"
       // =========================================================================
-      // Close or make any existing recovery chats read-only (do not delete chat history)
-      const chatsToClose = db.find('recovery_chats', c => c.gadgetId === targetGadget.id && c.status !== 'CLOSED');
+      // Close or make any existing recovery chats read-only for this recovery case (do not delete chat history)
+      const chatsToClose = db.find('recovery_chats', c => 
+        c.gadgetId === targetGadget.id && 
+        (activeMissing ? c.missingReportId === activeMissing.id : true) && 
+        c.status !== 'CLOSED'
+      );
       chatsToClose.forEach(c => {
         const currentMessages = Array.isArray(c.messages) ? [...c.messages] : [];
         currentMessages.push({

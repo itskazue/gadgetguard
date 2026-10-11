@@ -158,9 +158,17 @@ router.get('/my', authMiddleware, (req, res) => {
       const isSurrenderPending = (g.custodyStatus === 'PENDING_OSA_TURNOVER' || g.surrenderStatus === 'WILL_SURRENDER_TO_OSA');
 
       if (g.status === 'MISSING' && !isSurrenderPending) {
-        const foundReport = db.findOne('found_reports', f => f.gadgetId === g.id && f.status !== 'PROCESSED_BY_OSA' && f.status !== 'RETURNED' && f.status !== 'RESOLVED' && f.status !== 'CANCELLED');
+        const foundReport = db.findOne('found_reports', f => 
+          f.gadgetId === g.id && 
+          (missingReport ? f.missingReportId === missingReport.id : true) &&
+          f.status !== 'PROCESSED_BY_OSA' && f.status !== 'RETURNED' && f.status !== 'RESOLVED' && f.status !== 'CANCELLED'
+        );
         if (foundReport && (foundReport.turnInMethod === 'KEPT_SAFE' || foundReport.turnInMethod === 'KEPT_SAFE_CONTACT_ME' || foundReport.turnInMethod === 'FINDER_HOLDING')) {
-          const activeChat = db.findOne('recovery_chats', c => c.gadgetId === g.id && c.status === 'ACTIVE');
+          const activeChat = db.findOne('recovery_chats', c => 
+            c.gadgetId === g.id && 
+            (missingReport ? c.missingReportId === missingReport.id : true) &&
+            c.status === 'ACTIVE'
+          );
           if (activeChat) {
             finderInfo = {
               id: foundReport.id,
@@ -179,7 +187,12 @@ router.get('/my', authMiddleware, (req, res) => {
       // If a finder reported finding the gadget and chose to surrender to OSA
       let surrenderInfo = null;
       if (isSurrenderPending || (g.status === 'MISSING' && g.custodyStatus === 'PENDING_OSA_TURNOVER')) {
-        const surrenderReport = db.findOne('found_reports', f => f.gadgetId === g.id && (f.turnInMethod === 'SUBMITTED_TO_OSA' || f.finderDecision === 'WILL_SURRENDER_TO_OSA') && f.status === 'PENDING_OSA_TURNOVER');
+        const surrenderReport = db.findOne('found_reports', f => 
+          f.gadgetId === g.id && 
+          (missingReport ? f.missingReportId === missingReport.id : true) &&
+          (f.turnInMethod === 'SUBMITTED_TO_OSA' || f.finderDecision === 'WILL_SURRENDER_TO_OSA') && 
+          f.status === 'PENDING_OSA_TURNOVER'
+        );
         surrenderInfo = {
           id: surrenderReport ? surrenderReport.id : (g.pendingSurrenderRef || g.id),
           surrenderReference: (surrenderReport && surrenderReport.surrenderReference) || g.pendingSurrenderRef || 'SRF-PENDING',
@@ -191,13 +204,29 @@ router.get('/my', authMiddleware, (req, res) => {
         };
       }
 
+      // Check for closed recovery chat for this gadget / incident to preserve closed history
+      const latestClosedChat = db.find('recovery_chats', c => 
+        c.gadgetId === g.id && 
+        (missingReport ? c.missingReportId === missingReport.id : true) &&
+        c.status === 'CLOSED'
+      ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+
+      const closedChatInfo = latestClosedChat ? {
+        chatId: latestClosedChat.id,
+        closedReason: latestClosedChat.closedReason,
+        finderName: latestClosedChat.finderName || 'Finder',
+        foundLocation: latestClosedChat.foundLocation || 'Campus',
+        missingReportId: latestClosedChat.missingReportId
+      } : null;
+
       return {
         ...g,
         missingReport: missingReport || null,
         scanCount,
         latestClaim: latestClaim || null,
         finderInfo,
-        surrenderInfo
+        surrenderInfo,
+        closedChatInfo
       };
     });
 

@@ -142,7 +142,7 @@ router.post('/:chatId/message', (req, res) => {
         db.update('recovery_chats', chat.id, { status: 'CLOSED', closedReason });
       }
       const errorMsg = (isSurrendered || chat.closedReason === 'SURRENDERED_TO_OSA')
-        ? 'This recovery conversation is closed and read-only because the finder has chosen to surrender the gadget to OSA.'
+        ? 'The finder has decided to surrender your gadget to OSA. Awaiting physical handover.'
         : 'This recovery conversation is closed because the gadget has been marked recovered or returned.';
       return res.status(400).json({ 
         success: false, 
@@ -249,8 +249,10 @@ router.get('/by-gadget/:gadgetId', (req, res) => {
     allChats.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     const activeChat = allChats.find(c => c.status === 'ACTIVE') || allChats[0];
 
-    const isGadgetClosed = gadget.status !== 'MISSING';
+    const isSurrendered = Boolean(gadget && (gadget.custodyStatus === 'PENDING_OSA_TURNOVER' || gadget.surrenderStatus === 'WILL_SURRENDER_TO_OSA'));
+    const isGadgetClosed = gadget.status !== 'MISSING' || isSurrendered;
     const isClosed = activeChat.status === 'CLOSED' || isGadgetClosed;
+    const closedReason = activeChat.closedReason || (isSurrendered ? 'SURRENDERED_TO_OSA' : (isGadgetClosed ? 'GADGET_RECOVERED' : null));
 
     const messages = (activeChat.messages || []).map(m => ({
       id: m.id,
@@ -266,6 +268,7 @@ router.get('/by-gadget/:gadgetId', (req, res) => {
       chat: {
         id: activeChat.id,
         gadgetId: activeChat.gadgetId,
+        missingReportId: activeChat.missingReportId,
         gadget: {
           brand: gadget.brand,
           model: gadget.model,
@@ -279,6 +282,7 @@ router.get('/by-gadget/:gadgetId', (req, res) => {
         foundLocation: activeChat.foundLocation,
         status: activeChat.status,
         isClosed,
+        closedReason,
         messages,
         createdAt: activeChat.createdAt
       }
@@ -309,8 +313,10 @@ router.get('/active-finder/:token', (req, res) => {
       return res.status(404).json({ success: false, error: 'Active recovery chat session not found.' });
     }
 
-    const isGadgetClosed = gadget.status !== 'MISSING';
+    const isSurrendered = Boolean(gadget && (gadget.custodyStatus === 'PENDING_OSA_TURNOVER' || gadget.surrenderStatus === 'WILL_SURRENDER_TO_OSA'));
+    const isGadgetClosed = gadget.status !== 'MISSING' || isSurrendered;
     const isClosed = chat.status === 'CLOSED' || isGadgetClosed;
+    const closedReason = chat.closedReason || (isSurrendered ? 'SURRENDERED_TO_OSA' : (isGadgetClosed ? 'GADGET_RECOVERED' : null));
 
     const messages = (chat.messages || []).map(m => ({
       id: m.id,
@@ -326,6 +332,7 @@ router.get('/active-finder/:token', (req, res) => {
       chat: {
         id: chat.id,
         gadgetId: chat.gadgetId,
+        missingReportId: chat.missingReportId,
         gadget: {
           brand: gadget.brand,
           model: gadget.model,
@@ -339,6 +346,7 @@ router.get('/active-finder/:token', (req, res) => {
         foundLocation: chat.foundLocation,
         status: chat.status,
         isClosed,
+        closedReason,
         messages,
         createdAt: chat.createdAt
       }
