@@ -151,7 +151,7 @@ function navigateStudent(screenName) {
   if (sb) sb.classList.remove('mobile-open');
 
   // Load screen-specific data
-  if (screenName === 'lost-status') loadLostStatusScreen();
+  if (screenName === 'lost-status') loadLostStatusScreen(targetReturnId);
   if (screenName === 'claims') loadClaimsScreen(targetReturnId);
   if (screenName === 'notifications') loadNotificationsFeed();
   if (screenName === 'missing-form') populateMissingFormDropdown();
@@ -174,9 +174,25 @@ async function loadMyGadgetsData() {
     myGadgetsData = (res && res.gadgets) ? res.gadgets : [];
 
     // Compute real database metrics
-    const totalReg = myGadgetsData.filter(g => g.status === 'REGISTERED').length;
+    // Registered Gadgets: count ALL approved registered gadgets belonging to the student,
+    // including those currently marked Missing or in OSA Custody. A missing gadget is still registered.
+    // Exclude pending registrations (PENDING_APPROVAL, PENDING) and rejected registrations (REJECTED).
+    // Count each registered gadget only once (deduplicated by gadget ID).
+    const approvedGadgetIds = new Set();
+    myGadgetsData.forEach(g => {
+      if (
+        g && 
+        g.id && 
+        g.status !== 'PENDING_APPROVAL' && 
+        g.status !== 'PENDING' && 
+        g.status !== 'REJECTED'
+      ) {
+        approvedGadgetIds.add(g.id);
+      }
+    });
+    const totalReg = approvedGadgetIds.size;
     const totalMissing = myGadgetsData.filter(g => g.status === 'MISSING').length;
-    const totalCustody = myGadgetsData.filter(g => g.status === 'FOUND_IN_CUSTODY').length;
+    const totalCustody = myGadgetsData.filter(g => g.status === 'FOUND_IN_CUSTODY' || g.custodyStatus === 'IN_OSA_CUSTODY').length;
     const totalReturned = myGadgetsData.filter(g => g.status === 'RETURNED').length;
 
     // Fetch user return history count
@@ -436,11 +452,35 @@ function openGadgetDetailsModal(gadgetId) {
         </div>
       `;
     }
-  } else if (gadget.status === 'FOUND_IN_CUSTODY') {
+  } else if (gadget.status === 'FOUND_IN_CUSTODY' || gadget.custodyStatus === 'IN_OSA_CUSTODY') {
+    const custodyLoc = gadget.custodyLocation || 'Office of Student Affairs (OSA Room 1109)';
+    const receivedDateFormatted = gadget.receivedAtOsaDate ? formatReturnDateTime(gadget.receivedAtOsaDate) : '';
+    const staffName = gadget.receivedByOsaStaffName || 'OSA Officer';
+
     actionHtml += `
-      <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: var(--radius-md); padding: 12px; font-size: 0.825rem; color: #065f46;">
-        🌟 <strong>Device Secured in OSA Custody!</strong><br>
-        Please visit the Office of Student Affairs (Room 1109) with your student ID to claim your gadget.
+      <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: var(--radius-md); padding: 16px; font-size: 0.85rem; color: #166534; text-align: left;">
+        <div style="font-weight: 800; font-size: 0.95rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 6px; color: #15803d;">
+            <span>🏢</span> <strong>Device Secured in OSA Custody (Ready for Pickup)</strong>
+          </div>
+          <span style="background: #dcfce7; color: #166534; font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; border: 1px solid #86efac;">
+            IN OSA CUSTODY
+          </span>
+        </div>
+        <div style="background: #ffffff; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; margin-bottom: 10px; line-height: 1.6;">
+          <div>🏢 <strong>Custody Location:</strong> ${escapeHtml(custodyLoc)}</div>
+          ${receivedDateFormatted ? `<div>📅 <strong>Received at OSA:</strong> ${receivedDateFormatted}</div>` : ''}
+          ${staffName ? `<div>👤 <strong>Received by:</strong> ${escapeHtml(staffName)} (OSA Staff)</div>` : ''}
+        </div>
+        <div style="font-weight: 700; color: #15803d; margin-bottom: 4px;">📋 Official OSA Pickup Instructions:</div>
+        <ol style="margin: 0 0 8px 18px; padding: 0; font-size: 0.825rem; color: #374151; line-height: 1.55;">
+          <li>Visit the <strong>Office of Student Affairs (Room 1109)</strong> during office hours.</li>
+          <li>Bring your <strong>physical Student ID card</strong> to verify enrollment and device ownership.</li>
+          <li>Inspect your device and sign the physical return release acknowledgment.</li>
+        </ol>
+        <div style="font-size: 0.76rem; color: #4b5563; font-style: italic; margin-top: 6px;">
+          ℹ️ This gadget is safely held in OSA custody and is NOT yet returned. Your official return receipt will be recorded upon physical handover at Room 1109.
+        </div>
       </div>
     `;
   }
@@ -983,7 +1023,7 @@ async function cancelMissingReportFor(reportOrGadgetId) {
 }
 
 // Lost Gadget Status & Campus Board Screen
-async function loadLostStatusScreen() {
+async function loadLostStatusScreen(openGadgetIdOnLoad = null) {
   const activeContainer = document.getElementById('my-active-missing-list');
   const boardContainer = document.getElementById('campus-missing-board-grid');
 
@@ -993,18 +1033,84 @@ async function loadLostStatusScreen() {
     scansData = scanRes.scans || [];
   } catch (e) {}
 
-  const myMissing = myGadgetsData.filter(g => g.status === 'MISSING');
+  // Include both missing gadgets AND gadgets currently in OSA custody or awaiting turnover
+  const myActiveItems = myGadgetsData.filter(g => 
+    g.status === 'MISSING' || 
+    g.status === 'FOUND_IN_CUSTODY' || 
+    g.custodyStatus === 'IN_OSA_CUSTODY' ||
+    g.custodyStatus === 'PENDING_OSA_TURNOVER'
+  );
+
   if (activeContainer) {
-    if (myMissing.length === 0) {
+    if (myActiveItems.length === 0) {
       activeContainer.innerHTML = `
         <div style="background: #f8fafc; border: 1px solid var(--card-border); border-radius: var(--radius-md); padding: 24px; text-align: center;">
           <div style="font-size: 1.5rem; margin-bottom: 4px;">🛡️</div>
-          <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);">None of your devices are currently missing</div>
+          <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);">None of your devices are currently missing or in custody</div>
           <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">All your registered equipment is safe.</div>
         </div>
       `;
     } else {
-      activeContainer.innerHTML = myMissing.map(g => {
+      activeContainer.innerHTML = myActiveItems.map(g => {
+        const isInOsaCustody = Boolean(g.status === 'FOUND_IN_CUSTODY' || g.custodyStatus === 'IN_OSA_CUSTODY');
+        
+        if (isInOsaCustody) {
+          const custodyLoc = g.custodyLocation || 'Office of Student Affairs (OSA Room 1109)';
+          const receivedDateFormatted = g.receivedAtOsaDate ? formatReturnDateTime(g.receivedAtOsaDate) : '';
+          const staffName = g.receivedByOsaStaffName || 'OSA Officer';
+
+          return `
+            <div id="lost-gadget-${g.id}" class="lost-gadget-card in-custody" style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: var(--radius-md); padding: 18px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 2px 8px rgba(22,101,52,0.05);">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+                <div>
+                  <div style="font-weight: 800; font-size: 1.05rem; color: #166534; display: flex; align-items: center; gap: 8px;">
+                    <span>🏢</span> ${escapeHtml(g.brand)} ${escapeHtml(g.model)}
+                  </div>
+                  <div style="font-size: 0.82rem; color: #15803d; margin-top: 2px;">
+                    S/N: <code>${escapeHtml(g.serialNumber || '—')}</code> • Category: ${escapeHtml(g.category || 'Device')}
+                  </div>
+                  <div style="font-size: 0.78rem; color: #166534; font-weight: 700; margin-top: 4px;">
+                    🟢 Current Custody Status: In OSA Custody (Ready for Physical Claim)
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button class="btn btn-primary btn-sm" onclick="openGadgetDetailsModal('${g.id}')" style="background: #0284c7; border-color: #0284c7; font-weight: 700;">
+                    View Details & Pickup Info
+                  </button>
+                </div>
+              </div>
+
+              <!-- Custody & Pickup Instructions Banner -->
+              <div style="background: #ffffff; border: 1px solid #bbf7d0; border-radius: 10px; padding: 16px; font-size: 0.84rem; color: #166534; line-height: 1.6;">
+                <div style="font-weight: 800; font-size: 0.92rem; color: #15803d; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span>🌟</span> Your Gadget is Safely Secured in OSA Custody!
+                  </div>
+                  <span style="background: #dcfce7; color: #166534; font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; border: 1px solid #86efac; text-transform: uppercase;">
+                    AVAILABLE FOR PICKUP
+                  </span>
+                </div>
+                <div style="display: grid; gap: 4px; font-size: 0.82rem; color: #374151; margin-bottom: 10px;">
+                  <div>🏢 <strong>Custody Location:</strong> ${escapeHtml(custodyLoc)}</div>
+                  ${receivedDateFormatted ? `<div>📅 <strong>Turnover Received:</strong> ${receivedDateFormatted}</div>` : ''}
+                  ${staffName ? `<div>👤 <strong>Received By:</strong> ${escapeHtml(staffName)} (OSA Staff)</div>` : ''}
+                </div>
+                <div style="padding-top: 10px; border-top: 1px dashed #bbf7d0;">
+                  <strong style="color: #15803d; font-size: 0.85rem;">📋 How to Claim Your Gadget:</strong>
+                  <ol style="margin: 6px 0 0 18px; padding: 0; color: #374151; font-size: 0.82rem; line-height: 1.55;">
+                    <li>Proceed to the <strong>Office of Student Affairs (Room 1109)</strong> during office hours.</li>
+                    <li>Present your <strong>physical Student ID card</strong> to verify identity and gadget ownership.</li>
+                    <li>Inspect your device on-site and sign the physical return release acknowledgment.</li>
+                  </ol>
+                </div>
+                <div style="margin-top: 10px; font-size: 0.76rem; color: #64748b; font-style: italic;">
+                  ℹ️ Notice: This gadget is currently held in OSA custody and has NOT been returned yet. Your official return receipt will be recorded once physical handover is completed.
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
         const scansForGadget = scansData.filter(s => s.gadgetId === g.id);
         const scansCount = scansForGadget.length;
 
@@ -1122,7 +1228,7 @@ async function loadLostStatusScreen() {
         }
 
         return `
-          <div style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: var(--radius-md); padding: 18px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px;">
+          <div id="lost-gadget-${g.id}" class="lost-gadget-card missing" style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: var(--radius-md); padding: 18px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
               <div>
                 <div style="font-weight: 800; font-size: 1.05rem; color: #b91c1c;">${escapeHtml(g.brand)} ${escapeHtml(g.model)}</div>
@@ -1181,6 +1287,16 @@ async function loadLostStatusScreen() {
         </div>
       `).join('');
     } catch (e) {}
+  }
+
+  // If a specific gadget was targeted, scroll to it and open its details modal
+  if (openGadgetIdOnLoad) {
+    const el = document.getElementById(`lost-gadget-${openGadgetIdOnLoad}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.style.outline = '2px solid #0284c7';
+    }
+    openGadgetDetailsModal(openGadgetIdOnLoad);
   }
 }
 
@@ -1334,8 +1450,18 @@ async function loadClaimsScreen(openReturnIdOnLoad = null) {
 // Modal: Open Official Return Receipt
 async function openStudentReturnReceiptModal(returnId) {
   let record = null;
+  const matchFn = r => {
+    if (!r) return false;
+    if (returnId === undefined || returnId === null || returnId === '') return false;
+    return r.id === returnId ||
+           r.returnId === returnId ||
+           String(r.id) === String(returnId) ||
+           String(r.returnId) === String(returnId) ||
+           (r.claimId && String(r.claimId) === String(returnId));
+  };
+
   if (window._studentReturnsList && window._studentReturnsList.length > 0) {
-    record = window._studentReturnsList.find(r => (r.id === returnId || r.returnId === returnId));
+    record = window._studentReturnsList.find(matchFn);
   }
 
   if (!record) {
@@ -1343,12 +1469,12 @@ async function openStudentReturnReceiptModal(returnId) {
       const res = await api.getReturns();
       const returns = (res && res.returns) ? res.returns : [];
       window._studentReturnsList = returns;
-      record = returns.find(r => (r.id === returnId || r.returnId === returnId));
+      record = returns.find(matchFn);
     } catch (e) {}
   }
 
-  // If still not found, check if returnId was omitted or passed null/empty, pick first available
-  if (!record && window._studentReturnsList && window._studentReturnsList.length > 0) {
+  // If still not found and no specific returnId was given, pick first available record
+  if (!record && (!returnId || returnId === 'RECEIPT') && window._studentReturnsList && window._studentReturnsList.length > 0) {
     record = window._studentReturnsList[0];
   }
 
@@ -1358,7 +1484,7 @@ async function openStudentReturnReceiptModal(returnId) {
   }
 
   const receiptRef = record.id || record.returnId || 'RET-ACK';
-  const brandModel = `${record.gadget?.brand || ''} ${record.gadget?.model || 'Gadget'}`.trim();
+  const brandModel = `${record.gadget?.brand || ''} ${record.gadget?.model || 'Gadget'}`.trim() || 'Gadget';
   const category = record.gadget?.category || 'Electronic Device';
   const color = record.gadget?.color || 'Standard';
   const gadgetId = record.gadgetId || record.gadget?.id || '—';
@@ -1426,7 +1552,10 @@ async function openStudentReturnReceiptForNotif(notif, targetReturnId) {
 
     let match = null;
     if (targetReturnId) {
-      match = returns.find(r => r.id === targetReturnId || r.returnId === targetReturnId);
+      match = returns.find(r => r.id === targetReturnId || r.returnId === targetReturnId || String(r.id) === String(targetReturnId) || String(r.returnId) === String(targetReturnId));
+    }
+    if (!match && notif?.returnId) {
+      match = returns.find(r => r.id === notif.returnId || r.returnId === notif.returnId || String(r.id) === String(notif.returnId) || String(r.returnId) === String(notif.returnId));
     }
     if (!match && notif?.gadgetId) {
       match = returns.find(r => (r.gadgetId === notif.gadgetId || r.gadget?.id === notif.gadgetId));
@@ -1436,12 +1565,23 @@ async function openStudentReturnReceiptForNotif(notif, targetReturnId) {
     }
 
     if (match) {
-      openStudentReturnReceiptModal(match.id);
+      openStudentReturnReceiptModal(match.id || match.returnId);
     }
   } catch (e) {
     console.error('Error opening return receipt from notification:', e);
   }
 }
+
+window.openStudentReturnReceiptModal = openStudentReturnReceiptModal;
+window.openStudentReturnReceiptForNotif = openStudentReturnReceiptForNotif;
+window.findGadgetFromNotification = findGadgetFromNotification;
+window.handleNotifActionClick = handleNotifActionClick;
+window.renderNotificationActions = renderNotificationActions;
+window.loadLostStatusScreen = loadLostStatusScreen;
+window.loadMyGadgetsData = loadMyGadgetsData;
+window.openGadgetDetailsModal = openGadgetDetailsModal;
+window.closeModal = closeModal;
+window.showCustodyFallbackNotice = showCustodyFallbackNotice;
 
 // Claims Submit Modal
 function openSubmitClaimModal(gadgetId, gadgetName) {
@@ -1635,38 +1775,186 @@ function renderFormattedNotificationMessage(msg) {
   return html;
 }
 
+function findGadgetFromNotification(n) {
+  if (!n) return null;
+  const gadgets = Array.isArray(myGadgetsData) ? myGadgetsData : [];
+  if (gadgets.length === 0) return null;
+
+  // 1. Direct ID matches (completely unambiguous)
+  if (n.gadgetId) {
+    const match = gadgets.find(g => g && g.id === n.gadgetId);
+    if (match) return match;
+  }
+  if (n.linkUrl && n.linkUrl.includes('id=')) {
+    const m = n.linkUrl.match(/id=([a-zA-Z0-9_\-]+)/);
+    if (m) {
+      const match = gadgets.find(g => g && g.id === m[1]);
+      if (match) return match;
+    }
+  }
+
+  const rawText = `${n.title || ''} \n ${n.message || ''}`;
+  const text = rawText.toLowerCase();
+
+  // 2. Serial Number match (if unique and serial length >= 4)
+  const serialMatches = gadgets.filter(g => 
+    g && 
+    g.serialNumber && 
+    g.serialNumber.trim().length >= 4 && 
+    text.includes(g.serialNumber.trim().toLowerCase())
+  );
+  if (serialMatches.length === 1) {
+    return serialMatches[0];
+  } else if (serialMatches.length > 1) {
+    // Multiple gadgets matched by serial number: ambiguous!
+    return null;
+  }
+
+  // 3. Extract specified device line if present: e.g. "Device: Apple iPhone 13 Pro"
+  const deviceLineMatch = rawText.match(/Device:\s*([^\n\r]+)/i);
+  const specifiedDevice = deviceLineMatch ? deviceLineMatch[1].trim().toLowerCase() : null;
+
+  // Evaluate candidate gadgets
+  const matchedCandidates = [];
+
+  for (const g of gadgets) {
+    if (!g) continue;
+    const brand = (g.brand || '').trim().toLowerCase();
+    const model = (g.model || '').trim().toLowerCase();
+    const fullName = `${brand} ${model}`.trim();
+    if (!model && !brand) continue;
+
+    let isMatch = false;
+    let score = 0;
+
+    if (specifiedDevice) {
+      if (fullName && specifiedDevice === fullName) {
+        isMatch = true;
+        score = fullName.length + 1000;
+      } else if (model && specifiedDevice === model) {
+        isMatch = true;
+        score = model.length + 500;
+      } else if (fullName && specifiedDevice.includes(fullName)) {
+        isMatch = true;
+        score = fullName.length + 200;
+      } else if (model && model.length >= 3 && specifiedDevice.includes(model)) {
+        isMatch = true;
+        score = model.length + 100;
+      }
+    }
+
+    if (!isMatch) {
+      // Check full message text for fullName or model
+      if (fullName && fullName.length >= 4 && text.includes(fullName)) {
+        isMatch = true;
+        score = fullName.length + 50;
+      } else if (model && model.length >= 3 && text.includes(model)) {
+        isMatch = true;
+        score = model.length;
+      }
+    }
+
+    if (isMatch) {
+      matchedCandidates.push({
+        gadget: g,
+        score,
+        model,
+        fullName,
+        isInCustody: Boolean(g.status === 'FOUND_IN_CUSTODY' || g.custodyStatus === 'IN_OSA_CUSTODY')
+      });
+    }
+  }
+
+  if (matchedCandidates.length === 0) {
+    return null;
+  }
+
+  if (matchedCandidates.length === 1) {
+    return matchedCandidates[0].gadget;
+  }
+
+  // If multiple candidates matched:
+  // Discard candidates that are strictly shorter prefixes/substrings of a higher-scoring candidate.
+  // For instance, "iPhone 13" vs "iPhone 13 Pro" when text specifies "Apple iPhone 13 Pro".
+  const bestCandidates = matchedCandidates.filter(c => {
+    const isStrictSubstring = matchedCandidates.some(other => 
+      other !== c && 
+      other.score > c.score && 
+      (other.model.includes(c.model) || other.fullName.includes(c.fullName))
+    );
+    return !isStrictSubstring;
+  });
+
+  if (bestCandidates.length === 1) {
+    return bestCandidates[0].gadget;
+  }
+
+  // If multiple candidates still remain (e.g. multiple gadgets with similar or identical names):
+  // Check if exactly ONE of the best candidate gadgets is currently in custody,
+  // AND there are no duplicate gadgets with the same name in custody.
+  const custodyCandidates = bestCandidates.filter(c => c.isInCustody);
+  if (custodyCandidates.length === 1) {
+    const singleCustody = custodyCandidates[0];
+    const sameNameCustodyCount = custodyCandidates.filter(c => c.fullName === singleCustody.fullName).length;
+    if (sameNameCustodyCount === 1) {
+      return singleCustody.gadget;
+    }
+  }
+
+  // If the target cannot be uniquely and unambiguously identified among similar gadgets:
+  // Return null to trigger safe fallback
+  return null;
+}
+
 function renderNotificationActions(n) {
-  const isFoundNotif = n.title === 'Someone Found Your Gadget' || n.type === 'CHAT_MESSAGE';
-  const hasCustody = n.title?.includes('Custody') || n.type === 'GADGET_FOUND';
-  const isMissing = n.type === 'MISSING_ALERT' || n.title?.includes('Missing');
+  const isFoundNotif = Boolean(
+    (n.title && n.title.includes('Someone Found')) || 
+    n.type === 'CHAT_MESSAGE' ||
+    (n.message && n.message.includes('Keeping Gadget Safe'))
+  );
+
+  const isCustodyNotif = Boolean(
+    (n.title && n.title.includes('Custody')) || 
+    (n.message && (n.message.includes('OSA Custody') || n.message.includes('received by OSA'))) ||
+    (!isFoundNotif && n.type === 'GADGET_FOUND')
+  );
+
+  const isReturnNotif = Boolean(
+    n.type === 'RETURNED_SUCCESS' || 
+    (n.title && n.title.toLowerCase().includes('returned'))
+  );
+
+  const isMissing = !isFoundNotif && !isCustodyNotif && !isReturnNotif && (
+    n.type === 'MISSING_ALERT' || (n.title && n.title.includes('Missing'))
+  );
 
   let buttons = [];
 
-  if (isFoundNotif) {
+  if (isCustodyNotif) {
+    buttons.push(`
+      <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); handleNotifActionClick('${n.id}', 'lost-status')" style="background: #0284c7; border-color: #0284c7; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+        📍 View Gadget Status
+      </button>
+    `);
+  } else if (isReturnNotif) {
+    buttons.push(`
+      <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); handleNotifActionClick('${n.id}', 'return-receipt')" style="background: #142a6d; border-color: #142a6d; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+        🧾 View Return Receipt
+      </button>
+    `);
+  } else if (isFoundNotif) {
     buttons.push(`
       <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); handleNotifActionClick('${n.id}', 'chat')" style="font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
         💬 Open Chat / Message Finder
       </button>
     `);
-  }
-
-  if (hasCustody) {
-    buttons.push(`
-      <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); handleNotifActionClick('${n.id}', 'claims')" style="background: #059669; border-color: #059669; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
-        📋 View Claims / Handover History
-      </button>
-    `);
-  }
-
-  if (isMissing && !isFoundNotif) {
+  } else if (isMissing) {
     buttons.push(`
       <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); handleNotifActionClick('${n.id}', 'lost-status')" style="font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
         🚨 Lost Gadget Status
       </button>
     `);
-  }
-
-  if (n.linkUrl && !isFoundNotif && !hasCustody && !isMissing) {
+  } else if (n.linkUrl) {
     buttons.push(`
       <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); handleNotifActionClick('${n.id}', '${n.linkUrl}')" style="font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
         🔗 View Details
@@ -1760,15 +2048,66 @@ async function toggleNotificationItem(id, event) {
 }
 
 async function handleNotifActionClick(id, actionTarget) {
-  const notif = (studentNotifsCache || []).find(n => n.id === id);
-  const isReturnNotif = (notif && (notif.type === 'RETURNED_SUCCESS' || (notif.title && notif.title.toLowerCase().includes('returned')))) ||
-                        (actionTarget && (actionTarget.includes('returns') || actionTarget.includes('return')));
+  let notif = (studentNotifsCache || []).find(n => n.id === id);
+  if (!notif) {
+    try {
+      const res = await api.getNotifications();
+      studentNotifsCache = res.notifications || [];
+      notif = studentNotifsCache.find(n => n.id === id);
+    } catch (e) {}
+  }
+
+  // Ensure gadgets are available
+  if (!myGadgetsData || myGadgetsData.length === 0) {
+    try {
+      const gRes = await api.getMyGadgets();
+      myGadgetsData = (gRes && gRes.gadgets) ? gRes.gadgets : [];
+    } catch (e) {}
+  }
+
+  // Check if this is an OSA custody notification
+  const isCustodyNotif = Boolean(
+    (notif && ((notif.title && notif.title.includes('Custody')) || 
+               (notif.message && (notif.message.includes('OSA Custody') || notif.message.includes('received by OSA'))))) ||
+    (actionTarget && actionTarget.includes('custody')) ||
+    (actionTarget === 'lost-status' && notif && (notif.type === 'GADGET_FOUND' || (notif.title && notif.title.includes('Custody'))))
+  );
+
+  if (isCustodyNotif) {
+    const targetGadget = findGadgetFromNotification(notif);
+    const targetGadgetId = targetGadget?.id || (notif?.gadgetId && myGadgetsData.some(g => g.id === notif.gadgetId) ? notif.gadgetId : null);
+
+    if (targetGadgetId) {
+      // Unambiguously identified gadget: navigate to lost-status and open its details
+      navigateStudent(`lost-status?id=${targetGadgetId}`);
+      setTimeout(() => {
+        openGadgetDetailsModal(targetGadgetId);
+      }, 100);
+    } else {
+      // Ambiguous or unspecified device: safe fallback without opening another gadget's details
+      closeModal('gadget-details-modal');
+      navigateStudent('lost-status');
+      showCustodyFallbackNotice(notif);
+    }
+    return;
+  }
+
+  const isReturnNotif = !isCustodyNotif && (
+    (notif && (notif.type === 'RETURNED_SUCCESS' || (notif.title && notif.title.toLowerCase().includes('returned')))) ||
+    (actionTarget && (actionTarget.includes('returns') || actionTarget.includes('return-receipt') || actionTarget.includes('return')))
+  );
 
   if (isReturnNotif) {
     let targetReturnId = notif?.returnId;
     if (!targetReturnId && actionTarget && actionTarget.includes('id=')) {
       try {
         const match = actionTarget.match(/id=([a-zA-Z0-9_\-]+)/);
+        if (match) targetReturnId = match[1];
+      } catch (e) {}
+    }
+    if (!targetReturnId && notif?.linkUrl && notif.linkUrl.includes('id=')) {
+      try {
+        const match = notif.linkUrl.match(/id=([a-zA-Z0-9_\-]+)/);
         if (match) targetReturnId = match[1];
       } catch (e) {}
     }
@@ -1828,6 +2167,53 @@ async function markAllNotificationsRead() {
     if (badge) badge.style.display = 'none';
   } catch (e) {
     console.error('Error marking all notifications read:', e);
+  }
+}
+
+function showCustodyFallbackNotice(notif) {
+  if (typeof document === 'undefined') return;
+
+  const showBanner = () => {
+    const container = document.getElementById('my-active-missing-list');
+    if (!container) return;
+
+    // Remove any existing fallback notice
+    const existing = document.getElementById('custody-resolution-fallback-banner');
+    if (existing) existing.remove();
+
+    const banner = document.createElement('div');
+    banner.id = 'custody-resolution-fallback-banner';
+    banner.className = 'custody-resolution-fallback-banner';
+    banner.style.cssText = 'background: #eff6ff; border: 1.5px solid #93c5fd; border-radius: var(--radius-md, 10px); padding: 16px; margin-bottom: 16px; color: #1e40af; box-shadow: 0 2px 6px rgba(30,64,175,0.08);';
+    banner.innerHTML = `
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
+        <div style="display: flex; gap: 10px; align-items: flex-start;">
+          <span style="font-size: 1.25rem; line-height: 1;">ℹ️</span>
+          <div>
+            <div style="font-weight: 800; font-size: 0.92rem; margin-bottom: 4px; color: #1e3a8a;">
+              Multiple or Unspecified Devices in Custody Notice
+            </div>
+            <div style="font-size: 0.825rem; color: #1e40af; line-height: 1.5;">
+              This notification does not uniquely specify which of your devices was received. To avoid displaying details for the wrong device, please check your active devices below to confirm which item is in OSA custody and view its pickup instructions.
+            </div>
+          </div>
+        </div>
+        <button onclick="this.closest('#custody-resolution-fallback-banner').remove()" style="background: none; border: none; font-size: 1.2rem; line-height: 1; color: #64748b; cursor: pointer; padding: 0 4px;" title="Dismiss">&times;</button>
+      </div>
+    `;
+
+    container.prepend(banner);
+    if (typeof banner.scrollIntoView === 'function') {
+      try {
+        banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (e) {}
+    }
+  };
+
+  if (typeof setTimeout === 'function') {
+    setTimeout(showBanner, 150);
+  } else {
+    showBanner();
   }
 }
 

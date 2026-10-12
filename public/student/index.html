@@ -349,8 +349,8 @@
         <!-- ================= SCREEN 4: LOST GADGET STATUS ================= -->
         <section id="student-screen-lost-status" class="student-screen">
           <div class="app-card" style="margin-bottom: 24px;">
-            <h3 style="font-weight: 800; font-size: 1.15rem; margin-bottom: 6px;">My Active Missing Gadgets</h3>
-            <p class="text-muted" style="font-size: 0.825rem; margin-bottom: 16px;">Live recovery status and scan alerts for your missing items.</p>
+            <h3 style="font-weight: 800; font-size: 1.15rem; margin-bottom: 6px;">My Active Missing & In-Custody Gadgets</h3>
+            <p class="text-muted" style="font-size: 0.825rem; margin-bottom: 16px;">Live recovery status, custody tracking, and scan alerts for your devices.</p>
             
             <div id="my-active-missing-list">
               <!-- Populated by JS -->
@@ -844,8 +844,10 @@
         </div>
       </div>
     </div>
+  </div>
+
   <!-- Modal: View Official Return Receipt -->
-  <div id="student-return-receipt-modal" class="modal-overlay">
+  <div id="student-return-receipt-modal" class="modal-overlay" onclick="if(event.target === this) closeModal('student-return-receipt-modal')">
     <div class="modal-box" style="max-width: 540px; padding: 0; overflow: hidden; border-radius: 14px;">
       <!-- Receipt Header Banner -->
       <div style="background: linear-gradient(135deg, #142a6d 0%, #1e3a8a 100%); color: #ffffff; padding: 20px 24px; position: relative;">

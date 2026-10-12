@@ -531,7 +531,8 @@ router.post('/:id/receive', authMiddleware, requireRole('osa_admin'), (req, res)
       title: 'Your Gadget is in OSA Custody! 🏢',
       message: `Your missing gadget has been received by OSA and is now available for claim/verification.\n\nDevice: ${gadget.brand} ${gadget.model}\nCustody Location: ${finalCustodyLoc}\n\nPlease visit the Office of Student Affairs (Room 1109) or submit an ownership claim to arrange turnover.`,
       type: 'GADGET_FOUND',
-      linkUrl: '/student/#claims'
+      linkUrl: `/student/#lost-status?id=${gadget.id}`,
+      gadgetId: gadget.id
     });
 
     return res.json({
