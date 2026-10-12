@@ -95,6 +95,20 @@ router.post('/return', authMiddleware, requireRole('osa_admin'), (req, res) => {
       return res.status(404).json({ success: false, error: 'Gadget not found.' });
     }
 
+    // Backend Protection & Idempotency: Device must currently be physically in custody to be returned
+    if (gadget.status !== 'FOUND_IN_CUSTODY') {
+      if (gadget.lastReturnId) {
+        return res.status(400).json({ 
+          success: false, 
+          error: `Gadget is not currently in custody. This handover return has already been completed (Receipt: ${gadget.lastReturnId}).` 
+        });
+      }
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Gadget is not currently held in OSA custody vault.' 
+      });
+    }
+
     const owner = db.findById('users', gadget.userId);
     const returnDateIso = new Date().toISOString();
     const cleanPhotoUrl = handoverPhotoUrl.trim();
@@ -225,7 +239,9 @@ router.post('/return', authMiddleware, requireRole('osa_admin'), (req, res) => {
       title: 'Gadget Successfully Returned! 🎉',
       message: `Your ${gadget.brand} ${gadget.model} has been officially returned and recorded. Thank you for using GadgetGuard!`,
       type: 'RETURNED_SUCCESS',
-      linkUrl: '/student/#returns'
+      linkUrl: `/student/#returns?id=${returnRecord.id}`,
+      returnId: returnRecord.id,
+      gadgetId: gadget.id
     });
 
     const updatedGadget = db.findById('gadgets', gadgetId);
@@ -251,7 +267,11 @@ router.get('/returns', authMiddleware, (req, res) => {
       returns = returns.filter(r => r.userId === req.user.id);
     }
 
-    returns.sort((a, b) => new Date(b.returnDate) - new Date(a.returnDate));
+    returns.sort((a, b) => {
+      const dateA = new Date(a.returnDate || a.returnedAt || a.createdAt || 0).getTime();
+      const dateB = new Date(b.returnDate || b.returnedAt || b.createdAt || 0).getTime();
+      return dateB - dateA;
+    });
 
     const enriched = returns.map(r => {
       const gadget = db.findById('gadgets', r.gadgetId);
@@ -261,11 +281,14 @@ router.get('/returns', authMiddleware, (req, res) => {
       return {
         ...r,
         gadget: gadget ? {
+          id: gadget.id,
           brand: gadget.brand,
           model: gadget.model,
+          color: gadget.color || 'Standard',
           category: gadget.category,
           serialNumber: gadget.serialNumber,
-          photoUrl: gadget.photoUrl
+          photoUrl: gadget.photoUrl,
+          custodyLocation: r.previousVaultLocation || gadget.custodyLocation || 'OSA Vault Locker (Room 1109)'
         } : null,
         owner: owner ? {
           name: owner.name,
@@ -273,7 +296,7 @@ router.get('/returns', authMiddleware, (req, res) => {
           idNumber: owner.idNumber,
           department: owner.department
         } : null,
-        returnedByAdmin: admin ? admin.name : 'OSA Staff'
+        returnedByAdmin: admin ? admin.name : (r.returnedByOsaAdminName || 'OSA Staff')
       };
     });
 
@@ -286,7 +309,7 @@ router.get('/returns', authMiddleware, (req, res) => {
 // GET /api/osa/audit-logs (OSA Admin views audit logs)
 router.get('/audit-logs', authMiddleware, requireRole('osa_admin'), (req, res) => {
   try {
-    const logs = db.get('audit_logs');
+    const logs = [...db.get('audit_logs')];
     logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     const users = db.get('users');
     const userMap = new Map((users || []).map(u => [u.id, u]));

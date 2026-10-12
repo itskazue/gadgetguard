@@ -104,7 +104,18 @@ function initStudentNavigation() {
 }
 
 function navigateStudent(screenName) {
+  let targetReturnId = null;
+  if (screenName && screenName.includes('?')) {
+    const parts = screenName.split('?');
+    screenName = parts[0];
+    try {
+      const params = new URLSearchParams(parts[1]);
+      targetReturnId = params.get('id');
+    } catch (e) {}
+  }
+
   if (screenName === 'scans') screenName = 'lost-status';
+  if (screenName === 'returns' || screenName === 'return-history') screenName = 'claims';
 
   // Hide all screens
   document.querySelectorAll('.student-screen').forEach(s => s.classList.remove('active'));
@@ -113,7 +124,7 @@ function navigateStudent(screenName) {
   const target = document.getElementById(`student-screen-${screenName}`);
   if (target) {
     target.classList.add('active');
-    window.location.hash = screenName;
+    window.location.hash = targetReturnId ? `${screenName}?id=${targetReturnId}` : screenName;
   }
 
   const navItem = document.getElementById(`nav-item-${screenName}`);
@@ -127,7 +138,8 @@ function navigateStudent(screenName) {
     'gadgets': 'My Registered Gadgets',
     'missing-form': 'Report Gadget as Missing',
     'lost-status': 'Lost Gadget Status & Campus Board',
-    'claims': 'Claim Requests & Handover History',
+    'claims': 'My Gadget Return History',
+    'returns': 'My Gadget Return History',
     'notifications': 'Notifications Center',
     'profile': 'My Student Profile'
   };
@@ -140,7 +152,7 @@ function navigateStudent(screenName) {
 
   // Load screen-specific data
   if (screenName === 'lost-status') loadLostStatusScreen();
-  if (screenName === 'claims') loadClaimsScreen();
+  if (screenName === 'claims') loadClaimsScreen(targetReturnId);
   if (screenName === 'notifications') loadNotificationsFeed();
   if (screenName === 'missing-form') populateMissingFormDropdown();
 }
@@ -167,12 +179,14 @@ async function loadMyGadgetsData() {
     const totalCustody = myGadgetsData.filter(g => g.status === 'FOUND_IN_CUSTODY').length;
     const totalReturned = myGadgetsData.filter(g => g.status === 'RETURNED').length;
 
-    // Fetch user claims count
-    let totalClaims = 0;
+    // Fetch user return history count
+    let totalReturns = 0;
     try {
-      const claimsRes = await api.getMyClaims();
-      totalClaims = (claimsRes && claimsRes.claims) ? claimsRes.claims.length : 0;
-    } catch (e) {}
+      const returnsRes = await api.getReturns();
+      totalReturns = (returnsRes && returnsRes.returns) ? returnsRes.returns.length : 0;
+    } catch (e) {
+      totalReturns = myGadgetsData.filter(g => g.status === 'RETURNED' || g.claimStatus === 'RETURNED').length;
+    }
 
     // Update Dashboard 4 Metric Cards
     const regEl = document.getElementById('stat-registered-val');
@@ -182,7 +196,7 @@ async function loadMyGadgetsData() {
 
     if (regEl) regEl.textContent = totalReg;
     if (misEl) misEl.textContent = totalMissing;
-    if (clmEl) clmEl.textContent = totalClaims;
+    if (clmEl) clmEl.textContent = totalReturns;
     if (retEl) retEl.textContent = totalCustody + totalReturned;
 
     // Update sidebar missing badge
@@ -1170,85 +1184,263 @@ async function loadLostStatusScreen() {
   }
 }
 
-// Claims Screen
-async function loadClaimsScreen() {
-  const claimsContainer = document.getElementById('student-claims-table-container');
-  const returnsContainer = document.getElementById('student-returns-table-container');
+// Return Date & Time Formatter in Philippine Standard Time (PHT)
+function formatReturnDateTime(isoStr) {
+  if (!isoStr) return '—';
+  try {
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return '—';
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Manila',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    }).format(d);
+  } catch (e) {
+    return '—';
+  }
+}
+
+// Return History Screen (Consolidated Single Table)
+async function loadClaimsScreen(openReturnIdOnLoad = null) {
+  const container = document.getElementById('student-returns-table-container');
+  if (!container) return;
 
   try {
-    const claimsRes = await api.getMyClaims();
-    const claims = claimsRes.claims || [];
+    container.innerHTML = `<div style="padding:32px; text-align:center; color:var(--text-muted);"><div class="spinner"></div><div style="margin-top:8px;">Loading Return History...</div></div>`;
 
-    if (claimsContainer) {
-      if (claims.length === 0) {
-        claimsContainer.innerHTML = `<div style="padding:24px; text-align:center; color:var(--text-muted);">No active claim requests submitted.</div>`;
-      } else {
-        claimsContainer.innerHTML = `
-          <table class="clean-table">
-            <thead>
-              <tr>
-                <th>Gadget</th>
-                <th>Proof Details</th>
-                <th>ID Verification</th>
-                <th>Status</th>
-                <th>Submitted Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${claims.map(c => `
-                <tr>
-                  <td>
-                    <div style="font-weight: 700;">${escapeHtml(c.gadget?.brand)} ${escapeHtml(c.gadget?.model)}</div>
-                    <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(c.gadget?.category || '')}</div>
-                  </td>
-                  <td style="max-width: 250px; font-size: 0.825rem; color: var(--text-secondary);">"${escapeHtml(c.claimProofDetails)}"</td>
-                  <td style="font-size: 0.825rem;">${escapeHtml(c.verificationIdType)} (${escapeHtml(c.verificationIdNumber)})</td>
-                  <td>${renderStatusBadge(c.status)}</td>
-                  <td style="font-size: 0.8rem; color: var(--text-muted);">${formatDate(c.claimDate)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        `;
+    const res = await api.getReturns();
+    const rawReturns = (res && res.returns) ? res.returns : [];
+
+    // Deduplicate genuine return records by unique return transaction ID
+    const genuineReturns = [];
+    const seenTxIds = new Set();
+
+    for (const r of rawReturns) {
+      const txId = r.id || r.returnId;
+      if (txId) {
+        if (seenTxIds.has(txId)) continue;
+        seenTxIds.add(txId);
       }
+      genuineReturns.push(r);
     }
 
-    const returnsRes = await api.getReturns();
-    const returns = returnsRes.returns || [];
+    // Sort by return date descending
+    genuineReturns.sort((a, b) => {
+      const timeA = new Date(a.returnDate || a.returnedAt || a.processedAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.returnDate || b.returnedAt || b.processedAt || b.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
 
-    if (returnsContainer) {
-      if (returns.length === 0) {
-        returnsContainer.innerHTML = `<div style="padding:24px; text-align:center; color:var(--text-muted);">No past device returns on record.</div>`;
-      } else {
-        returnsContainer.innerHTML = `
-          <table class="clean-table">
-            <thead>
-              <tr>
-                <th>Receipt ID</th>
-                <th>Returned Device</th>
-                <th>Received By</th>
-                <th>Handover Date</th>
-                <th>OSA Officer</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${returns.map(r => `
-                <tr>
-                  <td class="font-mono" style="font-weight: 700; color: #6d28d9;">${escapeHtml(r.id)}</td>
-                  <td>
-                    <div style="font-weight: 700;">${escapeHtml(r.gadget?.brand)} ${escapeHtml(r.gadget?.model)}</div>
-                  </td>
-                  <td style="font-size: 0.825rem;">${escapeHtml(r.receivedByPersonName)} (${escapeHtml(r.receivedByPersonId)})</td>
-                  <td style="font-size: 0.8rem; color: var(--text-muted);">${formatDate(r.returnDate)}</td>
-                  <td style="font-size: 0.825rem; color: var(--primary); font-weight: 600;">${escapeHtml(r.returnedByAdmin)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        `;
-      }
+    window._studentReturnsList = genuineReturns;
+
+    if (genuineReturns.length === 0) {
+      container.innerHTML = `
+        <div style="padding: 48px 20px; text-align: center; color: var(--text-muted);">
+          <div style="font-size: 2.5rem; margin-bottom: 10px;">📜</div>
+          <div style="font-weight: 700; font-size: 1.05rem; color: #1e293b;">No gadget return records on file.</div>
+          <p style="font-size: 0.825rem; color: #64748b; max-width: 440px; margin: 6px auto 0;">
+            When a missing or turned-in gadget is officially returned to you by the Office of Student Affairs (OSA Room 1109), official return receipts and verified handover details will be recorded here.
+          </p>
+        </div>
+      `;
+      return;
     }
-  } catch (e) {}
+
+    container.innerHTML = `
+      <div style="overflow-x: auto;">
+        <table class="clean-table" style="min-width: 700px;">
+          <thead>
+            <tr>
+              <th style="min-width: 220px;">Gadget</th>
+              <th style="min-width: 190px;">Return Date &amp; Time (PHT)</th>
+              <th style="min-width: 140px;">Status</th>
+              <th class="text-right" style="min-width: 130px;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${genuineReturns.map(r => {
+              const brandModel = `${r.gadget?.brand || ''} ${r.gadget?.model || 'Gadget'}`.trim();
+              const category = r.gadget?.category || '';
+              const color = r.gadget?.color || '';
+              const gadgetId = r.gadgetId || r.gadget?.id || '';
+              const serialNo = r.gadget?.serialNumber || '';
+              const returnDate = r.returnDate || r.returnedAt || r.processedAt || r.createdAt;
+              const formattedDate = formatReturnDateTime(returnDate);
+              const receiptId = r.id || r.returnId || 'RECEIPT';
+
+              return `
+                <tr id="return-row-${escapeHtml(receiptId)}">
+                  <td>
+                    <div style="font-weight: 700; font-size: 0.92rem; color: #0f172a;">${escapeHtml(brandModel)}</div>
+                    <div style="display: flex; gap: 6px; align-items: center; margin-top: 3px; font-size: 0.775rem; color: #64748b;">
+                      ${category ? `<span>${escapeHtml(category)}</span>` : ''}
+                      ${category && color ? `<span>•</span>` : ''}
+                      ${color ? `<span>Color: ${escapeHtml(color)}</span>` : ''}
+                    </div>
+                    ${(gadgetId || serialNo) ? `
+                      <div class="font-mono" style="font-size: 0.72rem; color: #94a3b8; margin-top: 3px;">
+                        ${gadgetId ? `ID: ${escapeHtml(gadgetId)}` : ''}
+                        ${gadgetId && serialNo ? ` • ` : ''}
+                        ${serialNo ? `S/N: ${escapeHtml(serialNo)}` : ''}
+                      </div>
+                    ` : ''}
+                  </td>
+                  <td>
+                    <div style="font-weight: 700; font-size: 0.85rem; color: #1e293b;">
+                      ${formattedDate}
+                    </div>
+                    <div class="font-mono" style="font-size: 0.73rem; color: #059669; font-weight: 600; margin-top: 2px;">
+                      Ref: ${escapeHtml(receiptId)}
+                    </div>
+                  </td>
+                  <td>
+                    <span class="status-badge" style="background: #ecfdf5; color: #047857; font-weight: 800; font-size: 0.74rem; padding: 4px 10px; border: 1px solid #a7f3d0; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
+                      ✓ RETURNED
+                    </span>
+                    <div style="font-size: 0.7rem; color: #059669; font-weight: 600; margin-top: 2px;">Handover Complete</div>
+                  </td>
+                  <td class="text-right">
+                    <button class="btn btn-primary btn-sm" onclick="openStudentReturnReceiptModal('${escapeHtml(receiptId)}')" style="font-size: 0.78rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; background: #142a6d; border-color: #142a6d;">
+                      🧾 View Receipt
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    // Also clear legacy hidden claimsContainer if present to prevent any issues
+    const claimsContainer = document.getElementById('student-claims-table-container');
+    if (claimsContainer && claimsContainer !== container) {
+      claimsContainer.innerHTML = '';
+    }
+
+    if (openReturnIdOnLoad) {
+      openStudentReturnReceiptModal(openReturnIdOnLoad);
+    }
+  } catch (err) {
+    console.error('Error loading student return history:', err);
+    container.innerHTML = `<div style="padding:24px; text-align:center; color:#dc2626;">Failed to load return history records. Please try again.</div>`;
+  }
+}
+
+// Modal: Open Official Return Receipt
+async function openStudentReturnReceiptModal(returnId) {
+  let record = null;
+  if (window._studentReturnsList && window._studentReturnsList.length > 0) {
+    record = window._studentReturnsList.find(r => (r.id === returnId || r.returnId === returnId));
+  }
+
+  if (!record) {
+    try {
+      const res = await api.getReturns();
+      const returns = (res && res.returns) ? res.returns : [];
+      window._studentReturnsList = returns;
+      record = returns.find(r => (r.id === returnId || r.returnId === returnId));
+    } catch (e) {}
+  }
+
+  // If still not found, check if returnId was omitted or passed null/empty, pick first available
+  if (!record && window._studentReturnsList && window._studentReturnsList.length > 0) {
+    record = window._studentReturnsList[0];
+  }
+
+  if (!record) {
+    showToast('error', 'Receipt Not Found', 'Could not locate the requested return receipt.');
+    return;
+  }
+
+  const receiptRef = record.id || record.returnId || 'RET-ACK';
+  const brandModel = `${record.gadget?.brand || ''} ${record.gadget?.model || 'Gadget'}`.trim();
+  const category = record.gadget?.category || 'Electronic Device';
+  const color = record.gadget?.color || 'Standard';
+  const gadgetId = record.gadgetId || record.gadget?.id || '—';
+  const serialNo = record.gadget?.serialNumber || '—';
+  const returnDate = record.returnDate || record.returnedAt || record.processedAt || record.createdAt;
+  const staffName = record.returnedByAdmin || record.returnedByOsaAdminName || record.processedByName || 'OSA Staff';
+  const recipientName = record.receivedByPersonName || record.owner?.name || 'Verified Student Owner';
+  const recipientId = record.receivedByPersonId || record.ownerStudentId || record.owner?.idNumber || 'Verified ID';
+  const notes = record.notes || 'Official gadget return handover completed at OSA Room 1109.';
+  const handoverPhoto = record.handoverPhotoUrl || null;
+
+  // Set modal elements
+  const refEl = document.getElementById('receipt-modal-ref');
+  const gNameEl = document.getElementById('receipt-modal-gadget-name');
+  const gMetaEl = document.getElementById('receipt-modal-gadget-meta');
+  const gIdEl = document.getElementById('receipt-modal-gadget-id');
+  const serialEl = document.getElementById('receipt-modal-serial');
+  const dateEl = document.getElementById('receipt-modal-date');
+  const staffEl = document.getElementById('receipt-modal-staff');
+  const recNameEl = document.getElementById('receipt-modal-recipient-name');
+  const recIdEl = document.getElementById('receipt-modal-recipient-id');
+  const notesEl = document.getElementById('receipt-modal-notes');
+
+  if (refEl) refEl.textContent = receiptRef;
+  if (gNameEl) gNameEl.textContent = brandModel;
+  if (gMetaEl) gMetaEl.textContent = `${category}${color ? ` • Color: ${color}` : ''}`;
+  if (gIdEl) gIdEl.textContent = gadgetId;
+  if (serialEl) serialEl.textContent = serialNo;
+  if (dateEl) dateEl.textContent = formatReturnDateTime(returnDate);
+  if (staffEl) staffEl.textContent = staffName;
+  if (recNameEl) recNameEl.textContent = recipientName;
+  if (recIdEl) recIdEl.textContent = recipientId;
+  if (notesEl) notesEl.textContent = notes;
+
+  const photoImg = document.getElementById('receipt-modal-photo-img');
+  const noPhotoDiv = document.getElementById('receipt-modal-no-photo');
+  const photoCaption = document.getElementById('receipt-modal-photo-caption');
+
+  if (handoverPhoto) {
+    if (photoImg) {
+      photoImg.src = handoverPhoto;
+      photoImg.style.display = 'inline-block';
+    }
+    if (noPhotoDiv) noPhotoDiv.style.display = 'none';
+    if (photoCaption) photoCaption.style.display = 'block';
+  } else {
+    if (photoImg) {
+      photoImg.src = '';
+      photoImg.style.display = 'none';
+    }
+    if (noPhotoDiv) noPhotoDiv.style.display = 'block';
+    if (photoCaption) photoCaption.style.display = 'none';
+  }
+
+  const modal = document.getElementById('student-return-receipt-modal');
+  if (modal) modal.classList.add('active');
+}
+
+// Helper: Open Return Receipt directly from notification
+async function openStudentReturnReceiptForNotif(notif, targetReturnId) {
+  try {
+    const res = await api.getReturns();
+    const returns = (res && res.returns) ? res.returns : [];
+    window._studentReturnsList = returns;
+
+    let match = null;
+    if (targetReturnId) {
+      match = returns.find(r => r.id === targetReturnId || r.returnId === targetReturnId);
+    }
+    if (!match && notif?.gadgetId) {
+      match = returns.find(r => (r.gadgetId === notif.gadgetId || r.gadget?.id === notif.gadgetId));
+    }
+    if (!match && returns.length > 0) {
+      match = returns[0];
+    }
+
+    if (match) {
+      openStudentReturnReceiptModal(match.id);
+    }
+  } catch (e) {
+    console.error('Error opening return receipt from notification:', e);
+  }
 }
 
 // Claims Submit Modal
@@ -1568,6 +1760,27 @@ async function toggleNotificationItem(id, event) {
 }
 
 async function handleNotifActionClick(id, actionTarget) {
+  const notif = (studentNotifsCache || []).find(n => n.id === id);
+  const isReturnNotif = (notif && (notif.type === 'RETURNED_SUCCESS' || (notif.title && notif.title.toLowerCase().includes('returned')))) ||
+                        (actionTarget && (actionTarget.includes('returns') || actionTarget.includes('return')));
+
+  if (isReturnNotif) {
+    let targetReturnId = notif?.returnId;
+    if (!targetReturnId && actionTarget && actionTarget.includes('id=')) {
+      try {
+        const match = actionTarget.match(/id=([a-zA-Z0-9_\-]+)/);
+        if (match) targetReturnId = match[1];
+      } catch (e) {}
+    }
+
+    // Navigate to Return History screen (student-screen-claims)
+    navigateStudent('claims');
+
+    // Automatically open the verified return receipt modal
+    await openStudentReturnReceiptForNotif(notif, targetReturnId);
+    return;
+  }
+
   if (actionTarget === 'chat') {
     navigateStudent('lost-status');
     const myMissingWithFinder = myGadgetsData.find(g => g.status === 'MISSING' && g.finderInfo);
@@ -1586,7 +1799,11 @@ async function handleNotifActionClick(id, actionTarget) {
     navigateStudent('lost-status');
   } else if (actionTarget) {
     let targetHash = actionTarget.split('#')[1] || actionTarget;
+    if (targetHash.includes('?')) {
+      targetHash = targetHash.split('?')[0];
+    }
     if (targetHash === 'scans') targetHash = 'lost-status';
+    if (targetHash === 'returns' || targetHash === 'return-history') targetHash = 'claims';
     if (targetHash.startsWith('/')) targetHash = targetHash.replace(/^\//, '');
     if (targetHash) navigateStudent(targetHash);
   }

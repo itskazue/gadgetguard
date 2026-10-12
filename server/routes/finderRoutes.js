@@ -443,6 +443,16 @@ router.post('/:id/receive', authMiddleware, requireRole('osa_admin'), (req, res)
       return res.status(404).json({ success: false, error: 'Gadget not found for custody intake.' });
     }
 
+    // Backend Idempotency: If gadget and found report are already in OSA custody, return idempotently without duplicate records/logs
+    if (gadget.status === 'FOUND_IN_CUSTODY' && report && report.status === 'IN_OSA_CUSTODY') {
+      return res.json({
+        success: true,
+        message: 'Item is already in OSA custody.',
+        gadget,
+        report
+      });
+    }
+
     const receivedDateIso = new Date().toISOString();
     const finalCustodyLoc = custodyLocation || 'OSA Lost & Found Locker (Room 1109)';
 

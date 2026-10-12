@@ -773,8 +773,8 @@ async function openRejectGadgetModal(gadgetId) {
           text: 'The student has been notified with your reason.',
           confirmButtonColor: '#142a6d'
         });
-        loadPendingApprovals();
-        loadDashboardData();
+        loadApprovalsQueue();
+        loadOsaDashboardStats();
       } catch (err) {
         showToast('error', 'Rejection Error', err.message);
       }
@@ -1525,20 +1525,44 @@ function openReceiveCustodyModal(reportIdOrGadgetId, deviceName = '', ownerName 
   document.getElementById('receive-custody-modal').classList.add('active');
 }
 
+let isReceivingCustodyInFlight = false;
+
 async function handleReceiveCustodySubmit(e) {
   e.preventDefault();
+  if (isReceivingCustodyInFlight) return;
+
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  const originalBtnText = submitBtn ? submitBtn.innerHTML : 'Confirm OSA Receipt';
+
   const reportId = document.getElementById('custody-report-id').value;
   const custodyLocation = document.getElementById('custody-location-input').value.trim();
   const notes = document.getElementById('custody-notes-input').value.trim();
 
   try {
+    isReceivingCustodyInFlight = true;
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span>Processing...</span>';
+    }
+
     await api.receiveIntoCustody(reportId, { custodyLocation, notes });
     showToast('success', 'Item In OSA Custody!', `Moved to ${custodyLocation}. Owner notified to file claim.`);
     closeModal('receive-custody-modal');
-    loadFoundCustodyVault();
-    loadMissingGadgets();
   } catch (err) {
     showToast('error', 'Intake Failed', err.message);
+  } finally {
+    isReceivingCustodyInFlight = false;
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalBtnText;
+    }
+    try {
+      if (typeof loadFoundCustodyVault === 'function') loadFoundCustodyVault();
+      if (typeof loadMissingIncidents === 'function') loadMissingIncidents();
+      if (typeof loadOsaDashboardStats === 'function') loadOsaDashboardStats();
+    } catch (refreshErr) {
+      console.warn('Post-intake refresh notice:', refreshErr);
+    }
   }
 }
 
@@ -1857,24 +1881,37 @@ async function loadReturnedHistory() {
   if (!container) return;
 
   try {
-    const res = await api.getAllClaims();
-    const allClaims = res.claims || [];
-    window._allClaimsData = allClaims;
+    const returnsRes = await api.getReturns();
+    const officialReturns = returnsRes.returns || [];
 
-    // Filter to gadgets whose return process has already been successfully completed
-    const returned = allClaims.filter(c => {
-      return (c.status === 'RETURNED' || c.status === 'CLAIMED' || Boolean(c.returnRecord) || c.gadget?.status === 'RETURNED');
-    });
+    const historyItems = [];
+    const seenTxIds = new Set();
 
-    // Default arrangement: Newest returned records first
-    returned.sort((a, b) => {
+    for (const r of officialReturns) {
+      const txKey = r.id || (r.gadgetId + '_' + (r.returnDate || r.returnedAt));
+      if (!seenTxIds.has(txKey)) {
+        seenTxIds.add(txKey);
+        historyItems.push({
+          ...r,
+          id: r.id,
+          returnReference: r.id,
+          user: r.owner || { name: r.receivedByPersonName, idNumber: r.receivedByPersonId },
+          gadget: r.gadget,
+          handoverPhotoUrl: r.handoverPhotoUrl,
+          processedByName: r.returnedByAdmin,
+          returnDate: r.returnDate
+        });
+      }
+    }
+
+    historyItems.sort((a, b) => {
       const dateA = new Date(a.returnDate || a.returnedAt || a.processedAt || a.createdAt || 0).getTime();
       const dateB = new Date(b.returnDate || b.returnedAt || b.processedAt || b.createdAt || 0).getTime();
       return dateB - dateA;
     });
 
-    window._historyList = returned;
-    updateSidebarBadge('badge-history-count', returned.length);
+    window._historyList = historyItems;
+    updateSidebarBadge('badge-history-count', historyItems.length);
     filterReturnedHistoryTable();
   } catch (e) {
     console.error('Error loading returned history:', e);
@@ -2465,9 +2502,16 @@ function removeHandoverPhoto() {
   if (emptyNotice) emptyNotice.style.display = 'block';
 }
 
+let isDispatchingReturnInFlight = false;
+
 // Submit Handover Dispatch (Section C: Requires Photo Proof)
 async function handleDispatchReturnSubmit(e) {
   e.preventDefault();
+  if (isDispatchingReturnInFlight) return;
+
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  const originalBtnText = submitBtn ? submitBtn.innerHTML : 'Complete Return &amp; Issue Receipt';
+
   const gadgetId = document.getElementById('return-select-gadget').value;
   const claimId = document.getElementById('return-claim-id')?.value || null;
   const receivedByPersonName = document.getElementById('return-recipient-name').value.trim();
@@ -2489,7 +2533,14 @@ async function handleDispatchReturnSubmit(e) {
     return;
   }
 
+  let res;
   try {
+    isDispatchingReturnInFlight = true;
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span>Processing Return...</span>';
+    }
+
     let finalPhotoUrl = handoverPhotoRaw;
 
     // If photo is a base64 string, upload to persistent storage
@@ -2500,7 +2551,7 @@ async function handleDispatchReturnSubmit(e) {
       }
     }
 
-    const res = await api.dispatchReturn({
+    res = await api.dispatchReturn({
       gadgetId,
       claimId,
       receivedByPersonName,
@@ -2528,15 +2579,26 @@ async function handleDispatchReturnSubmit(e) {
       confirmButtonText: 'Great!',
       confirmButtonColor: '#142a6d'
     });
-
-    loadClaimsDesk();
-    loadReturnedHistory();
-    loadFoundCustodyVault();
-    loadMissingGadgets();
-    loadRegisteredGadgets();
-    loadOsaDashboardStats();
   } catch (err) {
     await SwalHelper.error('Return Dispatch Failed', err.message || 'Could not complete gadget return.');
+    return;
+  } finally {
+    isDispatchingReturnInFlight = false;
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalBtnText;
+    }
+  }
+
+  try {
+    if (typeof loadClaimsDesk === 'function') loadClaimsDesk();
+    if (typeof loadReturnedHistory === 'function') loadReturnedHistory();
+    if (typeof loadFoundCustodyVault === 'function') loadFoundCustodyVault();
+    if (typeof loadMissingIncidents === 'function') loadMissingIncidents();
+    if (typeof loadRegisteredVault === 'function') loadRegisteredVault();
+    if (typeof loadOsaDashboardStats === 'function') loadOsaDashboardStats();
+  } catch (refreshErr) {
+    console.warn('Post-return refresh notice:', refreshErr);
   }
 }
 

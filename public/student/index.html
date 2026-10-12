@@ -99,7 +99,7 @@
                 <line x1="16" y1="13" x2="8" y2="13"></line>
                 <line x1="16" y1="17" x2="8" y2="17"></line>
               </svg>
-              <span>Claim Requests</span>
+              <span>Return History</span>
             </div>
           </div>
         </li>
@@ -221,7 +221,7 @@
               <div class="metric-icon-box" style="background: #eff6ff; color: #1d4ed8;">📋</div>
               <div>
                 <div class="metric-value" id="stat-claims-val" style="color: #1d4ed8;">0</div>
-                <div class="metric-label">Claim Requests</div>
+                <div class="metric-label">Return History</div>
               </div>
             </div>
 
@@ -367,26 +367,24 @@
           </div>
         </section>
 
-        <!-- ================= SCREEN 5: CLAIM REQUESTS ================= -->
+        <!-- ================= SCREEN 5: RETURN HISTORY ================= -->
         <section id="student-screen-claims" class="student-screen">
-          <div class="app-card" style="margin-bottom: 24px;">
-            <h3 style="font-weight: 800; font-size: 1.15rem; margin-bottom: 6px;">My Custody Claim Requests</h3>
-            <p class="text-muted" style="font-size: 0.825rem; margin-bottom: 18px;">
-              Track ownership claims submitted for devices turned into the OSA Lost & Found vault.
-            </p>
-
-            <div id="student-claims-table-container">
-              <!-- Populated by JS -->
-            </div>
-          </div>
-
           <div class="app-card">
-            <h3 style="font-weight: 800; font-size: 1.15rem; margin-bottom: 6px;">📜 Handover & Return Receipts</h3>
-            <p class="text-muted" style="font-size: 0.825rem; margin-bottom: 18px;">Verified handover logs for devices safely retrieved from OSA.</p>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <h3 style="font-weight: 800; font-size: 1.15rem; margin-bottom: 4px;">My Gadget Return History</h3>
+                <p class="text-muted" style="font-size: 0.825rem; margin: 0;">
+                  Official handover records and verified return receipts for devices retrieved from the Office of Student Affairs (OSA).
+                </p>
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="loadClaimsScreen()">🔄 Refresh</button>
+            </div>
 
             <div id="student-returns-table-container">
               <!-- Populated by JS -->
             </div>
+            <!-- Hidden placeholder for legacy container references -->
+            <div id="student-claims-table-container" style="display: none;"></div>
           </div>
         </section>
 
@@ -844,6 +842,126 @@
             </button>
           </form>
         </div>
+      </div>
+    </div>
+  <!-- Modal: View Official Return Receipt -->
+  <div id="student-return-receipt-modal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 540px; padding: 0; overflow: hidden; border-radius: 14px;">
+      <!-- Receipt Header Banner -->
+      <div style="background: linear-gradient(135deg, #142a6d 0%, #1e3a8a 100%); color: #ffffff; padding: 20px 24px; position: relative;">
+        <button type="button" class="btn btn-secondary btn-icon" onclick="closeModal('student-return-receipt-modal')" style="position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.15); border: none; color: #ffffff; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.2rem;">&times;</button>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.15); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
+            🧾
+          </div>
+          <div>
+            <div style="font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: #ffc72c; font-weight: 700;">Office of Student Affairs (OSA)</div>
+            <h3 style="margin: 2px 0 0; font-size: 1.2rem; font-weight: 800; color: #ffffff;">Official Gadget Return Receipt</h3>
+            <div style="font-size: 0.78rem; color: #cbd5e1; margin-top: 2px;">Handover &amp; Custody Release Acknowledgment</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Receipt Body -->
+      <div class="modal-body" style="padding: 24px; max-height: 75vh; overflow-y: auto;">
+        
+        <!-- Official Status & Reference Banner -->
+        <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #047857; font-weight: 800;">Receipt Reference</div>
+            <div id="receipt-modal-ref" class="font-mono" style="font-size: 1rem; font-weight: 800; color: #065f46;">RET-0000</div>
+          </div>
+          <span style="background: #10b981; color: #ffffff; font-weight: 800; font-size: 0.75rem; padding: 4px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;">
+            ✓ OFFICIAL RETURN
+          </span>
+        </div>
+
+        <!-- Section 1: Gadget Information -->
+        <div style="margin-bottom: 18px;">
+          <div style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 8px;">
+            📱 Device Information
+          </div>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+              <div>
+                <div id="receipt-modal-gadget-name" style="font-weight: 800; font-size: 1.05rem; color: #0f172a;">Apple MacBook Pro</div>
+                <div id="receipt-modal-gadget-meta" style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">Laptop • Silver</div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase;">Gadget ID</div>
+                <div id="receipt-modal-gadget-id" class="font-mono" style="font-size: 0.8rem; font-weight: 700; color: #142a6d;">gdt_...</div>
+              </div>
+            </div>
+            <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #e2e8f0; font-size: 0.8rem; color: #475569; display: flex; justify-content: space-between;">
+              <span>Serial Number:</span>
+              <span id="receipt-modal-serial" class="font-mono" style="font-weight: 700; color: #0f172a;">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Handover Details -->
+        <div style="margin-bottom: 18px;">
+          <div style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 8px;">
+            🤝 Verified Handover Details
+          </div>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; font-size: 0.825rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+              <span style="color: #64748b;">Return Date &amp; Time (PHT):</span>
+              <span id="receipt-modal-date" style="font-weight: 700; color: #0f172a;">—</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+              <span style="color: #64748b;">Releasing OSA Officer:</span>
+              <span id="receipt-modal-staff" style="font-weight: 700; color: #142a6d;">OSA Staff</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+              <span style="color: #64748b;">Verified Recipient:</span>
+              <span id="receipt-modal-recipient-name" style="font-weight: 700; color: #0f172a;">Student</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+              <span style="color: #64748b;">Recipient Student/Gov ID:</span>
+              <span id="receipt-modal-recipient-id" class="font-mono" style="font-weight: 700; color: #047857;">Verified</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: #64748b;">Handover Location:</span>
+              <span style="font-weight: 600; color: #334155;">OSA Office (Room 1109)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Notes & Handover Remarks -->
+        <div style="margin-bottom: 18px;">
+          <div style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 8px;">
+            📝 Official Remarks &amp; Intake Notes
+          </div>
+          <div id="receipt-modal-notes" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; font-size: 0.825rem; color: #334155; line-height: 1.5; font-style: italic;">
+            Official gadget handover completed at OSA Room 1109.
+          </div>
+        </div>
+
+        <!-- Section 4: Handover Photo Proof -->
+        <div style="margin-bottom: 12px;">
+          <div style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 8px;">
+            📸 Handover Photo Evidence
+          </div>
+          <div id="receipt-modal-photo-container" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center;">
+            <img id="receipt-modal-photo-img" src="" alt="Handover Photo Proof" style="max-height: 200px; max-width: 100%; border-radius: 8px; border: 1.5px solid #10b981; object-fit: contain; box-shadow: 0 2px 6px rgba(0,0,0,0.06); display: none;">
+            <div id="receipt-modal-no-photo" style="font-size: 0.8rem; color: #94a3b8; font-style: italic; padding: 12px;">
+              No handover photo attached to this record.
+            </div>
+            <div id="receipt-modal-photo-caption" style="font-size: 0.72rem; color: #047857; margin-top: 6px; font-weight: 600; display: none;">
+              ✓ Verified physical handover photo captured at OSA Room 1109
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Receipt Footer -->
+      <div class="modal-footer" style="padding: 16px 24px; background: #f8fafc; border-top: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('student-return-receipt-modal')">Close</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="window.print()" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
+          🖨️ Print Receipt
+        </button>
       </div>
     </div>
   </div>

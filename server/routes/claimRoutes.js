@@ -144,11 +144,12 @@ router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
       const returnAdmin = returnRec?.returnedByOsaAdminId ? db.findById('users', returnRec.returnedByOsaAdminId) : null;
       const adminName = c.processedByName || admin?.name || returnAdmin?.name || returnRec?.returnedByOsaAdminName || 'OSA Staff';
       
-      const isReturned = (c.status === 'RETURNED' || c.status === 'CLAIMED' || Boolean(returnRec) || isStaleFromPriorCycle);
+      const isConcludedClaim = (c.status === 'RESOLVED' || c.status === 'REJECTED');
+      const isReturned = !isConcludedClaim && (c.status === 'RETURNED' || c.status === 'CLAIMED' || Boolean(returnRec) || isStaleFromPriorCycle);
       
       // An explicit claim is considered active in-custody only if it has not been returned,
       // is not stale from a concluded cycle, and the physical device is currently confirmed in OSA custody
-      const isInCustody = (!isReturned && !isStaleFromPriorCycle && isGadgetCurrentlyInCustody);
+      const isInCustody = (!isReturned && !isConcludedClaim && !isStaleFromPriorCycle && isGadgetCurrentlyInCustody);
 
       const foundReport = gadget ? db.findOne('found_reports', f => f.gadgetId === gadget.id) : null;
       const dateReceived = gadget?.receivedAtOsaDate || gadget?.custodyReceivedAt || foundReport?.receivedAtOsaDate || foundReport?.foundDate || gadget?.updatedAt || c.createdAt;
@@ -160,7 +161,7 @@ router.get('/', authMiddleware, requireRole('osa_admin'), (req, res) => {
       enrichedClaims.push({
         ...c,
         id: c.id,
-        status: isReturned ? 'RETURNED' : (isInCustody ? 'IN_CUSTODY' : c.status),
+        status: isConcludedClaim ? c.status : (isReturned ? 'RETURNED' : (isInCustody ? 'IN_CUSTODY' : c.status)),
         isInCustody: isInCustody,
         dateReceivedByOsa: dateReceived,
         custodyLocation: vaultLocation,

@@ -327,7 +327,7 @@ const db = {
     return this.insert('audit_logs', log);
   },
 
-  addNotification({ userId, title, message, type, linkUrl }) {
+  addNotification({ userId, title, message, type, linkUrl, ...rest }) {
     const notif = {
       id: 'notif_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
       userId,
@@ -336,6 +336,7 @@ const db = {
       type: type || 'SYSTEM',
       read: false,
       linkUrl: linkUrl || null,
+      ...rest,
       createdAt: new Date().toISOString()
     };
     return this.insert('notifications', notif);
