@@ -313,9 +313,17 @@ const api = {
   },
 
   async rejectGadget(id, reason) {
+    const payload = typeof reason === 'object' ? reason : { reason };
     return await this.request(`/gadgets/${id}/reject`, {
       method: 'POST',
-      body: JSON.stringify({ reason })
+      body: JSON.stringify(payload)
+    });
+  },
+
+  async resubmitGadget(id, data) {
+    return await this.request(`/gadgets/${id}/resubmit`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
     });
   },
 

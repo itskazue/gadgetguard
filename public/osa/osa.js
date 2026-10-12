@@ -744,62 +744,91 @@ async function handleApproveGadget(gadgetId) {
   }
 }
 
-async function openRejectGadgetModal(gadgetId) {
-  if (typeof Swal !== 'undefined') {
-    const { value: reason } = await Swal.fire({
-      title: 'Reject Gadget Registration',
-      input: 'textarea',
-      inputLabel: 'Reason for Rejection (Visible to student):',
-      inputPlaceholder: 'e.g. Serial number does not match receipt, physical inspection failed, duplicate serial...',
-      showCancelButton: true,
-      confirmButtonColor: '#dc2626',
-      cancelButtonColor: '#64748b',
-      confirmButtonText: 'Confirm Rejection',
-      cancelButtonText: 'Cancel',
-      reverseButtons: true,
-      inputValidator: (value) => {
-        if (!value || !value.trim()) {
-          return 'Please provide a reason for the rejection!';
-        }
-      }
-    });
+function handleRejectReasonCategoryChange(val) {
+  const descEl = document.getElementById('reject-category-description');
+  const notesText = document.getElementById('reject-reason-notes');
+  const reqAsterisk = document.getElementById('reject-notes-required');
+  
+  const descriptions = {
+    'Gadget Information Mismatch': 'Submitted brand, model, color, or other information does not match the physical gadget presented during face-to-face verification.',
+    'Incomplete or Incorrect Information': 'Required registration information is missing or incorrect.',
+    'Serial Number / IMEI Mismatch': 'The serial number or IMEI does not match the actual gadget, when applicable.',
+    'Duplicate Registration': 'The same gadget is already registered in the system.',
+    'Other Reason': 'Please enter a clear explanation below for why this registration is being rejected.'
+  };
 
-    if (reason) {
-      try {
-        await api.rejectGadget(gadgetId, reason.trim());
-        Swal.fire({
-          icon: 'info',
-          title: 'Gadget Rejected',
-          text: 'The student has been notified with your reason.',
-          confirmButtonColor: '#142a6d'
-        });
-        loadApprovalsQueue();
-        loadOsaDashboardStats();
-      } catch (err) {
-        showToast('error', 'Rejection Error', err.message);
-      }
+  if (descEl) descEl.textContent = descriptions[val] || '';
+
+  if (val === 'Other Reason') {
+    if (reqAsterisk) reqAsterisk.style.display = 'inline';
+    if (notesText) {
+      notesText.required = true;
+      notesText.placeholder = 'Required: Explain the exact reason for rejection so the student knows what to correct...';
     }
-    return;
+  } else {
+    if (reqAsterisk) reqAsterisk.style.display = 'none';
+    if (notesText) {
+      notesText.required = false;
+      notesText.placeholder = 'Optional: Provide specific feedback to help the student correct their registration...';
+    }
   }
+}
 
-  document.getElementById('reject-gadget-id').value = gadgetId;
-  document.getElementById('reject-reason-text').value = '';
-  document.getElementById('reject-gadget-modal').classList.add('active');
+async function openRejectGadgetModal(gadgetId) {
+  const gadget = (approvalsQueueCache || []).find(g => g.id === gadgetId);
+
+  const idInput = document.getElementById('reject-gadget-id');
+  const nameEl = document.getElementById('reject-gadget-name');
+  const ownerEl = document.getElementById('reject-gadget-owner');
+  const snEl = document.getElementById('reject-gadget-sn');
+  const catSelect = document.getElementById('reject-reason-category');
+  const notesText = document.getElementById('reject-reason-notes');
+  const descEl = document.getElementById('reject-category-description');
+  const reqAsterisk = document.getElementById('reject-notes-required');
+
+  if (idInput) idInput.value = gadgetId;
+  if (nameEl) nameEl.textContent = gadget ? `${gadget.brand} ${gadget.model}` : 'Gadget Registration';
+  if (ownerEl) ownerEl.textContent = gadget?.owner?.name ? `${gadget.owner.name} (${gadget.owner.idNumber || '-'})` : 'Student Owner';
+  if (snEl) snEl.textContent = gadget?.serialNumber || 'N/A';
+  if (catSelect) catSelect.value = '';
+  if (notesText) {
+    notesText.value = '';
+    notesText.required = false;
+  }
+  if (descEl) descEl.textContent = '';
+  if (reqAsterisk) reqAsterisk.style.display = 'none';
+
+  const modal = document.getElementById('reject-gadget-modal');
+  if (modal) modal.classList.add('active');
 }
 
 async function handleRejectGadgetSubmit(e) {
   e.preventDefault();
   const gadgetId = document.getElementById('reject-gadget-id').value;
-  const reason = document.getElementById('reject-reason-text').value.trim();
+  const category = document.getElementById('reject-reason-category').value;
+  const notes = (document.getElementById('reject-reason-notes')?.value || '').trim();
 
-  if (!reason) {
-    await SwalHelper.warning('Reason Required', 'Please provide a valid rejection explanation for audit.');
+  if (!category) {
+    await SwalHelper.warning('Reason Required', 'Please select an official rejection reason category.');
     return;
   }
 
+  if (category === 'Other Reason' && !notes) {
+    await SwalHelper.warning('Explanation Required', 'Please provide a custom explanation in the remarks field for "Other Reason".');
+    document.getElementById('reject-reason-notes')?.focus();
+    return;
+  }
+
+  const finalReason = (notes && notes.trim())
+    ? (category && category !== 'Other Reason' ? `${category}: ${notes.trim()}` : notes.trim())
+    : category;
+
+  const gadget = (approvalsQueueCache || []).find(g => g.id === gadgetId);
+  const gadgetName = gadget ? `${gadget.brand} ${gadget.model}` : 'this gadget';
+
   const confirmReject = await SwalHelper.confirm({
     title: 'Reject Gadget Registration?',
-    text: 'Are you sure you want to reject this registration? The student will be notified.',
+    text: `Are you sure you want to reject the registration for "${gadgetName}"?\n\nReason: "${finalReason}"\n\nThe student will be notified and can edit and resubmit their details.`,
     icon: 'warning',
     confirmText: 'Yes, Confirm Rejection',
     cancelText: 'Cancel',
@@ -809,14 +838,19 @@ async function handleRejectGadgetSubmit(e) {
   if (!confirmReject) return;
 
   try {
-    await api.rejectGadget(gadgetId, reason);
+    await api.rejectGadget(gadgetId, { reason: finalReason, category, notes });
     closeModal('reject-gadget-modal');
-    await SwalHelper.info('Gadget Registration Rejected', 'The student has been notified with your remarks.');
-    loadCurrentOsaScreenData();
+    await SwalHelper.info('Gadget Registration Rejected', 'The student has been notified and can edit and resubmit their registration.');
+    loadApprovalsQueue();
+    loadOsaDashboardStats();
   } catch (err) {
     await SwalHelper.error('Rejection Failed', err.message || 'Could not reject gadget.');
   }
 }
+
+window.handleRejectReasonCategoryChange = handleRejectReasonCategoryChange;
+window.openRejectGadgetModal = openRejectGadgetModal;
+window.handleRejectGadgetSubmit = handleRejectGadgetSubmit;
 
 // 3. Registered Vault
 async function loadRegisteredVault() {

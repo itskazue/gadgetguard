@@ -448,9 +448,17 @@ router.post('/:id/approve', authMiddleware, requireRole('osa_admin'), async (req
 // POST /api/gadgets/:id/reject (OSA Admin rejects gadget)
 router.post('/:id/reject', authMiddleware, requireRole('osa_admin'), (req, res) => {
   try {
-    const { reason } = req.body;
-    if (!reason || !reason.trim()) {
+    const { reason, category, notes } = req.body;
+    const finalReason = (notes && notes.trim())
+      ? (category && category !== 'Other Reason' ? `${category}: ${notes.trim()}` : notes.trim())
+      : (category || reason || '').trim();
+
+    if (!finalReason) {
       return res.status(400).json({ success: false, error: 'Rejection reason is required.' });
+    }
+
+    if (category === 'Other Reason' && (!notes || !notes.trim())) {
+      return res.status(400).json({ success: false, error: 'Custom explanation is required when "Other Reason" is selected.' });
     }
 
     const gadget = db.findById('gadgets', req.params.id);
@@ -458,9 +466,26 @@ router.post('/:id/reject', authMiddleware, requireRole('osa_admin'), (req, res) 
       return res.status(404).json({ success: false, error: 'Gadget not found.' });
     }
 
+    const reviewHistory = Array.isArray(gadget.reviewHistory) ? [...gadget.reviewHistory] : [];
+    reviewHistory.push({
+      action: 'REJECTED',
+      reason: finalReason,
+      category: category || 'Other Reason',
+      notes: notes ? notes.trim() : '',
+      reviewerId: req.user.id,
+      reviewerName: req.user.name,
+      date: new Date().toISOString()
+    });
+
     const updated = db.update('gadgets', gadget.id, {
       status: 'REJECTED',
-      rejectionReason: reason.trim()
+      rejectionReason: finalReason,
+      rejectionCategory: category || null,
+      rejectionNotes: notes ? notes.trim() : null,
+      rejectedAt: new Date().toISOString(),
+      rejectedBy: req.user.id,
+      rejectedByName: req.user.name,
+      reviewHistory
     });
 
     db.addAuditLog({
@@ -469,7 +494,7 @@ router.post('/:id/reject', authMiddleware, requireRole('osa_admin'), (req, res) 
       action: 'REJECT_GADGET',
       targetType: 'gadget',
       targetId: gadget.id,
-      details: `Rejected gadget: ${gadget.brand} ${gadget.model}. Reason: ${reason.trim()}`,
+      details: `Rejected gadget: ${gadget.brand} ${gadget.model}. Reason: ${finalReason}`,
       ipAddress: req.ip
     });
 
@@ -477,7 +502,7 @@ router.post('/:id/reject', authMiddleware, requireRole('osa_admin'), (req, res) 
     db.addNotification({
       userId: gadget.userId,
       title: 'Gadget Registration Rejected ⚠️',
-      message: `Your registration for ${gadget.brand} ${gadget.model} was rejected by OSA. Reason: ${reason.trim()}`,
+      message: `Your registration for ${gadget.brand} ${gadget.model} was rejected by OSA.\nReason: ${finalReason}\n\nYou can edit your gadget details and resubmit for verification in the Student Portal.`,
       type: 'REGISTRATION_REJECTED',
       linkUrl: `/student/#gadgets`
     });
@@ -488,9 +513,119 @@ router.post('/:id/reject', authMiddleware, requireRole('osa_admin'), (req, res) 
       gadget: updated
     });
   } catch (err) {
+    console.error('Reject gadget error:', err);
     return res.status(500).json({ success: false, error: 'Error rejecting gadget.' });
   }
 });
+
+// PUT /api/gadgets/:id/resubmit (Student edits and resubmits rejected gadget)
+const handleResubmit = async (req, res) => {
+  try {
+    const gadget = db.findById('gadgets', req.params.id);
+    if (!gadget) {
+      return res.status(404).json({ success: false, error: 'Gadget not found.' });
+    }
+
+    // Security: Students must only edit their own registrations
+    if (gadget.userId !== req.user.id) {
+      return res.status(403).json({ success: false, error: 'Unauthorized. You can only edit your own gadget registrations.' });
+    }
+
+    // Only rejected registrations can be edited and resubmitted via this workflow
+    if (gadget.status !== 'REJECTED') {
+      return res.status(400).json({ success: false, error: 'Only rejected registrations can be edited and resubmitted.' });
+    }
+
+    const { category, brand, model, serialNumber, color, description, photoUrl } = req.body;
+
+    if (!brand || !brand.trim()) {
+      return res.status(400).json({ success: false, error: 'Brand is required.' });
+    }
+    if (!model || !model.trim()) {
+      return res.status(400).json({ success: false, error: 'Model is required.' });
+    }
+
+    // Check serial conflict if updated
+    if (serialNumber && serialNumber.trim() && !serialNumber.startsWith('NO-SN-')) {
+      const sn = serialNumber.trim().toLowerCase();
+      const existingConflict = db.findOne('gadgets', g =>
+        g.id !== gadget.id &&
+        g.serialNumber &&
+        g.serialNumber.trim().toLowerCase() === sn &&
+        g.status !== 'REJECTED'
+      );
+      if (existingConflict) {
+        return res.status(400).json({ success: false, error: 'Another approved or registered device with this serial number already exists.' });
+      }
+    }
+
+    // Preserve original review history and audit trail
+    const reviewHistory = Array.isArray(gadget.reviewHistory) ? [...gadget.reviewHistory] : [];
+    reviewHistory.push({
+      action: 'RESUBMITTED',
+      previousData: {
+        category: gadget.category,
+        brand: gadget.brand,
+        model: gadget.model,
+        serialNumber: gadget.serialNumber,
+        color: gadget.color,
+        description: gadget.description,
+        status: gadget.status
+      },
+      previousRejectionReason: gadget.rejectionReason,
+      date: new Date().toISOString()
+    });
+
+    const finalSn = (serialNumber && serialNumber.trim())
+      ? serialNumber.trim()
+      : (gadget.serialNumber && !gadget.serialNumber.startsWith('NO-SN-') ? gadget.serialNumber : `NO-SN-${Date.now().toString(36).toUpperCase()}`);
+
+    // Update the SAME gadget record in-place
+    const updated = db.update('gadgets', gadget.id, {
+      category: category || gadget.category,
+      brand: brand.trim(),
+      model: model.trim(),
+      serialNumber: finalSn,
+      color: color ? color.trim() : (gadget.color || 'Standard'),
+      description: description !== undefined ? description.trim() : (gadget.description || ''),
+      photoUrl: photoUrl || gadget.photoUrl,
+      status: 'PENDING_APPROVAL',
+      rejectionReason: null,
+      lastResubmittedAt: new Date().toISOString(),
+      reviewHistory
+    });
+
+    db.addAuditLog({
+      userId: req.user.id,
+      userRole: req.user.role,
+      action: 'RESUBMIT_GADGET',
+      targetType: 'gadget',
+      targetId: gadget.id,
+      details: `Student resubmitted gadget registration: ${updated.brand} ${updated.model} (S/N: ${updated.serialNumber})`,
+      ipAddress: req.ip
+    });
+
+    db.addNotification({
+      userId: req.user.id,
+      title: 'Registration Resubmitted for Review 📝',
+      message: `Your updated registration for ${updated.brand} ${updated.model} has been submitted to OSA for verification.`,
+      type: 'SYSTEM',
+      linkUrl: '/student/#gadgets'
+    });
+
+    return res.json({
+      success: true,
+      message: 'Gadget registration resubmitted for OSA review successfully.',
+      gadget: updated
+    });
+  } catch (err) {
+    console.error('Resubmit gadget error:', err);
+    return res.status(500).json({ success: false, error: 'Server error resubmitting gadget.' });
+  }
+};
+
+router.put('/:id/resubmit', authMiddleware, handleResubmit);
+router.post('/:id/resubmit', authMiddleware, handleResubmit);
 
 // PATCH /api/gadgets/:id/photo (Student or OSA updates or removes gadget photo/proof)
 router.patch('/:id/photo', authMiddleware, (req, res) => {

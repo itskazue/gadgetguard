@@ -305,8 +305,9 @@ function filterStudentGadgets(status) {
 }
 
 function createGadgetCardHtml(g) {
+  const isRejected = g.status === 'REJECTED';
   return `
-    <div class="gadget-item-card">
+    <div class="gadget-item-card ${isRejected ? 'rejected-card' : ''}">
       <div class="gadget-item-img-box">
         <img src="${g.photoUrl || 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500'}" alt="${escapeHtml(g.model)}" class="gadget-item-img">
         <div class="gadget-item-status-pill">
@@ -322,8 +323,18 @@ function createGadgetCardHtml(g) {
         <div>
           <span class="gadget-item-sn">S/N: ${escapeHtml(g.serialNumber)}</span>
         </div>
-        <div class="gadget-item-footer">
-          <span style="font-size: 0.75rem; color: var(--text-dim);">${formatDate(g.registrationDate).split(',')[0]}</span>
+        ${isRejected ? `
+          <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 6px 10px; font-size: 0.76rem; color: #991b1b; margin-top: 6px; line-height: 1.4;">
+            <strong>Reason:</strong> ${escapeHtml(g.rejectionReason || 'Registration rejected by OSA')}
+          </div>
+        ` : ''}
+        <div class="gadget-item-footer" style="gap: 6px; flex-wrap: wrap;">
+          <span style="font-size: 0.75rem; color: var(--text-dim); margin-right: auto;">${formatDate(g.registrationDate).split(',')[0]}</span>
+          ${isRejected ? `
+            <button class="btn btn-primary btn-sm" onclick="openEditResubmitGadgetModal('${g.id}')" style="background: #b91c1c; border-color: #b91c1c; font-weight: 700;">
+              ✏️ Edit & Resubmit
+            </button>
+          ` : ''}
           <button class="btn btn-secondary btn-sm" onclick="openGadgetDetailsModal('${g.id}')">
             View Details →
           </button>
@@ -483,6 +494,34 @@ function openGadgetDetailsModal(gadgetId) {
         </div>
       </div>
     `;
+  } else if (gadget.status === 'REJECTED') {
+    actionHtml += `
+      <div style="background: #fef2f2; border: 1.5px solid #fca5a5; border-radius: var(--radius-md); padding: 16px; font-size: 0.85rem; color: #991b1b; text-align: left;">
+        <div style="font-weight: 800; font-size: 0.95rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 6px; color: #b91c1c;">
+            <span>⚠️</span> <strong>Registration Rejected by OSA</strong>
+          </div>
+          <span style="background: #fee2e2; color: #991b1b; font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; border: 1px solid #fca5a5;">
+            REJECTED
+          </span>
+        </div>
+        <div style="background: #ffffff; border: 1px solid #fecaca; border-radius: 8px; padding: 12px; margin-bottom: 12px; line-height: 1.6; color: #374151;">
+          <div style="color: #991b1b; font-weight: 700; margin-bottom: 4px;">📋 Official Rejection Reason:</div>
+          <div style="font-size: 0.84rem; color: #111827; background: #fff5f5; border-left: 3px solid #ef4444; padding: 8px 10px; border-radius: 4px; font-weight: 600;">
+            ${escapeHtml(gadget.rejectionReason || 'Registration details rejected during verification.')}
+          </div>
+          ${gadget.rejectedByName ? `<div style="font-size: 0.78rem; color: #6b7280; margin-top: 6px;">Reviewed by: <strong>${escapeHtml(gadget.rejectedByName)}</strong> (OSA Staff)${gadget.rejectedAt ? ' on ' + formatDate(gadget.rejectedAt) : ''}</div>` : ''}
+        </div>
+        <div style="font-size: 0.8rem; color: #7f1d1d; margin-bottom: 12px; line-height: 1.45;">
+          💡 <strong>What should I do?</strong> You can correct your brand, model, serial number, or other registration information and resubmit this same device for OSA review.
+        </div>
+        <div>
+          <button type="button" class="btn btn-primary btn-sm" onclick="closeModal('gadget-details-modal'); openEditResubmitGadgetModal('${gadget.id}')" style="background: #b91c1c; border-color: #b91c1c; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+            ✏️ Edit & Resubmit Device Details
+          </button>
+        </div>
+      </div>
+    `;
   }
 
   // Allow updating device photo / proof of ownership anytime
@@ -577,6 +616,117 @@ async function handleRemovePhotoSubmit() {
     await SwalHelper.error('Error', err.message || 'Error removing photo.');
   }
 }
+
+// Edit & Resubmit Rejected Gadget Modal & Form Handlers
+async function openEditResubmitGadgetModal(gadgetId) {
+  let gadget = myGadgetsData.find(g => g.id === gadgetId);
+  if (!gadget) {
+    try {
+      const res = await api.getGadgetById(gadgetId);
+      if (res && res.gadget) gadget = res.gadget;
+    } catch (e) {
+      console.warn('Could not fetch gadget details:', e);
+    }
+  }
+
+  if (!gadget) {
+    await SwalHelper.error('Error', 'Gadget record could not be loaded.');
+    return;
+  }
+
+  if (gadget.status !== 'REJECTED') {
+    await SwalHelper.warning('Not Rejected', 'Only rejected gadget registrations can be edited and resubmitted.');
+    return;
+  }
+
+  const idInput = document.getElementById('edit-resubmit-gadget-id');
+  const reasonEl = document.getElementById('edit-resubmit-rejection-reason');
+  const catInput = document.getElementById('edit-resubmit-category');
+  const brandInput = document.getElementById('edit-resubmit-brand');
+  const modelInput = document.getElementById('edit-resubmit-model');
+  const serialInput = document.getElementById('edit-resubmit-serial');
+  const colorInput = document.getElementById('edit-resubmit-color');
+  const descInput = document.getElementById('edit-resubmit-desc');
+
+  if (idInput) idInput.value = gadget.id;
+  if (reasonEl) reasonEl.textContent = gadget.rejectionReason || 'Registration details rejected during verification.';
+  if (catInput) catInput.value = gadget.category || 'Laptop';
+  if (brandInput) brandInput.value = gadget.brand || '';
+  if (modelInput) modelInput.value = gadget.model || '';
+  if (serialInput) serialInput.value = (gadget.serialNumber && !gadget.serialNumber.startsWith('NO-SN-')) ? gadget.serialNumber : '';
+  if (colorInput) colorInput.value = (gadget.color && gadget.color !== 'Standard') ? gadget.color : '';
+  if (descInput) descInput.value = gadget.description || '';
+
+  const modal = document.getElementById('edit-resubmit-gadget-modal');
+  if (modal) modal.classList.add('active');
+}
+
+async function handleEditResubmitGadgetSubmit(e) {
+  e.preventDefault();
+  const gadgetId = document.getElementById('edit-resubmit-gadget-id')?.value;
+  if (!gadgetId) return;
+
+  const category = document.getElementById('edit-resubmit-category')?.value;
+  const brand = (document.getElementById('edit-resubmit-brand')?.value || '').trim();
+  const model = (document.getElementById('edit-resubmit-model')?.value || '').trim();
+  const serialNumber = (document.getElementById('edit-resubmit-serial')?.value || '').trim();
+  const color = (document.getElementById('edit-resubmit-color')?.value || '').trim();
+  const description = (document.getElementById('edit-resubmit-desc')?.value || '').trim();
+
+  if (!brand || !model) {
+    await SwalHelper.warning('Missing Information', 'Please provide both Brand and Model.');
+    return;
+  }
+
+  const confirmed = await SwalHelper.confirm({
+    title: 'Resubmit Gadget Registration?',
+    text: `Are you ready to resubmit "${brand} ${model}" for OSA verification? Its status will return to Pending Approval.`,
+    icon: 'question',
+    confirmText: 'Yes, Resubmit for Review',
+    cancelText: 'Cancel'
+  });
+
+  if (!confirmed) return;
+
+  const submitBtn = document.querySelector('#edit-resubmit-gadget-modal button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Resubmitting...';
+  }
+
+  try {
+    const res = await api.resubmitGadget(gadgetId, {
+      category,
+      brand,
+      model,
+      serialNumber,
+      color,
+      description
+    });
+
+    if (res && res.success) {
+      closeModal('edit-resubmit-gadget-modal');
+      await SwalHelper.success(
+        'Resubmitted Successfully! 🎉',
+        'Your updated gadget registration has been submitted back to OSA for verification. Its status is now Pending Approval.'
+      );
+      await loadMyGadgetsData();
+      navigateStudent('gadgets');
+    } else {
+      await SwalHelper.error('Resubmission Failed', res?.error || 'Unable to resubmit registration.');
+    }
+  } catch (err) {
+    await SwalHelper.error('Resubmission Error', err.message || 'Error resubmitting gadget registration.');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Review & Resubmit';
+    }
+  }
+}
+
+window.openEditResubmitGadgetModal = openEditResubmitGadgetModal;
+window.handleEditResubmitGadgetSubmit = handleEditResubmitGadgetSubmit;
 
 // Student Change Password Handler
 async function handleStudentChangePasswordSubmit(e) {
