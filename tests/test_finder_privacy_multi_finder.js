@@ -620,7 +620,7 @@ async function run() {
     const deviceHtml = fs.readFileSync(path.join(__dirname, '..', 'public', 'device', 'index.html'), 'utf8');
     assert(deviceHtml.includes('clearFinderSession('), 'device/index.html contains clearFinderSession function');
     assert(deviceHtml.includes('endFinderSessionOnDevice('), 'device/index.html contains endFinderSessionOnDevice function');
-    assert(deviceHtml.includes('End / Leave Session on This Device') || deviceHtml.includes('End Session on This Device'), 'device/index.html includes End Session button');
+    assert(!deviceHtml.includes('End / Leave Session on This Device'), 'device/index.html removed End / Leave Session button from main interface');
 
     // Verify student.js multi-finder rendering
     const studentJs = fs.readFileSync(path.join(__dirname, '..', 'public', 'student', 'student.js'), 'utf8');
@@ -936,9 +936,9 @@ async function run() {
     assert(pollInactive2.statusCode === 401, 'Passive GET poll 2 on inactive session still returns 401 (cannot bypass timeout via background polls)');
 
     // 8.8 Frontend UI Security Contracts Verification (Requirements 1, 4)
-    assert(deviceHtml.includes('startSeparateFinderSession'), 'device/index.html includes startSeparateFinderSession');
+    assert(deviceHtml.includes('startSeparateFinderSession'), 'device/index.html includes startSeparateFinderSession function');
     assert(deviceHtml.includes('api.endFinderSession'), 'device/index.html calls api.endFinderSession');
-    assert(deviceHtml.includes('I am a Different Finder'), 'device/index.html includes Different Finder session switching button');
+    assert(!deviceHtml.includes('I am a Different Finder'), 'device/index.html removed Different Finder button from main interface');
     assert(deviceHtml.includes('resumeInactiveFinderSession'), 'device/index.html includes resumeInactiveFinderSession');
     assert(deviceHtml.includes('Session Cleared Locally (Device Offline)'), 'device/index.html handles offline end-session failure honestly');
 

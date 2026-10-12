@@ -1176,12 +1176,19 @@
             window.__activeFinderSession = null;
           }
         } else if (res.gadget && res.gadget.status === 'MISSING') {
-          // Check if local session exists specifically for this gadget + current missing report
-          const sessionByGadget = getFinderSession(token, res.gadget.id, currentMissingId);
-          if (sessionByGadget && sessionByGadget.gadgetId === res.gadget.id && !sessionByGadget.isClosed && (!sessionByGadget.missingReportId || sessionByGadget.missingReportId === currentMissingId)) {
-            window.__activeFinderSession = sessionByGadget;
-          } else {
+          // If a finderToken was supplied to the backend but was not verified as active (e.g. revoked or expired),
+          // prune the stale local credential safely so user sees normal public missing options
+          if (lookupParams.finderToken) {
+            clearFinderSession(token, res.gadget.id, currentMissingId);
             window.__activeFinderSession = null;
+          } else {
+            // Check if local session exists specifically for this gadget + current missing report
+            const sessionByGadget = getFinderSession(token, res.gadget.id, currentMissingId);
+            if (sessionByGadget && sessionByGadget.gadgetId === res.gadget.id && !sessionByGadget.isClosed && (!sessionByGadget.missingReportId || sessionByGadget.missingReportId === currentMissingId)) {
+              window.__activeFinderSession = sessionByGadget;
+            } else {
+              window.__activeFinderSession = null;
+            }
           }
         } else {
           window.__activeFinderSession = null;
@@ -1469,14 +1476,8 @@
               <div class="finder-closed-notice">
                 ✓ This gadget has been marked recovered or returned. Your conversation is closed and saved as read-only.
               </div>
-              <button type="button" class="btn-qr-action btn-qr-outline" style="margin-top: 12px; margin-bottom: 8px;" onclick="resumeSavedFinderChat(true)">
+              <button type="button" class="btn-qr-action btn-qr-outline" style="margin-top: 12px; margin-bottom: 0;" onclick="resumeSavedFinderChat(true)">
                 💬 View Closed Conversation (Read-Only)
-              </button>
-              <button type="button" class="btn-qr-action btn-qr-subtle" style="margin-bottom: 8px; font-size: 0.84rem; color: #1e3a8a; background: #f0f9ff; border: 1.5px dashed #7dd3fc; font-weight: 700;" onclick="startSeparateFinderSession()">
-                🆕 I am a Different Finder (Start Separate Report)
-              </button>
-              <button type="button" class="btn-qr-action btn-qr-subtle" style="margin-bottom: 0; font-size: 0.82rem; color: #64748b; background: transparent; border: 1px solid #cbd5e1;" onclick="endFinderSessionOnDevice()">
-                🚪 End / Leave Session on This Device
               </button>
             ` : `
               <div class="finder-active-notice">
@@ -1485,14 +1486,8 @@
               <button type="button" class="btn-qr-action btn-qr-emerald" style="margin-top: 12px; margin-bottom: 8px;" onclick="resumeSavedFinderChat(false)">
                 💬 Continue Conversation
               </button>
-              <button type="button" class="btn-qr-action btn-qr-subtle" style="margin-bottom: 8px;" onclick="handleKeepSafeToSurrenderTransition()">
+              <button type="button" class="btn-qr-action btn-qr-subtle" style="margin-bottom: 0;" onclick="handleKeepSafeToSurrenderTransition()">
                 🏢 I Will Surrender It to OSA Instead
-              </button>
-              <button type="button" class="btn-qr-action btn-qr-subtle" style="margin-bottom: 8px; font-size: 0.84rem; color: #1e3a8a; background: #f0f9ff; border: 1.5px dashed #7dd3fc; font-weight: 700;" onclick="startSeparateFinderSession()">
-                🆕 I am a Different Finder (Start Separate Session)
-              </button>
-              <button type="button" class="btn-qr-action btn-qr-subtle" style="margin-bottom: 0; font-size: 0.82rem; color: #64748b; background: transparent; border: 1px solid #cbd5e1;" onclick="endFinderSessionOnDevice()">
-                🚪 End / Leave Session on This Device
               </button>
             `}
           </div>
@@ -1882,13 +1877,7 @@
             <div>NCST Main Campus</div>
           </div>
 
-          <div style="margin-top: 14px; text-align: center;">
-            <button type="button" class="btn btn-secondary btn-sm" onclick="endFinderSessionOnDevice()" style="font-size: 0.8rem; padding: 6px 14px; display: inline-flex; align-items: center; gap: 6px;">
-              🚪 End Session on This Device
-            </button>
-          </div>
-
-          <div style="margin-top: 12px; font-size: 0.76rem; color: #64748b; text-align: center;">
+          <div style="margin-top: 14px; font-size: 0.76rem; color: #64748b; text-align: center;">
             🔒 Privacy Protected: Personal contact numbers and private account information are kept strictly confidential.
           </div>
         </div>
