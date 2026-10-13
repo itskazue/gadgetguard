@@ -1381,51 +1381,70 @@ async function loadLostStatusScreen(openGadgetIdOnLoad = null) {
           const staffName = g.receivedByOsaStaffName || 'OSA Officer';
 
           return `
-            <div id="lost-gadget-${g.id}" class="lost-gadget-card in-custody" style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: var(--radius-md); padding: 18px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 2px 8px rgba(22,101,52,0.05);">
-              <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
-                <div>
-                  <div style="font-weight: 800; font-size: 1.05rem; color: #166534; display: flex; align-items: center; gap: 8px;">
-                    <span>🏢</span> ${escapeHtml(g.brand)} ${escapeHtml(g.model)}
+            <div id="lost-gadget-${g.id}" class="lost-gadget-card in-custody" data-gadget-id="${g.id}">
+              <div class="lost-gadget-summary">
+                <div class="lost-gadget-info">
+                  <div class="lost-gadget-title">
+                    <span class="custody-office-icon" aria-hidden="true">🏢</span>
+                    <span class="lost-gadget-name">${escapeHtml(g.brand)} ${escapeHtml(g.model)}</span>
                   </div>
-                  <div style="font-size: 0.82rem; color: #15803d; margin-top: 2px;">
-                    S/N: <code>${escapeHtml(g.serialNumber || '—')}</code> • Category: ${escapeHtml(g.category || 'Device')}
+                  <div class="lost-gadget-meta">
+                    <span class="gadget-meta-item">S/N: <code>${escapeHtml(g.serialNumber || '—')}</code></span>
+                    <span class="gadget-meta-bullet">•</span>
+                    <span class="gadget-meta-item">Category: ${escapeHtml(g.category || 'Device')}</span>
                   </div>
-                  <div style="font-size: 0.78rem; color: #166534; font-weight: 700; margin-top: 4px;">
-                    🟢 Current Custody Status: In OSA Custody (Ready for Physical Claim)
+                  <div class="lost-gadget-status-badge in-custody">
+                    <span class="status-indicator-dot" aria-hidden="true">🟢</span>
+                    <span>In OSA Custody (Ready for Physical Claim)</span>
                   </div>
                 </div>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                  <button class="btn btn-primary btn-sm" onclick="openGadgetDetailsModal('${g.id}')" style="background: #0284c7; border-color: #0284c7; font-weight: 700;">
+                <div class="lost-gadget-actions">
+                  <button type="button" class="btn btn-primary btn-sm" onclick="openGadgetDetailsModal('${g.id}')">
                     View Details & Pickup Info
+                  </button>
+                  <button type="button" 
+                          class="btn btn-secondary btn-sm btn-custody-toggle" 
+                          id="btn-toggle-custody-${g.id}" 
+                          aria-expanded="false" 
+                          aria-controls="custody-details-${g.id}"
+                          onclick="toggleCustodyCardDetails('${g.id}')">
+                    <span class="toggle-text">Pickup Instructions</span>
+                    <span class="custody-chevron" aria-hidden="true">▼</span>
                   </button>
                 </div>
               </div>
 
-              <!-- Custody & Pickup Instructions Banner -->
-              <div style="background: #ffffff; border: 1px solid #bbf7d0; border-radius: 10px; padding: 16px; font-size: 0.84rem; color: #166534; line-height: 1.6;">
-                <div style="font-weight: 800; font-size: 0.92rem; color: #15803d; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-                  <div style="display: flex; align-items: center; gap: 6px;">
-                    <span>🌟</span> Your Gadget is Safely Secured in OSA Custody!
+              <!-- Collapsible Custody & Pickup Instructions Banner -->
+              <div id="custody-details-${g.id}" 
+                   class="custody-collapsible-content" 
+                   role="region" 
+                   aria-labelledby="btn-toggle-custody-${g.id}" 
+                   style="display: none;">
+                <div class="custody-details-banner">
+                  <div class="custody-banner-header">
+                    <div class="custody-banner-title">
+                      <span aria-hidden="true">🌟</span> Your Gadget is Safely Secured in OSA Custody!
+                    </div>
+                    <span class="custody-pickup-badge">
+                      AVAILABLE FOR PICKUP
+                    </span>
                   </div>
-                  <span style="background: #dcfce7; color: #166534; font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; border: 1px solid #86efac; text-transform: uppercase;">
-                    AVAILABLE FOR PICKUP
-                  </span>
-                </div>
-                <div style="display: grid; gap: 4px; font-size: 0.82rem; color: #374151; margin-bottom: 10px;">
-                  <div>🏢 <strong>Custody Location:</strong> ${escapeHtml(custodyLoc)}</div>
-                  ${receivedDateFormatted ? `<div>📅 <strong>Turnover Received:</strong> ${receivedDateFormatted}</div>` : ''}
-                  ${staffName ? `<div>👤 <strong>Received By:</strong> ${escapeHtml(staffName)} (OSA Staff)</div>` : ''}
-                </div>
-                <div style="padding-top: 10px; border-top: 1px dashed #bbf7d0;">
-                  <strong style="color: #15803d; font-size: 0.85rem;">📋 How to Claim Your Gadget:</strong>
-                  <ol style="margin: 6px 0 0 18px; padding: 0; color: #374151; font-size: 0.82rem; line-height: 1.55;">
-                    <li>Proceed to the <strong>Office of Student Affairs (Room 1109)</strong> during office hours.</li>
-                    <li>Present your <strong>physical Student ID card</strong> to verify identity and gadget ownership.</li>
-                    <li>Inspect your device on-site and sign the physical return release acknowledgment.</li>
-                  </ol>
-                </div>
-                <div style="margin-top: 10px; font-size: 0.76rem; color: #64748b; font-style: italic;">
-                  ℹ️ Notice: This gadget is currently held in OSA custody and has NOT been returned yet. Your official return receipt will be recorded once physical handover is completed.
+                  <div class="custody-meta-grid">
+                    <div>🏢 <strong>Custody Location:</strong> ${escapeHtml(custodyLoc)}</div>
+                    ${receivedDateFormatted ? `<div>📅 <strong>Turnover Received:</strong> ${receivedDateFormatted}</div>` : ''}
+                    ${staffName ? `<div>👤 <strong>Received By:</strong> ${escapeHtml(staffName)} (OSA Staff)</div>` : ''}
+                  </div>
+                  <div class="custody-steps-box">
+                    <strong>📋 How to Claim Your Gadget:</strong>
+                    <ol>
+                      <li>Proceed to the <strong>Office of Student Affairs (Room 1109)</strong> during office hours.</li>
+                      <li>Present your <strong>physical Student ID card</strong> to verify identity and gadget ownership.</li>
+                      <li>Inspect your device on-site and sign the physical return release acknowledgment.</li>
+                    </ol>
+                  </div>
+                  <div class="custody-warning-notice">
+                    ℹ️ Notice: This gadget is currently held in OSA custody and has NOT been returned yet. Your official return receipt will be recorded once physical handover is completed.
+                  </div>
                 </div>
               </div>
             </div>
@@ -1438,11 +1457,11 @@ async function loadLostStatusScreen(openGadgetIdOnLoad = null) {
         let scansListHtml = '';
         if (scansCount > 0) {
           scansListHtml = `
-            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed #fecaca; width: 100%;">
-              <div style="font-weight: 700; font-size: 0.8rem; color: #991b1b; margin-bottom: 6px;">📍 Recent QR Scan Alerts (${scansCount}):</div>
-              <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div class="lost-gadget-scans-feed">
+              <div class="lost-gadget-scans-header">📍 Recent QR Scan Alerts (${scansCount}):</div>
+              <div class="scan-alerts-list">
                 ${scansForGadget.map(s => `
-                  <div style="background: #ffffff; border: 1px solid #fed7aa; border-radius: 8px; padding: 8px 12px; font-size: 0.78rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+                  <div class="scan-alert-item">
                     <div>
                       <strong style="color: #b91c1c;">📍 ${escapeHtml(s.scanLocationNote || 'Location unavailable')}</strong>
                       ${s.locationSource === 'GPS' ? '<span style="background:#ecfdf5; color:#047857; font-size:0.68rem; font-weight:700; border:1px solid #a7f3d0; border-radius:4px; padding:1px 5px; margin-left:6px;">GPS</span>' : (s.locationSource === 'IP' ? '<span style="background:#eff6ff; color:#1e40af; font-size:0.68rem; font-weight:700; border:1px solid #bfdbfe; border-radius:4px; padding:1px 5px; margin-left:6px;">Estimated Area</span>' : '')}
@@ -1549,18 +1568,25 @@ async function loadLostStatusScreen(openGadgetIdOnLoad = null) {
         }
 
         return `
-          <div id="lost-gadget-${g.id}" class="lost-gadget-card missing" style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: var(--radius-md); padding: 18px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
-              <div>
-                <div style="font-weight: 800; font-size: 1.05rem; color: #b91c1c;">${escapeHtml(g.brand)} ${escapeHtml(g.model)}</div>
-                <div style="font-size: 0.82rem; color: #7f1d1d; margin-top: 2px;">
-                  📍 Last Seen: ${escapeHtml(g.missingReport?.lastSeenLocation || 'Campus')}
+          <div id="lost-gadget-${g.id}" class="lost-gadget-card missing" data-gadget-id="${g.id}">
+            <div class="lost-gadget-summary">
+              <div class="lost-gadget-info">
+                <div class="lost-gadget-title">
+                  <span class="missing-alert-icon" aria-hidden="true">🚨</span>
+                  <span class="lost-gadget-name">${escapeHtml(g.brand)} ${escapeHtml(g.model)}</span>
                 </div>
-                <div style="font-size: 0.78rem; color: #991b1b; font-weight: 700; margin-top: 4px;">
-                  ${isAwaitingOsaHandover ? '🟡 Status: Awaiting OSA Handover' : '🔴 Public Missing Alert: Active'} • Scans: ${scansCount}
+                <div class="lost-gadget-meta">
+                  <span class="gadget-meta-item">📍 Last Seen: <strong>${escapeHtml(g.missingReport?.lastSeenLocation || 'Campus')}</strong></span>
+                  ${g.serialNumber ? `<span class="gadget-meta-bullet">•</span><span class="gadget-meta-item">S/N: <code>${escapeHtml(g.serialNumber)}</code></span>` : ''}
+                  ${g.category ? `<span class="gadget-meta-bullet">•</span><span class="gadget-meta-item">Category: ${escapeHtml(g.category)}</span>` : ''}
+                </div>
+                <div class="lost-gadget-status-badge ${isAwaitingOsaHandover ? 'awaiting-handover' : 'missing-active'}">
+                  <span class="status-indicator-dot" aria-hidden="true">${isAwaitingOsaHandover ? '🟡' : '🔴'}</span>
+                  <span>${isAwaitingOsaHandover ? 'Status: Awaiting OSA Handover' : 'Public Missing Alert: Active'}</span>
+                  <span class="scans-count-chip">• Scans: ${scansCount}</span>
                 </div>
               </div>
-              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <div class="lost-gadget-actions">
                 ${actionButtonsHtml}
               </div>
             </div>
@@ -1580,11 +1606,9 @@ async function loadLostStatusScreen(openGadgetIdOnLoad = null) {
 
       if (reports.length === 0) {
         boardContainer.innerHTML = `<div style="grid-column:1/-1; padding:24px; text-align:center; color:var(--text-muted);">No missing gadgets currently reported across campus.</div>`;
-        return;
-      }
-
-      boardContainer.innerHTML = reports.map(r => `
-        <div class="gadget-item-card">
+      } else {
+        boardContainer.innerHTML = reports.map(r => `
+        <div class="gadget-item-card campus-missing-card">
           <div class="gadget-item-img-box">
             ${renderDevicePhotoThumbnail(r.gadget?.photoUrl, r.gadget?.category, r.gadget?.model)}
             <div class="gadget-item-status-pill">
@@ -1592,21 +1616,27 @@ async function loadLostStatusScreen(openGadgetIdOnLoad = null) {
             </div>
           </div>
           <div class="gadget-item-body">
-            <div class="gadget-item-title">${escapeHtml(r.gadget?.brand)} ${escapeHtml(r.gadget?.model)}</div>
-            <div style="font-size: 0.8rem; color: #b91c1c; font-weight: 600; margin-bottom: 6px;">
-              📍 Last Seen: ${escapeHtml(r.lastSeenLocation)}
+            <div class="gadget-item-title" title="${escapeHtml(r.gadget?.brand)} ${escapeHtml(r.gadget?.model)}">
+              ${escapeHtml(r.gadget?.brand)} ${escapeHtml(r.gadget?.model)}
             </div>
-            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
+            <div class="campus-missing-meta-row">
+              <span class="campus-missing-category">${escapeHtml(r.gadget?.category || 'Device')}</span>
+              ${r.reportedAt || r.createdAt ? `<span class="campus-missing-date">Reported: ${formatReturnDateTime(r.reportedAt || r.createdAt)}</span>` : ''}
+            </div>
+            <div class="campus-missing-location">
+              <span aria-hidden="true">📍</span> <strong>Last Seen:</strong> ${escapeHtml(r.lastSeenLocation || 'Campus')}
+            </div>
+            <div class="campus-missing-details">
               "${escapeHtml(r.details || 'Reported lost on campus grounds.')}"
             </div>
-            <div class="gadget-item-footer">
-              <a href="/device/${r.gadget?.secureToken}" target="_blank" class="btn btn-warning btn-sm" style="width: 100%; font-weight: 700; text-align: center;" title="Found this item? Click to submit a surrender report to OSA Room 1109.">
-                📢 Found This? Surrender to OSA
-              </a>
+            <div class="campus-missing-notice-box">
+              <span class="notice-icon" aria-hidden="true">ℹ️</span>
+              <span class="notice-text">If you spot this device, please scan its physical QR sticker or turn it over to OSA Room 1109.</span>
             </div>
           </div>
         </div>
       `).join('');
+      }
     } catch (e) {}
   }
 
@@ -1616,9 +1646,47 @@ async function loadLostStatusScreen(openGadgetIdOnLoad = null) {
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       el.style.outline = '2px solid #0284c7';
+      // Auto-expand custody details if this is a custody card
+      toggleCustodyCardDetails(openGadgetIdOnLoad, true);
     }
     openGadgetDetailsModal(openGadgetIdOnLoad);
   }
+}
+
+// Expand / Collapse Custody Card Details Handler
+function toggleCustodyCardDetails(gadgetId, forceState = null) {
+  const detailsEl = document.getElementById(`custody-details-${gadgetId}`);
+  const btnEl = document.getElementById(`btn-toggle-custody-${gadgetId}`);
+  if (!detailsEl) return;
+
+  const isCurrentlyExpanded = detailsEl.style.display !== 'none';
+  const shouldExpand = forceState !== null ? Boolean(forceState) : !isCurrentlyExpanded;
+
+  if (shouldExpand) {
+    detailsEl.style.display = 'block';
+    detailsEl.classList.add('expanded');
+    if (btnEl) {
+      btnEl.setAttribute('aria-expanded', 'true');
+      const textSpan = btnEl.querySelector('.toggle-text');
+      const chevronSpan = btnEl.querySelector('.custody-chevron');
+      if (textSpan) textSpan.textContent = 'Hide Instructions';
+      if (chevronSpan) chevronSpan.textContent = '▲';
+    }
+  } else {
+    detailsEl.style.display = 'none';
+    detailsEl.classList.remove('expanded');
+    if (btnEl) {
+      btnEl.setAttribute('aria-expanded', 'false');
+      const textSpan = btnEl.querySelector('.toggle-text');
+      const chevronSpan = btnEl.querySelector('.custody-chevron');
+      if (textSpan) textSpan.textContent = 'Pickup Instructions';
+      if (chevronSpan) chevronSpan.textContent = '▼';
+    }
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.toggleCustodyCardDetails = toggleCustodyCardDetails;
 }
 
 // Return Date & Time Formatter in Philippine Standard Time (PHT)
