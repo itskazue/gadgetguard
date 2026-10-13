@@ -11,6 +11,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('requireLogin') === 'true' || urlParams.get('login') === '1') {
+    const user = api.getCurrentUser();
+    if (user && user.role !== 'osa_admin') {
+      const redirect = urlParams.get('redirect') || '/student/';
+      window.location.href = redirect;
+      return;
+    }
     openLoginModal();
     showToast('info', 'Sign In Required', 'Please log in with your NCST Student ID or Email.');
   }
@@ -275,7 +281,10 @@ async function handleLoginSubmit(e) {
     await SwalHelper.success('Welcome Back!', `Logged in as ${res.user.name}`, 1200);
 
     setTimeout(() => {
-      if (res.user.role === 'osa_admin') {
+      const redirectUrl = new URLSearchParams(window.location.search).get('redirect');
+      if (redirectUrl && (redirectUrl.startsWith('/student') || redirectUrl.startsWith('/osa'))) {
+        window.location.href = redirectUrl;
+      } else if (res.user.role === 'osa_admin') {
         window.location.href = '/osa/';
       } else {
         window.location.href = '/student/';

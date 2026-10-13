@@ -2,6 +2,74 @@ const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx7NYkgEsADcw8U8ISMBe3wFyQi5H2stcWMtiiXOTqmhVqMkTPjMqaRMVa1BaqKHCIe/exec';
+const CANONICAL_APP_URL = 'https://ncstgadgetguard.onrender.com';
+
+/**
+ * Resolves the application base URL for emails and links.
+ * Always resolves to the live Render domain in production or when outgoing emails are generated.
+ * Ignores localhost/127.0.0.1 development configuration unless explicitly permitted via ALLOW_LOCAL_EMAIL_URLS=true or NODE_ENV=test_local.
+ */
+function getAppBaseUrl(req) {
+  // 1. If process.env.APP_URL is set and is NOT localhost, use it (production override)
+  if (process.env.APP_URL && process.env.APP_URL.trim()) {
+    const configured = process.env.APP_URL.trim().replace(/\/+$/, '');
+    if (!configured.includes('localhost') && !configured.includes('127.0.0.1')) {
+      return configured;
+    }
+    // Only allow localhost if explicitly opted-in for local tests
+    if (process.env.NODE_ENV === 'test_local' || process.env.ALLOW_LOCAL_EMAIL_URLS === 'true') {
+      return configured;
+    }
+  }
+
+  // 2. If req has a non-localhost host (e.g. Render request headers), use it
+  if (req) {
+    const proto = req.headers?.['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.headers?.['x-forwarded-host'] || (typeof req.get === 'function' ? req.get('host') : req.headers?.host);
+    if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+      return `${proto}://${host}`.replace(/\/+$/, '');
+    }
+  }
+
+  // 3. If test_local or ALLOW_LOCAL_EMAIL_URLS is set
+  if (process.env.NODE_ENV === 'test_local' || process.env.ALLOW_LOCAL_EMAIL_URLS === 'true') {
+    return 'http://localhost:3000';
+  }
+
+  // 4. Default to canonical live Render URL (prevents localhost leaking into live emails even if run locally with .env)
+  return CANONICAL_APP_URL;
+}
+
+/**
+ * Resolves the absolute URL for the Student Portal.
+ * Guaranteed to route to /student/ on the live domain.
+ */
+function getStudentPortalUrl(customUrl, req) {
+  const base = getAppBaseUrl(req);
+  if (customUrl && typeof customUrl === 'string' && customUrl.trim()) {
+    const trimmed = customUrl.trim();
+    try {
+      const parsed = new URL(trimmed, base);
+      // If a localhost URL is passed in production/normal mode, force canonical host
+      if ((parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') &&
+          process.env.NODE_ENV !== 'test_local' &&
+          process.env.ALLOW_LOCAL_EMAIL_URLS !== 'true') {
+        const canonical = new URL(CANONICAL_APP_URL);
+        parsed.protocol = canonical.protocol;
+        parsed.host = canonical.host;
+      }
+      if (parsed.pathname === '/' || parsed.pathname === '') {
+        parsed.pathname = '/student/';
+      } else if (!parsed.pathname.endsWith('/') && !parsed.pathname.includes('.')) {
+        parsed.pathname = `${parsed.pathname}/`;
+      }
+      return parsed.toString();
+    } catch (e) {
+      return `${base}/student/`;
+    }
+  }
+  return `${base}/student/`;
+}
 
 // Create reusable transporter object using SMTP transport (Fallback)
 function createTransporter() {
@@ -119,8 +187,8 @@ async function sendMail({ to, subject, html, text }) {
 /**
  * 1. Send Account & Gadget Approved Email (When OSA verifies and approves)
  */
-async function sendApprovalEmail({ studentEmail, studentName, studentId, gadgetInfo, loginUrl }) {
-  const portalUrl = loginUrl || process.env.APP_URL || 'http://localhost:3000';
+function generateApprovalEmailPayload({ studentEmail, studentName, studentId, gadgetInfo, loginUrl, req }) {
+  const portalUrl = getStudentPortalUrl(loginUrl, req);
   const subject = '🛡️ NCST GadgetGuard: Device Registration & Account Approved';
 
   const html = `
@@ -217,7 +285,12 @@ async function sendApprovalEmail({ studentEmail, studentName, studentId, gadgetI
 </html>
   `;
 
-  return sendMail({ to: studentEmail, subject, html });
+  return { to: studentEmail, subject, html, portalUrl };
+}
+
+async function sendApprovalEmail(options) {
+  const payload = generateApprovalEmailPayload(options);
+  return sendMail(payload);
 }
 
 /**
@@ -279,9 +352,10 @@ async function sendPreRegistrationEmail({ studentEmail, studentName, studentId, 
  * 3. Send Password Reset Email (15-Minute Expiry)
  * Branded official NCST email with single-use security token and Cubicle 8 notice
  */
-async function sendPasswordResetEmail({ to, name, resetUrl, role }) {
+function generatePasswordResetEmailPayload({ to, name, resetUrl, role, req }) {
   const subject = '🔐 NCST GadgetGuard: Password Reset Request';
   const roleLabel = role === 'osa_admin' ? 'OSA Administrator' : 'Student';
+  const finalResetUrl = resetUrl || `${getAppBaseUrl(req)}/reset-password.html`;
 
   const html = `
 <!DOCTYPE html>
@@ -320,7 +394,7 @@ async function sendPasswordResetEmail({ to, name, resetUrl, role }) {
       </p>
 
       <div class="btn-container">
-        <a href="${resetUrl}" class="btn" target="_blank">Reset My Password &rarr;</a>
+        <a href="${finalResetUrl}" class="btn" target="_blank">Reset My Password &rarr;</a>
       </div>
 
       <div class="notice-box">
@@ -344,16 +418,27 @@ async function sendPasswordResetEmail({ to, name, resetUrl, role }) {
 </html>
   `;
 
+  return { to, subject, html, resetUrl: finalResetUrl };
+}
+
+async function sendPasswordResetEmail(options) {
+  const payload = generatePasswordResetEmailPayload(options);
+
   // Respect owner authorization rule: do not dispatch external reset emails without owner approval
   if (process.env.SEND_RESET_EMAILS !== 'true') {
-    console.log(`📡 [Password Reset Mailer] Real email dispatch held for ${to} (SEND_RESET_EMAILS != true, awaiting owner approval).`);
-    return { success: true, held: true, dispatched: false, message: 'Email dispatch held awaiting owner approval.' };
+    console.log(`📡 [Password Reset Mailer] Real email dispatch held for ${options.to} (SEND_RESET_EMAILS != true, awaiting owner approval).`);
+    return { success: true, held: true, dispatched: false, message: 'Email dispatch held awaiting owner approval.', payload };
   }
 
-  return sendMail({ to, subject, html });
+  return sendMail(payload);
 }
 
 module.exports = {
+  CANONICAL_APP_URL,
+  getAppBaseUrl,
+  getStudentPortalUrl,
+  generateApprovalEmailPayload,
+  generatePasswordResetEmailPayload,
   verifySMTP,
   sendMail,
   sendApprovalEmail,

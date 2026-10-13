@@ -573,7 +573,8 @@ router.post('/resend-approval-email', authMiddleware, requireRole('osa_admin'), 
         model: gadget.model,
         category: gadget.category,
         serialNumber: gadget.serialNumber
-      } : null
+      } : null,
+      req
     });
 
     db.addAuditLog({

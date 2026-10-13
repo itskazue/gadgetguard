@@ -414,7 +414,8 @@ router.post('/:id/approve', authMiddleware, requireRole('osa_admin'), async (req
             model: gadget.model,
             category: gadget.category,
             serialNumber: gadget.serialNumber
-          }
+          },
+          req
         });
         console.log(`📧 Approval email result for ${owner.email}:`, mailRes);
       } catch (e) {

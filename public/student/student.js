@@ -74,7 +74,9 @@ async function ensureStudentAuthenticated() {
   }
 
   if (!token || !user || user.role === 'osa_admin') {
-    window.location.href = '/?login=1';
+    const targetHash = window.location.hash || '';
+    const redirectParam = encodeURIComponent('/student/' + targetHash);
+    window.location.href = `/?login=1&redirect=${redirectParam}`;
     return;
   }
 
@@ -88,7 +90,9 @@ async function ensureStudentAuthenticated() {
 
     } else {
       api.clearAuth();
-      window.location.href = '/?login=1';
+      const targetHash = window.location.hash || '';
+      const redirectParam = encodeURIComponent('/student/' + targetHash);
+      window.location.href = `/?login=1&redirect=${redirectParam}`;
     }
   } catch (e) {
     console.warn('Could not refresh student session:', e);

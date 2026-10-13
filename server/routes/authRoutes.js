@@ -3,7 +3,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const { hashPassword, comparePassword, validatePasswordStrength, generateToken, authMiddleware, requireRole } = require('../auth');
 const db = require('../db');
-const { sendPasswordResetEmail } = require('../services/mailer');
+const { sendPasswordResetEmail, getAppBaseUrl } = require('../services/mailer');
 const { rateLimiter } = require('../services/rateLimiter');
 
 // Rate limiters for security endpoints
@@ -216,10 +216,8 @@ router.post('/forgot-password', forgotPasswordIpLimiter, forgotPasswordEmailLimi
 
       db.insert('password_resets', resetRecord);
 
-      // Build reset URL
-      const host = req.get('host');
-      const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-      const baseUrl = process.env.APP_URL || `${protocol}://${host}`;
+      // Build reset URL using centralized base URL
+      const baseUrl = getAppBaseUrl(req);
       const resetUrl = `${baseUrl}/reset-password.html?token=${rawToken}`;
 
       // Dispatch branded reset email (never log rawToken or resetUrl)
@@ -227,7 +225,8 @@ router.post('/forgot-password', forgotPasswordIpLimiter, forgotPasswordEmailLimi
         to: user.email,
         name: user.name,
         resetUrl,
-        role: user.role
+        role: user.role,
+        req
       }).catch(err => {
         console.warn('⚠️ [Forgot Password] Email delivery dispatch failed:', err.message);
       });

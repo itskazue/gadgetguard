@@ -205,7 +205,8 @@ app.post('/api/smtp/test', async (req, res) => {
       model: 'MacBook Air M2',
       category: 'Laptop',
       serialNumber: 'C02G8491MD6R'
-    }
+    },
+    req
   });
 
   return res.json(result);
