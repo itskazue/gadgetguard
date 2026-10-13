@@ -453,9 +453,12 @@ function matchesPhtDateRange(dateInput, rangeType, fromDateStr, toDateStr) {
   }
 
   if (rangeType === 'WEEK') {
-    // 7-day rolling window ending at end of today in PHT
-    const startWeekUtcMs = startTodayUtcMs - (6 * 24 * 60 * 60 * 1000);
-    return timeMs >= startWeekUtcMs && timeMs <= endTodayUtcMs;
+    // Philippine calendar week (Monday to Sunday) in PHT
+    const dayOfWeek = nowPht.getUTCDay();
+    const daysSinceMonday = (dayOfWeek + 6) % 7;
+    const startWeekUtcMs = startTodayUtcMs - (daysSinceMonday * 24 * 60 * 60 * 1000);
+    const endWeekUtcMs = startWeekUtcMs + (7 * 24 * 60 * 60 * 1000) - 1;
+    return timeMs >= startWeekUtcMs && timeMs <= endWeekUtcMs;
   }
 
   if (rangeType === 'MONTH') {
@@ -463,6 +466,13 @@ function matchesPhtDateRange(dateInput, rangeType, fromDateStr, toDateStr) {
     const startMonthUtcMs = Date.UTC(nowYear, nowMonth, 1) - PHT_OFFSET_MS;
     const endMonthUtcMs = Date.UTC(nowYear, nowMonth + 1, 1) - PHT_OFFSET_MS - 1;
     return timeMs >= startMonthUtcMs && timeMs <= endMonthUtcMs;
+  }
+
+  if (rangeType === 'YEAR') {
+    // Current calendar year in PHT
+    const startYearUtcMs = Date.UTC(nowYear, 0, 1) - PHT_OFFSET_MS;
+    const endYearUtcMs = Date.UTC(nowYear + 1, 0, 1) - PHT_OFFSET_MS - 1;
+    return timeMs >= startYearUtcMs && timeMs <= endYearUtcMs;
   }
 
   if (rangeType === 'CUSTOM') {
@@ -3213,102 +3223,394 @@ function renderScansTable(scans, hasFilter = false) {
   `;
 }
 
-// 11. Reports Screen
+// 11. Reports Screen — Phase 4: Database-Driven Reports & Analytics
+// =========================================================================
+
+// Global Reports State Cache
+window._currentReportFilter = { range: 'ALL', from: '', to: '' };
+window._latestReportData = null;
+
+// Handle Preset Date Filter Changes
+function handleReportDateFilterChange() {
+  const select = document.getElementById('reports-date-filter');
+  const customWrap = document.getElementById('reports-custom-date-wrap');
+  if (!select) return;
+
+  const val = select.value;
+  if (val === 'CUSTOM') {
+    if (customWrap) customWrap.style.display = 'flex';
+    // Do not automatically trigger query until user inputs dates and clicks Apply
+  } else {
+    if (customWrap) customWrap.style.display = 'none';
+    const fromInput = document.getElementById('reports-date-from');
+    const toInput = document.getElementById('reports-date-to');
+    if (fromInput) fromInput.value = '';
+    if (toInput) toInput.value = '';
+
+    window._currentReportFilter = { range: val, from: '', to: '' };
+    loadReportsData();
+  }
+}
+
+// Validate Custom Date Range Inputs
+function validateCustomReportDates() {
+  const fromInput = document.getElementById('reports-date-from');
+  const toInput = document.getElementById('reports-date-to');
+  if (!fromInput || !toInput) return true;
+
+  const fromVal = fromInput.value;
+  const toVal = toInput.value;
+
+  if (fromVal && toVal) {
+    if (toVal < fromVal) {
+      showToast('warning', 'Invalid Date Range', 'End date cannot be earlier than start date.');
+      return false;
+    }
+  }
+  return true;
+}
+
+// Apply Custom Date Range Filter
+function applyCustomReportDateFilter() {
+  const fromInput = document.getElementById('reports-date-from');
+  const toInput = document.getElementById('reports-date-to');
+  if (!fromInput || !toInput) return;
+
+  const fromVal = fromInput.value;
+  const toVal = toInput.value;
+
+  if (!fromVal || !toVal) {
+    showToast('warning', 'Date Required', 'Please select both start and end dates.');
+    return;
+  }
+
+  if (toVal < fromVal) {
+    showToast('error', 'Invalid Date Order', 'End date cannot be earlier than start date.');
+    return;
+  }
+
+  window._currentReportFilter = { range: 'CUSTOM', from: fromVal, to: toVal };
+  loadReportsData();
+}
+
+// Reset Report Filter to All Time Default
+function resetReportDateFilter() {
+  const select = document.getElementById('reports-date-filter');
+  const customWrap = document.getElementById('reports-custom-date-wrap');
+  const fromInput = document.getElementById('reports-date-from');
+  const toInput = document.getElementById('reports-date-to');
+
+  if (select) select.value = 'ALL';
+  if (customWrap) customWrap.style.display = 'none';
+  if (fromInput) fromInput.value = '';
+  if (toInput) toInput.value = '';
+
+  window._currentReportFilter = { range: 'ALL', from: '', to: '' };
+  loadReportsData();
+}
+
+// Format Period Display Label in Philippine Time (PHT, UTC+8)
+function formatPeriodDisplay(filter) {
+  const range = filter?.range || 'ALL';
+  const PHT_OFFSET_MS = 8 * 60 * 60 * 1000;
+  const nowPht = new Date(Date.now() + PHT_OFFSET_MS);
+
+  if (range === 'TODAY') {
+    const dStr = nowPht.toISOString().split('T')[0];
+    return `Today (${dStr} • Philippine Time 00:00:00 - 23:59:59 PHT)`;
+  }
+  if (range === 'WEEK') {
+    return 'This Week (Philippine Calendar Week • Monday – Sunday PHT)';
+  }
+  if (range === 'MONTH') {
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return `This Month (${monthNames[nowPht.getUTCMonth()]} ${nowPht.getUTCFullYear()} • Asia/Manila)`;
+  }
+  if (range === 'YEAR') {
+    return `This Year (${nowPht.getUTCFullYear()} Calendar Year • Asia/Manila)`;
+  }
+  if (range === 'CUSTOM') {
+    return `Custom Date Range: ${filter.from || '...'} to ${filter.to || '...'} (Inclusive PHT)`;
+  }
+  return 'All Time (Complete Historical Archive)';
+}
+
+// Format Duration Milliseconds into Human-Readable String
+function formatDurationHuman(ms) {
+  if (ms === null || ms === undefined || isNaN(ms)) return 'N/A';
+  if (ms < 0) return '0 mins';
+  const sec = Math.round(ms / 1000);
+  if (sec < 60) return `${sec}s`;
+  const min = Math.round(ms / (60 * 1000));
+  if (min < 60) return `${min} mins`;
+  const hrs = (ms / (60 * 60 * 1000)).toFixed(1);
+  if (parseFloat(hrs) < 24) return `${hrs} hrs`;
+  const days = (ms / (24 * 60 * 60 * 1000)).toFixed(1);
+  return `${days} days`;
+}
+
+// Load and Display Database-Driven Reports & Analytics
 async function loadReportsData() {
+  const periodLabel = document.getElementById('reports-period-label');
+  const filter = window._currentReportFilter || { range: 'ALL' };
+
+  if (periodLabel) {
+    periodLabel.textContent = formatPeriodDisplay(filter);
+  }
+
   try {
-    const [statsRes, gadgetsRes] = await Promise.all([
-      api.getOsaStats().catch(() => ({})),
-      api.getAllGadgets().catch(() => ({}))
-    ]);
+    const params = { range: filter.range };
+    if (filter.from) params.from = filter.from;
+    if (filter.to) params.to = filter.to;
 
-    const s = statsRes.stats || {};
-    const gadgets = gadgetsRes.gadgets || [];
-    const total = gadgets.length || 1;
+    const res = await api.getOsaReports(params);
+    if (!res || !res.success) {
+      console.error('Failed to fetch reports analytics:', res);
+      return;
+    }
 
-    // 1. Metric values
+    window._latestReportData = res;
+    const { kpis, charts } = res;
+
+    // 1. KPI 1: Recovery Success Rate
+    const recRateEl = document.getElementById('report-recovery-rate');
+    const recRateSubEl = document.getElementById('report-recovery-rate-sub');
+    if (recRateEl) {
+      if (kpis.recoverySuccessRate !== null && kpis.recoverySuccessRate !== undefined) {
+        recRateEl.textContent = `${kpis.recoverySuccessRate}%`;
+      } else {
+        recRateEl.textContent = 'N/A';
+      }
+    }
+    if (recRateSubEl) {
+      if (kpis.totalMissingIncidents > 0) {
+        recRateSubEl.textContent = `${kpis.recoveredIncidentsCount} of ${kpis.totalMissingIncidents} missing incidents recovered`;
+      } else {
+        recRateSubEl.textContent = 'No missing incidents in period (Denominator: 0)';
+      }
+    }
+
+    // 2. KPI 2: Average Resolution Speed
+    const avgTimeEl = document.getElementById('report-avg-time');
+    const avgTimeSubEl = document.getElementById('report-avg-time-sub');
+    if (avgTimeEl) {
+      if (kpis.avgResolutionSpeedMs !== null && kpis.avgResolutionSpeedMs !== undefined) {
+        avgTimeEl.textContent = formatDurationHuman(kpis.avgResolutionSpeedMs);
+      } else {
+        avgTimeEl.textContent = 'N/A';
+      }
+    }
+    if (avgTimeSubEl) {
+      if (kpis.timedIncidentsCount > 0) {
+        avgTimeSubEl.textContent = `Mean duration across ${kpis.timedIncidentsCount} resolved cases`;
+      } else {
+        avgTimeSubEl.textContent = 'No resolved cases in period';
+      }
+    }
+
+    // 3. KPI 3: Total Lifecycle Assets (Current Inventory Snapshot)
     const totalCasesEl = document.getElementById('report-total-cases');
+    const totalCasesSubEl = document.getElementById('report-total-cases-sub');
+    if (totalCasesEl) totalCasesEl.textContent = kpis.totalLifecycleAssets ?? 0;
+    if (totalCasesSubEl) totalCasesSubEl.textContent = 'Current Inventory Snapshot';
+
+    // 4. KPI 4: Active QR Security Tags (Current Inventory Snapshot)
     const activeStickersEl = document.getElementById('report-active-stickers');
-    if (totalCasesEl) totalCasesEl.textContent = gadgets.length;
-    if (activeStickersEl) activeStickersEl.textContent = s.registeredGadgets || 0;
+    const activeStickersSubEl = document.getElementById('report-active-stickers-sub');
+    if (activeStickersEl) activeStickersEl.textContent = kpis.activeQrTags ?? 0;
+    if (activeStickersSubEl) activeStickersSubEl.textContent = 'Current Inventory Snapshot';
 
-    // 2. Category Census Breakdown
-    const cats = {
-      Laptop: 0,
-      Smartphone: 0,
-      Tablet: 0,
-      Earbuds: 0,
-      Camera: 0,
-      Other: 0
-    };
+    // 5. Chart 1: Device Inventory by Category (Current Inventory Snapshot)
+    const totalAssets = charts.totalAssets || 1;
+    const catCensus = charts.categoryCensus || {};
 
-    gadgets.forEach(g => {
-      const c = g.category || 'Other';
-      if (cats[c] !== undefined) cats[c]++;
-      else cats.Other++;
-    });
-
-    const updateCat = (key, count, elCountId, elBarId) => {
+    const updateCat = (count, elCountId, elBarId) => {
       const countEl = document.getElementById(elCountId);
       const barEl = document.getElementById(elBarId);
-      const pct = Math.round((count / total) * 100);
+      const pct = charts.totalAssets > 0 ? Math.round((count / totalAssets) * 100) : 0;
       if (countEl) countEl.textContent = `${count} devices (${pct}%)`;
       if (barEl) barEl.style.width = `${pct}%`;
     };
 
-    updateCat('Laptop', cats.Laptop, 'cat-count-laptop', 'cat-bar-laptop');
-    updateCat('Smartphone', cats.Smartphone, 'cat-count-phone', 'cat-bar-phone');
-    updateCat('Tablet', cats.Tablet, 'cat-count-tablet', 'cat-bar-tablet');
-    updateCat('Earbuds', cats.Earbuds, 'cat-count-audio', 'cat-bar-audio');
-    updateCat('Camera', cats.Camera, 'cat-count-camera', 'cat-bar-camera');
+    updateCat(catCensus.Laptop || 0, 'cat-count-laptop', 'cat-bar-laptop');
+    updateCat(catCensus.Smartphone || 0, 'cat-count-phone', 'cat-bar-phone');
+    updateCat(catCensus.Tablet || 0, 'cat-count-tablet', 'cat-bar-tablet');
+    updateCat(catCensus.Earbuds || 0, 'cat-count-audio', 'cat-bar-audio');
+    updateCat(catCensus.Camera || 0, 'cat-count-camera', 'cat-bar-camera');
 
-    // 3. Status Breakdown
-    const regCount = s.registeredGadgets || 0;
-    const custodyCount = s.inCustodyGadgets || 0;
-    const returnedCount = s.returnedGadgets || 0;
-    const pendingCount = s.pendingGadgets || 0;
-    const missingCount = s.missingGadgets || 0;
+    // 6. Chart 2: Asset Recovery Status Breakdown (Current Inventory Snapshot)
+    const statCensus = charts.statusCensus || {};
 
     const updateStatus = (count, elCountId, elBarId) => {
       const countEl = document.getElementById(elCountId);
       const barEl = document.getElementById(elBarId);
-      const pct = Math.round((count / total) * 100);
+      const pct = charts.totalAssets > 0 ? Math.round((count / totalAssets) * 100) : 0;
       if (countEl) countEl.textContent = `${count} assets (${pct}%)`;
       if (barEl) barEl.style.width = `${pct}%`;
     };
 
-    updateStatus(regCount, 'status-count-registered', 'status-bar-registered');
-    updateStatus(custodyCount, 'status-count-custody', 'status-bar-custody');
-    updateStatus(returnedCount, 'status-count-returned', 'status-bar-returned');
-    updateStatus(pendingCount, 'status-count-pending', 'status-bar-pending');
-    updateStatus(missingCount, 'status-count-missing', 'status-bar-missing');
+    updateStatus(statCensus.registered || 0, 'status-count-registered', 'status-bar-registered');
+    updateStatus(statCensus.custody || 0, 'status-count-custody', 'status-bar-custody');
+    updateStatus(statCensus.returned || 0, 'status-count-returned', 'status-bar-returned');
+    updateStatus(statCensus.pending || 0, 'status-count-pending', 'status-bar-pending');
+    updateStatus(statCensus.missing || 0, 'status-count-missing', 'status-bar-missing');
 
   } catch (err) {
     console.error('Error loading reports data:', err);
+    showToast('error', 'Report Load Error', 'Could not retrieve database analytics.');
   }
 }
 
+// Export Analytics Summary Modal & Download Trigger
 function exportAnalyticsSummary() {
+  const data = window._latestReportData;
+  const filter = window._currentReportFilter || { range: 'ALL' };
+  const periodText = formatPeriodDisplay(filter);
+
+  const kpis = data?.kpis || {
+    recoverySuccessRate: null,
+    totalMissingIncidents: 0,
+    recoveredIncidentsCount: 0,
+    avgResolutionSpeedMs: null,
+    totalLifecycleAssets: 0,
+    activeQrTags: 0
+  };
+
+  const recDisplay = (kpis.recoverySuccessRate !== null && kpis.recoverySuccessRate !== undefined)
+    ? `${kpis.recoverySuccessRate}% (${kpis.recoveredIncidentsCount}/${kpis.totalMissingIncidents} recovered)`
+    : 'N/A (No missing incidents recorded)';
+
+  const timeDisplay = (kpis.avgResolutionSpeedMs !== null && kpis.avgResolutionSpeedMs !== undefined)
+    ? formatDurationHuman(kpis.avgResolutionSpeedMs)
+    : 'N/A (No resolved cases)';
+
   if (typeof Swal !== 'undefined') {
     Swal.fire({
       icon: 'info',
-      title: 'NCST Executive Summary',
+      title: 'NCST Executive Analytics Summary',
       html: `
         <div style="text-align:left; font-size:0.875rem; background:#f8fafc; padding:16px; border-radius:12px; border:1px solid #e2e8f0; line-height:1.6;">
           <div style="font-weight:700; color:#142a6d; margin-bottom:8px; border-bottom:1px solid #cbd5e1; padding-bottom:6px;">
-            🏛️ National College of Science & Technology (NCST)
+            🏛️ National College of Science & Technology (NCST)<br>
+            <span style="font-size:0.75rem; font-weight:600; color:#64748b;">Office of Student Affairs (OSA Room 1109)</span>
           </div>
-          <div>✅ <strong>Recovery Success Rate:</strong> 100%</div>
-          <div>⚡ <strong>Average Resolution Time:</strong> &lt; 24 Hours</div>
-          <div>🛡️ <strong>System Protocol:</strong> Active 24/7 QR Telemetry</div>
-          <div>🏢 <strong>Supervision:</strong> Office of Student Affairs (OSA Room 1109)</div>
+          <div style="margin-bottom:8px; font-size:0.8rem; background:#e0f2fe; padding:6px 10px; border-radius:6px; color:#0369a1;">
+            📅 <strong>Reporting Period:</strong> ${escapeHtml(periodText)}
+          </div>
+          <div>🛡️ <strong>Recovery Success Rate:</strong> <strong>${escapeHtml(recDisplay)}</strong></div>
+          <div>⚡ <strong>Average Resolution Speed:</strong> <strong>${escapeHtml(timeDisplay)}</strong></div>
+          <div>📋 <strong>Total Lifecycle Assets:</strong> <strong>${kpis.totalLifecycleAssets}</strong> (Current Snapshot)</div>
+          <div>🏷️ <strong>Active QR Security Tags:</strong> <strong>${kpis.activeQrTags}</strong> (Current Snapshot)</div>
+          <div style="margin-top:8px; font-size:0.75rem; color:#64748b; border-top:1px dashed #cbd5e1; padding-top:6px;">
+            ✓ Calculations strictly verified from live database records. Status: For Review / Not Yet Officially Certified.
+          </div>
         </div>
       `,
-      confirmButtonText: 'Download Certificate Summary',
+      showCancelButton: true,
+      cancelButtonText: 'Close',
+      confirmButtonText: '📥 Download Summary',
       confirmButtonColor: '#142a6d'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        downloadCertifiedSummaryText();
+      }
     });
   } else {
-    alert('NCST Analytics Summary: 100% Recovery Rate verified.');
+    downloadCertifiedSummaryText();
   }
+}
+
+// Download Executive Summary Report (.txt)
+function downloadCertifiedSummaryText() {
+  const data = window._latestReportData;
+  const filter = window._currentReportFilter || { range: 'ALL' };
+  const periodText = formatPeriodDisplay(filter);
+  const nowIso = new Date().toISOString();
+
+  const kpis = data?.kpis || {};
+  const charts = data?.charts || {};
+  const cats = charts.categoryCensus || {};
+  const stats = charts.statusCensus || {};
+
+  const recDisplay = (kpis.recoverySuccessRate !== null && kpis.recoverySuccessRate !== undefined)
+    ? `${kpis.recoverySuccessRate}% (${kpis.recoveredIncidentsCount} of ${kpis.totalMissingIncidents} recovered)`
+    : 'N/A (No missing incidents recorded in period)';
+
+  const speedDisplay = (kpis.avgResolutionSpeedMs !== null && kpis.avgResolutionSpeedMs !== undefined)
+    ? formatDurationHuman(kpis.avgResolutionSpeedMs)
+    : 'N/A (No resolved cases in period)';
+
+  const lines = [
+    '================================================================================',
+    '       NATIONAL COLLEGE OF SCIENCE AND TECHNOLOGY — OFFICE OF STUDENT AFFAIRS    ',
+    '                 CAMPUS ASSET RECOVERY & SECURITY EXECUTIVE REPORT               ',
+    '================================================================================',
+    '',
+    `Generated At:       ${nowIso} (Philippine Time UTC+8)`,
+    `Reporting Period:   ${periodText}`,
+    `Issuing Body:       Office of Student Affairs (OSA Room 1109)`,
+    `System Security:    GadgetGuard Institutional Asset Protection`,
+    '',
+    '--------------------------------------------------------------------------------',
+    'I. PERIOD-FILTERED INCIDENT PERFORMANCE METRICS',
+    '--------------------------------------------------------------------------------',
+    `Recovery Success Rate:        ${recDisplay}`,
+    `Average Resolution Speed:     ${speedDisplay}`,
+    `Missing Incidents in Scope:   ${kpis.totalMissingIncidents ?? 0}`,
+    `Recovered Incidents in Scope: ${kpis.recoveredIncidentsCount ?? 0}`,
+    '',
+    '--------------------------------------------------------------------------------',
+    'II. CURRENT INVENTORY CENSUS SNAPSHOT',
+    '--------------------------------------------------------------------------------',
+    `Total Lifecycle Assets:       ${kpis.totalLifecycleAssets ?? 0}`,
+    `Active QR Security Tags:      ${kpis.activeQrTags ?? 0}`,
+    '',
+    'Device Category Census:',
+    `  - Laptops & MacBooks:       ${cats.Laptop ?? 0}`,
+    `  - Smartphones & Mobile:     ${cats.Smartphone ?? 0}`,
+    `  - Tablets & iPads:          ${cats.Tablet ?? 0}`,
+    `  - Audio Gear & Earbuds:     ${cats.Earbuds ?? 0}`,
+    `  - Cameras & Media:          ${cats.Camera ?? 0}`,
+    `  - Other Categories:         ${cats.Other ?? 0}`,
+    '',
+    'Asset Recovery Status Census:',
+    `  - Registered & Protected:   ${stats.registered ?? 0}`,
+    `  - In OSA Custody Vault:     ${stats.custody ?? 0}`,
+    `  - Handed Over & Returned:   ${stats.returned ?? 0}`,
+    `  - Pending OSA Inspection:   ${stats.pending ?? 0}`,
+    `  - Active Missing Broadcast: ${stats.missing ?? 0}`,
+    '',
+    '--------------------------------------------------------------------------------',
+    'III. DATA INTEGRITY & RECORD STATUS',
+    '--------------------------------------------------------------------------------',
+    'Record Status:      VERIFIED READ-ONLY DATABASE RECORDS',
+    'Issuing Office:     Office of Student Affairs (OSA Room 1109)',
+    'Institution:        National College of Science and Technology (NCST)',
+    'Prepared By:        Office of Student Affairs',
+    'Status:             For Review / Not Yet Officially Certified',
+    'Notice:             This automated report reflects system telemetry and records.',
+    '                    It does not constitute formal institutional approval until',
+    '                    duly reviewed, authorized, and signed by school administration.',
+    '                    Does not contain unauthorized personal information or chat logs.',
+    '================================================================================'
+  ];
+
+  const content = lines.join('\r\n');
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const sanitizedPeriod = (filter.range || 'ALL').toLowerCase();
+  a.href = url;
+  a.download = `NCST_Executive_Report_${sanitizedPeriod}_${new Date().toISOString().split('T')[0]}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// Print Executive Report Layout Trigger
+function printExecutiveReport() {
+  window.print();
 }
 
 // 12. Audit Logs

@@ -306,6 +306,186 @@ router.get('/returns', authMiddleware, (req, res) => {
   }
 });
 
+// GET /api/osa/reports (Database-Driven Reports & Analytics with PHT Date Range Filtering)
+router.get('/reports', authMiddleware, requireRole('osa_admin'), (req, res) => {
+  try {
+    const { range = 'ALL', from, to } = req.query;
+
+    const gadgets = db.get('gadgets') || [];
+    const missingReports = db.get('missing_reports') || [];
+    const returns = db.get('returns') || [];
+
+    // Helper: matches Philippine Time (UTC+8) date range with inclusive boundaries
+    const PHT_OFFSET_MS = 8 * 60 * 60 * 1000;
+    const nowUtc = Date.now();
+    const nowPht = new Date(nowUtc + PHT_OFFSET_MS);
+    const nowYear = nowPht.getUTCFullYear();
+    const nowMonth = nowPht.getUTCMonth();
+    const nowDate = nowPht.getUTCDate();
+
+    const startTodayUtcMs = Date.UTC(nowYear, nowMonth, nowDate) - PHT_OFFSET_MS;
+    const endTodayUtcMs = startTodayUtcMs + (24 * 60 * 60 * 1000) - 1;
+
+    function isDateInRange(dateInput) {
+      if (!range || range === 'ALL') return true;
+      if (!dateInput) return false;
+      const d = new Date(dateInput);
+      if (isNaN(d.getTime())) return false;
+      const t = d.getTime();
+
+      if (range === 'TODAY') {
+        return t >= startTodayUtcMs && t <= endTodayUtcMs;
+      }
+      if (range === 'WEEK') {
+        // Philippine calendar week (Monday 00:00:00.000 to Sunday 23:59:59.999 PHT)
+        const dayOfWeek = nowPht.getUTCDay();
+        const daysSinceMonday = (dayOfWeek + 6) % 7;
+        const startWeekUtcMs = startTodayUtcMs - (daysSinceMonday * 24 * 60 * 60 * 1000);
+        const endWeekUtcMs = startWeekUtcMs + (7 * 24 * 60 * 60 * 1000) - 1;
+        return t >= startWeekUtcMs && t <= endWeekUtcMs;
+      }
+      if (range === 'MONTH') {
+        const startMonthUtcMs = Date.UTC(nowYear, nowMonth, 1) - PHT_OFFSET_MS;
+        const endMonthUtcMs = Date.UTC(nowYear, nowMonth + 1, 1) - PHT_OFFSET_MS - 1;
+        return t >= startMonthUtcMs && t <= endMonthUtcMs;
+      }
+      if (range === 'YEAR') {
+        const startYearUtcMs = Date.UTC(nowYear, 0, 1) - PHT_OFFSET_MS;
+        const endYearUtcMs = Date.UTC(nowYear + 1, 0, 1) - PHT_OFFSET_MS - 1;
+        return t >= startYearUtcMs && t <= endYearUtcMs;
+      }
+      if (range === 'CUSTOM') {
+        let match = true;
+        if (from) {
+          const parts = from.split('-');
+          if (parts.length === 3) {
+            const fromUtcMs = Date.UTC(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10)) - PHT_OFFSET_MS;
+            if (t < fromUtcMs) match = false;
+          }
+        }
+        if (to) {
+          const parts = to.split('-');
+          if (parts.length === 3) {
+            const toUtcMs = Date.UTC(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10)) - PHT_OFFSET_MS + (24 * 60 * 60 * 1000) - 1;
+            if (t > toUtcMs) match = false;
+          }
+        }
+        return match;
+      }
+      return true;
+    }
+
+    // 1. Current Inventory Snapshot Metrics
+    const totalGadgets = gadgets.length;
+    // Genuine active QR tags count all approved gadgets assigned a permanent valid QR token,
+    // including missing gadgets whose physical QR code remains valid and scannable by finders.
+    const activeStickers = gadgets.filter(g => Boolean(g.secureToken) && g.status !== 'REJECTED' && g.status !== 'PENDING_APPROVAL').length;
+
+    // Category Distribution (Current Inventory Snapshot)
+    const categoryCensus = {
+      Laptop: 0,
+      Smartphone: 0,
+      Tablet: 0,
+      Earbuds: 0,
+      Camera: 0,
+      Other: 0
+    };
+    gadgets.forEach(g => {
+      const cat = g.category || 'Other';
+      if (categoryCensus[cat] !== undefined) categoryCensus[cat]++;
+      else categoryCensus.Other++;
+    });
+
+    // Asset Status Distribution (Current Inventory Snapshot)
+    const statusCensus = {
+      registered: gadgets.filter(g => g.status === 'REGISTERED').length,
+      custody: gadgets.filter(g => g.status === 'FOUND_IN_CUSTODY').length,
+      returned: gadgets.filter(g => g.status === 'RETURNED').length,
+      pending: gadgets.filter(g => g.status === 'PENDING_APPROVAL').length,
+      missing: gadgets.filter(g => g.status === 'MISSING').length
+    };
+
+    // 2. Historical Incident Performance (Period-Filtered)
+    // Non-cancelled missing incidents whose reported date is within the selected range
+    const periodIncidents = missingReports.filter(m => {
+      if (m.status === 'CANCELLED') return false;
+      const incidentDate = m.reportedAt || m.createdAt || m.lastSeenDate;
+      return isDateInRange(incidentDate);
+    });
+
+    const totalMissingIncidents = periodIncidents.length;
+    let recoveredIncidentsCount = 0;
+    const resolutionDurationsMs = [];
+
+    periodIncidents.forEach(m => {
+      const g = gadgets.find(x => x.id === m.gadgetId);
+      const matchingReturn = returns.find(r => r.gadgetId === m.gadgetId && new Date(r.returnDate || r.createdAt).getTime() >= new Date(m.reportedAt || m.createdAt).getTime());
+
+      const isRecovered = (
+        m.status === 'RESOLVED' ||
+        Boolean(matchingReturn) ||
+        (g && (g.status === 'RETURNED' || g.status === 'FOUND_IN_CUSTODY'))
+      );
+
+      if (isRecovered) {
+        recoveredIncidentsCount++;
+
+        // Calculate resolution duration
+        const reportTimeMs = new Date(m.reportedAt || m.createdAt || m.lastSeenDate).getTime();
+        let resolveTimeMs = null;
+
+        if (matchingReturn) {
+          resolveTimeMs = new Date(matchingReturn.returnDate || matchingReturn.createdAt).getTime();
+        } else if (m.resolvedAt) {
+          resolveTimeMs = new Date(m.resolvedAt).getTime();
+        } else if (g && g.lastReturnedAt) {
+          resolveTimeMs = new Date(g.lastReturnedAt).getTime();
+        }
+
+        if (reportTimeMs && resolveTimeMs && resolveTimeMs >= reportTimeMs) {
+          resolutionDurationsMs.push(resolveTimeMs - reportTimeMs);
+        }
+      }
+    });
+
+    // Recovery Rate: percentage (0-100) or null (N/A)
+    const recoverySuccessRate = totalMissingIncidents > 0 
+      ? Math.round((recoveredIncidentsCount / totalMissingIncidents) * 1000) / 10 
+      : null;
+
+    // Average Resolution Speed: milliseconds or null (N/A)
+    const avgResolutionSpeedMs = resolutionDurationsMs.length > 0
+      ? Math.round(resolutionDurationsMs.reduce((a, b) => a + b, 0) / resolutionDurationsMs.length)
+      : null;
+
+    return res.json({
+      success: true,
+      period: {
+        range,
+        from: from || null,
+        to: to || null
+      },
+      kpis: {
+        recoverySuccessRate,
+        totalMissingIncidents,
+        recoveredIncidentsCount,
+        avgResolutionSpeedMs,
+        timedIncidentsCount: resolutionDurationsMs.length,
+        totalLifecycleAssets: totalGadgets,
+        activeQrTags: activeStickers
+      },
+      charts: {
+        categoryCensus,
+        statusCensus,
+        totalAssets: totalGadgets
+      }
+    });
+  } catch (err) {
+    console.error('Error generating reports:', err);
+    return res.status(500).json({ success: false, error: 'Error generating reports analytics.' });
+  }
+});
+
 // GET /api/osa/audit-logs (OSA Admin views audit logs)
 router.get('/audit-logs', authMiddleware, requireRole('osa_admin'), (req, res) => {
   try {

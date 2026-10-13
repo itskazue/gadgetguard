@@ -787,46 +787,105 @@
               <p>Performance telemetry, recovery resolution rates, and hardware distribution across NCST campus grounds.</p>
             </div>
             <div class="reports-header-actions">
-              <button class="btn btn-secondary btn-sm" onclick="exportAnalyticsSummary()">
-                📥 Export Summary
+              <button class="btn btn-secondary btn-sm" onclick="exportAnalyticsSummary()" title="Download executive summary report">
+                📥 Download Summary
               </button>
-              <button class="btn btn-primary btn-sm" onclick="window.print()">
+              <button class="btn btn-primary btn-sm" onclick="printExecutiveReport()" data-action="window.print()" title="Print executive institutional report">
                 🖨️ Print Executive Report
               </button>
             </div>
           </div>
 
+          <!-- Report Date Range Filter Toolbar -->
+          <div class="osa-toolbar-filter-grid reports-filter-toolbar" style="margin-bottom: 14px;">
+            <div class="osa-filter-item">
+              <label class="osa-filter-label" for="reports-date-filter">📅 Reporting Period</label>
+              <select id="reports-date-filter" class="form-control osa-filter-select" onchange="handleReportDateFilterChange()">
+                <option value="ALL" selected>All Time</option>
+                <option value="TODAY">Today</option>
+                <option value="WEEK">This Week</option>
+                <option value="MONTH">This Month</option>
+                <option value="YEAR">This Year</option>
+                <option value="CUSTOM">Custom Date Range</option>
+              </select>
+            </div>
+            <div class="osa-filter-item" id="reports-custom-date-wrap" style="display: none;">
+              <label class="osa-filter-label">📆 Start Date – End Date</label>
+              <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                <input type="date" id="reports-date-from" class="form-control osa-filter-input" style="width: 135px;" onchange="validateCustomReportDates()">
+                <span style="color: #64748b; font-size: 0.8rem;">–</span>
+                <input type="date" id="reports-date-to" class="form-control osa-filter-input" style="width: 135px;" onchange="validateCustomReportDates()">
+                <button class="btn btn-primary btn-sm" id="reports-apply-btn" onclick="applyCustomReportDateFilter()" style="height: 38px; padding: 0 14px; font-weight: 700;">
+                  Apply Filter
+                </button>
+              </div>
+            </div>
+            <div class="osa-filter-item">
+              <label class="osa-filter-label">&nbsp;</label>
+              <button class="btn btn-secondary btn-sm" id="reports-reset-btn" onclick="resetReportDateFilter()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset reporting period to All Time">
+                ↺ Reset Filter
+              </button>
+            </div>
+          </div>
+
+          <!-- Reporting Period Indicator Banner -->
+          <div id="reports-period-indicator" style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 10px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: #334155; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <span style="color: #64748b; font-weight: 600;">📅 Selected Reporting Period:</span>
+              <strong id="reports-period-label" style="color: #142a6d; margin-left: 4px;">All Time (Complete Historical Archive)</strong>
+            </div>
+            <div id="reports-period-status-badge" style="font-size: 0.75rem; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; padding: 2px 8px; border-radius: 4px; font-weight: 700;">
+              Database-Verified Records • Status: For Review / Not Yet Officially Certified
+            </div>
+          </div>
+
           <!-- Top Metric Cards Grid -->
           <div class="metrics-grid-4">
+            <!-- 1. Recovery Success Rate -->
             <div class="metric-card">
               <div class="metric-icon-box" style="background:#ecfdf5; color:#047857;">🛡️</div>
               <div>
-                <div class="metric-value" id="report-recovery-rate" style="color:#047857;">100%</div>
+                <div class="metric-value" id="report-recovery-rate" style="color:#047857;">N/A</div>
                 <div class="metric-label">Recovery Success Rate</div>
+                <div class="metric-subtext" id="report-recovery-rate-sub" style="font-size: 0.72rem; color: #64748b; margin-top: 2px;">
+                  Historical • Calculating...
+                </div>
               </div>
             </div>
 
+            <!-- 2. Avg Resolution Speed -->
             <div class="metric-card">
               <div class="metric-icon-box" style="background:#eff6ff; color:#142a6d;">⚡</div>
               <div>
-                <div class="metric-value" id="report-avg-time" style="color:#142a6d;">&lt; 24h</div>
+                <div class="metric-value" id="report-avg-time" style="color:#142a6d;">N/A</div>
                 <div class="metric-label">Avg. Resolution Speed</div>
+                <div class="metric-subtext" id="report-avg-time-sub" style="font-size: 0.72rem; color: #64748b; margin-top: 2px;">
+                  Historical • Calculating...
+                </div>
               </div>
             </div>
 
+            <!-- 3. Total Lifecycle Assets -->
             <div class="metric-card">
               <div class="metric-icon-box" style="background:#f5f3ff; color:#6d28d9;">📋</div>
               <div>
                 <div class="metric-value" id="report-total-cases" style="color:#6d28d9;">0</div>
                 <div class="metric-label">Total Lifecycle Assets</div>
+                <div class="metric-subtext" id="report-total-cases-sub" style="font-size: 0.72rem; color: #64748b; margin-top: 2px;">
+                  Current Inventory Snapshot
+                </div>
               </div>
             </div>
 
+            <!-- 4. Active QR Security Tags -->
             <div class="metric-card">
               <div class="metric-icon-box" style="background:#fffbeb; color:#b45309;">🏷️</div>
               <div>
                 <div class="metric-value" id="report-active-stickers" style="color:#b45309;">0</div>
                 <div class="metric-label">Active QR Security Tags</div>
+                <div class="metric-subtext" id="report-active-stickers-sub" style="font-size: 0.72rem; color: #64748b; margin-top: 2px;">
+                  Permanent Valid Tags • Snapshot
+                </div>
               </div>
             </div>
           </div>
@@ -838,7 +897,7 @@
             <div class="analytics-card">
               <div class="analytics-card-header">
                 <div class="analytics-card-title">💻 Device Inventory by Category</div>
-                <span class="analytics-card-sub" id="cat-total-label">Hardware Census</span>
+                <span class="analytics-card-sub" id="cat-total-label">Current Inventory Snapshot</span>
               </div>
               <div id="category-distribution-list">
                 <!-- Dynamically Populated by JS -->
@@ -898,7 +957,7 @@
             <div class="analytics-card">
               <div class="analytics-card-header">
                 <div class="analytics-card-title">🛡️ Asset Recovery Status Breakdown</div>
-                <span class="analytics-card-sub">Active Telemetry</span>
+                <span class="analytics-card-sub" id="status-total-label">Current Inventory Snapshot</span>
               </div>
               <div>
                 <div class="progress-metric-item">
@@ -955,7 +1014,7 @@
 
           </div>
 
-          <!-- Official Institutional Certification Footer -->
+          <!-- Institutional Certification Footer -->
           <div class="report-certified-footer">
             <div class="certified-seal-wrap">
               <img src="/assets/ncst_logo.png" alt="NCST Logo" class="certified-seal-img">
@@ -965,8 +1024,8 @@
               </div>
             </div>
             <div style="text-align:right;">
-              <div style="font-size:0.775rem; color:#cbd5e1;">Official Certification Stamp:</div>
-              <div style="font-weight:700; font-size:0.9rem; color:#fbbf24;">Dean Carlos Mendoza, OSA Director</div>
+              <div style="font-weight:700; font-size:0.9rem; color:#f8fafc;">Prepared by: Office of Student Affairs</div>
+              <div style="font-size:0.72rem; color:#fca5a5; font-weight:600; margin-top:2px;">Status: For Review / Not Yet Officially Certified</div>
             </div>
           </div>
 

@@ -553,6 +553,11 @@ const api = {
     return await this.request('/osa/stats');
   },
 
+  async getOsaReports(params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return await this.request('/osa/reports' + (q ? '?' + q : ''));
+  },
+
   // Photo Upload helper
   async uploadPhoto(fileOrBase64) {
     if (typeof fileOrBase64 === 'string' && fileOrBase64.startsWith('data:')) {
