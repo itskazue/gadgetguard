@@ -333,6 +333,112 @@ const api = {
     });
   },
 
+  async forgotPassword(email) {
+    return await this.request('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+  },
+
+  async verifyResetToken(token) {
+    const query = new URLSearchParams({ token }).toString();
+    return await this.request(`/auth/verify-reset-token?${query}`);
+  },
+
+  async resetPassword(token, newPassword, confirmPassword) {
+    return await this.request('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword, confirmPassword })
+    });
+  },
+
+  async promptInitialPasswordChange(role = 'user') {
+    const user = this.getCurrentUser();
+    if (!user || !user.mustChangePassword) return;
+
+    if (typeof Swal === 'undefined') return;
+
+    const { value: formValues } = await Swal.fire({
+      title: 'Initial Password Change Required 🔒',
+      html: `
+        <div style="text-align: left; font-size: 0.85rem; color: #475569; margin-bottom: 1rem; line-height: 1.5;">
+          Welcome, <strong>${(user.name || 'User').replace(/</g, '&lt;')}</strong>! For your security, NCST policy requires you to update your temporary initial password before accessing your dashboard.
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.75rem; text-align: left;">
+          <div>
+            <label style="font-size: 0.775rem; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">Current / Temporary Password *</label>
+            <input type="password" id="swal-init-current-pwd" class="swal2-input" placeholder="Enter current temporary password" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px; font-size: 0.875rem;">
+          </div>
+          <div>
+            <label style="font-size: 0.775rem; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">New Password (Min. 8 chars, letters & numbers) *</label>
+            <input type="password" id="swal-init-new-pwd" class="swal2-input" placeholder="Enter new strong password" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px; font-size: 0.875rem;">
+          </div>
+          <div>
+            <label style="font-size: 0.775rem; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">Confirm New Password *</label>
+            <input type="password" id="swal-init-confirm-pwd" class="swal2-input" placeholder="Repeat new strong password" style="margin: 0; width: 100%; box-sizing: border-box; height: 38px; font-size: 0.875rem;">
+          </div>
+        </div>
+      `,
+      focusConfirm: false,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showCancelButton: true,
+      cancelButtonText: 'Sign Out',
+      confirmButtonText: 'Update Password & Enter',
+      confirmButtonColor: '#142a6d',
+      cancelButtonColor: '#64748b',
+      preConfirm: () => {
+        const currentPassword = (document.getElementById('swal-init-current-pwd').value || '').trim();
+        const newPassword = (document.getElementById('swal-init-new-pwd').value || '').trim();
+        const confirmPassword = (document.getElementById('swal-init-confirm-pwd').value || '').trim();
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+          Swal.showValidationMessage('Please fill in all password fields.');
+          return false;
+        }
+        if (newPassword.length < 8) {
+          Swal.showValidationMessage('New password must be at least 8 characters long.');
+          return false;
+        }
+        if (!/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+          Swal.showValidationMessage('New password must contain both letters and numbers.');
+          return false;
+        }
+        if (newPassword !== confirmPassword) {
+          Swal.showValidationMessage('New password and confirm password do not match.');
+          return false;
+        }
+        if (currentPassword === newPassword) {
+          Swal.showValidationMessage('New password cannot be the same as your current password.');
+          return false;
+        }
+        return { currentPassword, newPassword, confirmPassword };
+      }
+    });
+
+    if (!formValues) {
+      this.clearAuth();
+      window.location.href = role === 'osa' ? '/osa/login.html' : '/?login=1';
+      return;
+    }
+
+    try {
+      const res = await this.changePassword(formValues.currentPassword, formValues.newPassword, formValues.confirmPassword);
+      if (res && res.success) {
+        user.mustChangePassword = false;
+        this.setCurrentUser(user);
+        await SwalHelper.success('Password Set Successfully! 🔒', 'Your account is now fully secured. Access granted.', 1500);
+        window.location.reload();
+      } else {
+        await SwalHelper.error('Update Failed', res.error || 'Failed to update initial password.');
+        return this.promptInitialPasswordChange(role);
+      }
+    } catch (err) {
+      await SwalHelper.error('Update Failed', err.message || 'Incorrect current password or invalid new password.');
+      return this.promptInitialPasswordChange(role);
+    }
+  },
+
   // Gadgets
   async getMyGadgets() {
     return await this.request('/gadgets/my');

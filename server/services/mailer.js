@@ -80,8 +80,8 @@ async function sendMail({ to, subject, html, text }) {
       }
 
       if (response.ok && (resJson.success !== false)) {
-        console.log(`✅ [Google HTTPS Webhook] Email delivered successfully to ${to}`);
-        return { success: true, method: 'HTTPS_WEBHOOK', details: resJson };
+        console.log(`✅ [Google HTTPS Webhook] Email payload dispatched to webhook for ${to} (HTTP accepted)`);
+        return { success: true, method: 'HTTPS_WEBHOOK', dispatched: true, details: resJson };
       } else {
         console.warn(`⚠️ Google Webhook responded with error:`, resJson);
       }
@@ -96,11 +96,8 @@ async function sendMail({ to, subject, html, text }) {
   const senderEmail = process.env.SMTP_USER || 'kazinteg1@gmail.com';
 
   if (!transporter) {
-    console.log(`\n📧 [SIMULATED EMAIL - NO DELIVERY MECHANISM]`);
-    console.log(`To: ${to}`);
-    console.log(`Subject: ${subject}`);
-    console.log(`Body:\n${text || html}\n`);
-    return { success: true, simulated: true };
+    console.warn(`⚠️ [Mailer] No email transport configured for delivery to ${to}`);
+    return { success: false, error: 'No email transport configured' };
   }
 
   try {
@@ -278,9 +275,89 @@ async function sendPreRegistrationEmail({ studentEmail, studentName, studentId, 
   return sendMail({ to: studentEmail, subject, html });
 }
 
+/**
+ * 3. Send Password Reset Email (15-Minute Expiry)
+ * Branded official NCST email with single-use security token and Cubicle 8 notice
+ */
+async function sendPasswordResetEmail({ to, name, resetUrl, role }) {
+  const subject = '🔐 NCST GadgetGuard: Password Reset Request';
+  const roleLabel = role === 'osa_admin' ? 'OSA Administrator' : 'Student';
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; color: #1e293b; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+    .header { background: linear-gradient(135deg, #142a6d 0%, #1e3a8a 50%, #2563eb 100%); padding: 32px 24px; text-align: center; color: white; }
+    .header h1 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+    .header p { margin: 6px 0 0 0; opacity: 0.9; font-size: 13px; }
+    .content { padding: 32px 28px; }
+    .badge-security { display: inline-block; background: #fef3c7; color: #92400e; font-weight: 700; font-size: 12px; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; margin-bottom: 16px; border: 1px solid #fde68a; }
+    .greeting { font-size: 18px; font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 12px; }
+    .message { font-size: 15px; line-height: 1.6; color: #475569; margin-bottom: 24px; }
+    .btn-container { text-align: center; margin: 28px 0; }
+    .btn { background: #142a6d; color: #ffffff !important; text-decoration: none; font-weight: 700; font-size: 15px; padding: 14px 32px; border-radius: 10px; display: inline-block; box-shadow: 0 4px 12px rgba(20, 42, 109, 0.25); }
+    .notice-box { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #2563eb; border-radius: 10px; padding: 14px 18px; font-size: 13px; color: #334155; line-height: 1.5; margin: 20px 0; }
+    .help-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 14px 18px; font-size: 13px; color: #1e40af; line-height: 1.5; margin: 20px 0; }
+    .footer { background: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; }
+    .footer p { margin: 4px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🛡️ NCST GADGETGUARD</h1>
+      <p>Official Campus Asset Tracking & Account Security</p>
+    </div>
+    <div class="content">
+      <span class="badge-security">🔐 Password Reset Verification</span>
+      <h2 class="greeting">Hello, ${name}!</h2>
+      <p class="message">
+        We received a request to reset the password for your NCST GadgetGuard <strong>${roleLabel}</strong> account associated with <strong>${to}</strong>.
+      </p>
+
+      <div class="btn-container">
+        <a href="${resetUrl}" class="btn" target="_blank">Reset My Password &rarr;</a>
+      </div>
+
+      <div class="notice-box">
+        ⏱️ <strong>Time Sensitive:</strong> This reset link is single-use and will automatically expire in <strong>15 minutes</strong>. If the link expires, you will need to request a new one.
+      </div>
+
+      <div class="help-box">
+        🏢 <strong>In-Person Assistance:</strong> If you cannot access your school email or require in-person identity verification, please proceed to <strong>Cubicle 8, Multipurpose Building</strong>.
+      </div>
+
+      <p style="font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 24px;">
+        🔒 If you did not make this request, you can safely ignore this email. Your current password remains secure, and no changes have been made to your account.
+      </p>
+    </div>
+    <div class="footer">
+      <p><strong>Office of Student Affairs (OSA) • National College of Science and Technology</strong></p>
+      <p>Automated security notification. Never share your password or reset link with anyone.</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  // Respect owner authorization rule: do not dispatch external reset emails without owner approval
+  if (process.env.SEND_RESET_EMAILS !== 'true') {
+    console.log(`📡 [Password Reset Mailer] Real email dispatch held for ${to} (SEND_RESET_EMAILS != true, awaiting owner approval).`);
+    return { success: true, held: true, dispatched: false, message: 'Email dispatch held awaiting owner approval.' };
+  }
+
+  return sendMail({ to, subject, html });
+}
+
 module.exports = {
   verifySMTP,
   sendMail,
   sendApprovalEmail,
-  sendPreRegistrationEmail
+  sendPreRegistrationEmail,
+  sendPasswordResetEmail
 };
+

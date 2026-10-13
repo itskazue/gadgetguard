@@ -237,6 +237,7 @@
         <div class="form-group">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <label class="form-label" for="osa-password" style="margin: 0;">Password</label>
+            <a href="javascript:void(0)" onclick="openOsaForgotPasswordModal()" style="font-size: 0.75rem; color: var(--ncst-navy); font-weight: 700; text-decoration: none;">Forgot password?</a>
           </div>
           <div style="position: relative;">
             <input type="password" id="osa-password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
@@ -323,6 +324,44 @@
         submitBtn.disabled = false;
         submitBtn.textContent = '🔑 Sign In to OSA Console';
         await SwalHelper.error('Administrative Authentication Failed', err.message || 'Invalid staff email or password.');
+      }
+    }
+
+    async function openOsaForgotPasswordModal() {
+      const currentEmail = document.getElementById('osa-email').value.trim();
+      const { value: email } = await Swal.fire({
+        title: '🔑 OSA Staff Password Reset',
+        html: `
+          <p style="font-size:0.85rem; color:#475569; margin-bottom:12px;">
+            Enter your verified Office of Student Affairs staff email address. While automated email delivery is temporarily disabled, please consult the OSA IT Administrator or visit Cubicle 8 for assisted credential recovery.
+          </p>
+        `,
+        input: 'email',
+        inputValue: currentEmail,
+        inputPlaceholder: 'e.g. mrconsonants@gmail.com',
+        showCancelButton: true,
+        confirmButtonText: 'Submit Reset Request',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#142a6d',
+        inputValidator: (val) => {
+          if (!val || !val.trim()) {
+            return 'Please enter your registered staff email address.';
+          }
+        }
+      });
+
+      if (!email) return;
+
+      try {
+        Swal.showLoading();
+        const res = await api.forgotPassword(email.trim());
+        await SwalHelper.info(
+          'Password Reset Request',
+          res.message || 'If an active account with that email exists, password reset instructions have been recorded.',
+          4000
+        );
+      } catch (err) {
+        await SwalHelper.error('Request Failed', err.message || 'Could not process password reset request.');
       }
     }
   </script>

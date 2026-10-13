@@ -707,7 +707,7 @@ await itAsync('Live Server: Intake custody turnover generates correct notificati
     // 1. Login as OSA Admin
     const osaLogin = await httpRequest('/api/auth/login', {
       method: 'POST',
-      body: { email: osaUser.email, password: 'password123' }
+      body: { email: osaUser.email, password: 'admin123' }
     });
     assert.strictEqual(osaLogin.statusCode, 200, 'OSA login succeeded');
     const osaToken = osaLogin.data.token;

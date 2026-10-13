@@ -1,19 +1,47 @@
 const express = require('express');
 const router = express.Router();
-const { hashPassword, comparePassword, generateToken, authMiddleware, requireRole } = require('../auth');
+const crypto = require('crypto');
+const { hashPassword, comparePassword, validatePasswordStrength, generateToken, authMiddleware, requireRole } = require('../auth');
 const db = require('../db');
+const { sendPasswordResetEmail } = require('../services/mailer');
+const { rateLimiter } = require('../services/rateLimiter');
+
+// Rate limiters for security endpoints
+const forgotPasswordIpLimiter = rateLimiter({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  keyPrefix: 'forgot_ip',
+  message: 'Too many password reset requests from this network. Please try again after 15 minutes.'
+});
+
+const forgotPasswordEmailLimiter = rateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  keyPrefix: 'forgot_email',
+  keyGenerator: (req) => {
+    const email = req.body && req.body.email ? String(req.body.email).trim().toLowerCase() : '';
+    return email ? `pwd_email_${email}` : (req.ip || 'unknown');
+  },
+  message: 'Too many reset requests for this account. Please wait 15 minutes before requesting another link.'
+});
+
+const resetPasswordLimiter = rateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  keyPrefix: 'reset_ip',
+  message: 'Too many password reset attempts. Please wait 15 minutes before trying again.'
+});
 
 /**
  * NCST Student Information System (SIS) Integration Helper
  * Ready for future REST / LDAP / OAuth sync with NCST Official Student Database
  */
 async function syncOrFetchNCSTStudent(identifier) {
-  // Placeholder hook: In future production, query NCST Student Database API / LDAP here
-  // e.g. const response = await fetch(`https://sis.ncst.edu.ph/api/v1/students/${identifier}`, { ... });
   return null;
 }
 
-// GET /api/auth/demo-accounts (Convenience endpoint for quick login / demo switchers)
+// GET /api/auth/demo-accounts
+// Returns active accounts list for testing; demoPassword exposure removed for security
 router.get('/demo-accounts', (req, res) => {
   const users = db.get('users').map(u => ({
     id: u.id,
@@ -22,14 +50,13 @@ router.get('/demo-accounts', (req, res) => {
     idNumber: u.idNumber,
     role: u.role,
     department: u.department,
-    status: u.status,
-    demoPassword: u.role === 'osa_admin' ? 'admin123' : 'password123'
+    status: u.status
   }));
   res.json({ success: true, accounts: users });
 });
 
 // POST /api/auth/register
-// Note: Student self-registration is decommissioned in favor of official NCST Student Portal authentication.
+// Student self-registration is decommissioned in favor of official NCST Student Portal authentication.
 router.post('/register', async (req, res) => {
   return res.status(403).json({
     success: false,
@@ -48,13 +75,13 @@ router.post('/login', async (req, res) => {
 
     const cleanInput = email.trim().toLowerCase();
     
-    // Look up by Email OR Student ID OR Name
+    // Look up by Email OR Student ID OR Staff ID
     let user = db.findOne('users', u => 
       (u.email && u.email.toLowerCase() === cleanInput) ||
       (u.idNumber && u.idNumber.toLowerCase() === cleanInput)
     );
 
-    // If still not found, check if student exists in external NCST Student Database (future sync hook)
+    // If still not found, check external NCST SIS hook
     if (!user) {
       const sisStudent = await syncOrFetchNCSTStudent(cleanInput);
       if (sisStudent) {
@@ -80,22 +107,16 @@ router.post('/login', async (req, res) => {
     }
 
     const cleanPass = password.trim();
-    const commonAcceptablePasswords = ['password123', 'student123', 'admin123', '123456', 'denzel123', 'password', 'password1234'];
-    const isPasswordCorrect = comparePassword(cleanPass, user.passwordHash) || commonAcceptablePasswords.includes(cleanPass);
+
+    // Verify password hash strictly with bcrypt
+    const isPasswordCorrect = comparePassword(cleanPass, user.passwordHash);
 
     if (!isPasswordCorrect) {
       return res.status(401).json({ success: false, error: 'Invalid Student ID / Email or password.' });
     }
 
-    // Auto-sync user's password hash if common demo password used
-    if (user.passwordHash !== hashPassword(cleanPass)) {
-      db.update('users', user.id, {
-        passwordHash: hashPassword(cleanPass)
-      });
-    }
-
     if (user.status === 'SUSPENDED') {
-      return res.status(403).json({ success: false, error: 'This student account is suspended. Please visit the Office of Student Affairs.' });
+      return res.status(403).json({ success: false, error: 'This account is suspended. Please visit the Office of Student Affairs.' });
     }
 
     db.addAuditLog({
@@ -115,7 +136,8 @@ router.post('/login', async (req, res) => {
       success: true,
       message: 'Login successful!',
       token,
-      user: userSafe
+      user: userSafe,
+      mustChangePassword: !!user.mustChangePassword
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -145,6 +167,317 @@ router.put('/profile', authMiddleware, (req, res) => {
     res.json({ success: true, message: 'Profile updated!', user: userSafe });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Error updating profile.' });
+  }
+});
+
+// POST /api/auth/forgot-password
+// Dispatches 15-minute expiring reset token; returns generic response to prevent account enumeration
+router.post('/forgot-password', forgotPasswordIpLimiter, forgotPasswordEmailLimiter, async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email || typeof email !== 'string' || !email.trim()) {
+      return res.status(400).json({ success: false, error: 'Registered email address is required.' });
+    }
+
+    const cleanInput = email.trim().toLowerCase();
+
+    // Look up by email (or Student ID fallback)
+    const user = db.findOne('users', u => 
+      (u.email && u.email.toLowerCase() === cleanInput) ||
+      (u.idNumber && u.idNumber.toLowerCase() === cleanInput)
+    );
+
+    // If active user found, generate secure reset token
+    if (user && user.status === 'ACTIVE') {
+      // Cryptographically secure 32-byte (64 hex char) random token
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+      // Invalidate any existing active tokens for this user
+      const existingActive = db.find('password_resets', r => r.userId === user.id && !r.used);
+      for (const t of existingActive) {
+        db.update('password_resets', t.id, { used: true, invalidatedAt: new Date().toISOString() });
+      }
+
+      // 15-minute expiration
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+      const resetRecord = {
+        id: 'rst_' + Date.now().toString(36) + '_' + crypto.randomBytes(4).toString('hex'),
+        userId: user.id,
+        email: user.email,
+        tokenHash,
+        expiresAt,
+        used: false,
+        usedAt: null,
+        createdAt: new Date().toISOString(),
+        ipAddress: req.ip
+      };
+
+      db.insert('password_resets', resetRecord);
+
+      // Build reset URL
+      const host = req.get('host');
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+      const baseUrl = process.env.APP_URL || `${protocol}://${host}`;
+      const resetUrl = `${baseUrl}/reset-password.html?token=${rawToken}`;
+
+      // Dispatch branded reset email (never log rawToken or resetUrl)
+      sendPasswordResetEmail({
+        to: user.email,
+        name: user.name,
+        resetUrl,
+        role: user.role
+      }).catch(err => {
+        console.warn('⚠️ [Forgot Password] Email delivery dispatch failed:', err.message);
+      });
+
+      db.addAuditLog({
+        userId: user.id,
+        userRole: user.role,
+        action: 'REQUEST_PASSWORD_RESET',
+        targetType: 'user',
+        targetId: user.id,
+        details: `Password reset link requested for ${user.email}`,
+        ipAddress: req.ip
+      });
+
+      if (process.env.NODE_ENV === 'test') {
+        res.setHeader('X-Test-Reset-Token', rawToken);
+      }
+    }
+
+    // Generic response returned for both found and non-existent accounts to prevent enumeration
+    const emailsEnabled = process.env.SEND_RESET_EMAILS === 'true';
+    const message = emailsEnabled
+      ? 'If an active account with that email exists, password reset instructions have been sent.'
+      : 'Password reset request received. Automated email delivery is temporarily disabled. If an active account with that email exists, please visit the Office of Student Affairs (Cubicle 8, Multipurpose Building) for assisted credential recovery.';
+
+    return res.json({
+      success: true,
+      emailDeliveryDisabled: !emailsEnabled,
+      message
+    });
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    return res.status(500).json({ success: false, error: 'Server error processing password reset request.' });
+  }
+});
+
+// GET /api/auth/verify-reset-token
+// Verifies whether a token is valid, unused, and within the 15-minute window
+router.get('/verify-reset-token', (req, res) => {
+  try {
+    const { token } = req.query;
+
+    if (!token || typeof token !== 'string' || !token.trim()) {
+      return res.status(400).json({ success: false, valid: false, error: 'Reset token is required.' });
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
+    const resetRecord = db.findOne('password_resets', r => r.tokenHash === tokenHash);
+
+    if (!resetRecord) {
+      return res.status(400).json({ success: false, valid: false, error: 'Invalid or expired password reset link.' });
+    }
+
+    if (resetRecord.used) {
+      return res.status(400).json({ success: false, valid: false, error: 'This password reset link has already been used. Please request a new one.' });
+    }
+
+    if (new Date(resetRecord.expiresAt).getTime() < Date.now()) {
+      return res.status(400).json({ success: false, valid: false, error: 'This password reset link has expired. Please request a new one.' });
+    }
+
+    return res.json({
+      success: true,
+      valid: true,
+      email: resetRecord.email
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, valid: false, error: 'Server error verifying reset token.' });
+  }
+});
+
+// Test-only endpoint to safely simulate token expiration in automated tests
+if (process.env.NODE_ENV === 'test') {
+  router.post('/test-expire-token', (req, res) => {
+    try {
+      const { token } = req.body;
+      if (!token) return res.status(400).json({ success: false, error: 'Token is required.' });
+      const tokenHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
+      const resetRecord = db.findOne('password_resets', r => r.tokenHash === tokenHash);
+      if (!resetRecord) return res.status(404).json({ success: false, error: 'Token record not found.' });
+      db.update('password_resets', resetRecord.id, {
+        expiresAt: new Date(Date.now() - 60 * 1000).toISOString()
+      });
+      return res.json({ success: true, message: 'Token expired for test.' });
+    } catch (err) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  });
+}
+
+// POST /api/auth/reset-password
+// Consumes single-use reset token and sets new password
+router.post('/reset-password', resetPasswordLimiter, async (req, res) => {
+  try {
+    const { token, newPassword, confirmPassword } = req.body;
+
+    if (!token || typeof token !== 'string' || !token.trim()) {
+      return res.status(400).json({ success: false, error: 'Reset token is required.' });
+    }
+
+    if (!newPassword) {
+      return res.status(400).json({ success: false, error: 'New password is required.' });
+    }
+
+    if (confirmPassword && newPassword !== confirmPassword) {
+      return res.status(400).json({ success: false, error: 'New passwords do not match.' });
+    }
+
+    // Strong password validation (at least 8 chars, letters and numbers)
+    const strength = validatePasswordStrength(newPassword);
+    if (!strength.valid) {
+      return res.status(400).json({ success: false, error: strength.error });
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
+    const resetRecord = db.findOne('password_resets', r => r.tokenHash === tokenHash);
+
+    if (!resetRecord) {
+      return res.status(400).json({ success: false, error: 'Invalid or expired password reset link.' });
+    }
+
+    if (resetRecord.used) {
+      return res.status(400).json({ success: false, error: 'This password reset link has already been used. Please request a new one.' });
+    }
+
+    if (new Date(resetRecord.expiresAt).getTime() < Date.now()) {
+      return res.status(400).json({ success: false, error: 'This password reset link has expired. Please request a new one.' });
+    }
+
+    // Immediate synchronous check-and-set claim to prevent in-process concurrency race conditions
+    const nowIso = new Date().toISOString();
+    resetRecord.used = true;
+    resetRecord.usedAt = nowIso;
+    db.update('password_resets', resetRecord.id, {
+      used: true,
+      usedAt: nowIso
+    });
+
+    const user = db.findById('users', resetRecord.userId);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User account associated with this token no longer exists.' });
+    }
+
+    // Update password hash, clear mustChangePassword, record change timestamp
+    const newHash = hashPassword(newPassword);
+
+    db.update('users', user.id, {
+      passwordHash: newHash,
+      mustChangePassword: false,
+      passwordChangedAt: nowIso,
+      updatedAt: nowIso
+    });
+
+    // Invalidate all remaining tokens for this user
+    const otherTokens = db.find('password_resets', r => r.userId === user.id && !r.used);
+    for (const t of otherTokens) {
+      db.update('password_resets', t.id, { used: true, invalidatedAt: nowIso });
+    }
+
+    db.addAuditLog({
+      userId: user.id,
+      userRole: user.role,
+      action: 'RESET_PASSWORD_SUCCESS',
+      targetType: 'user',
+      targetId: user.id,
+      details: `Password reset successfully via verified token for ${user.email}`,
+      ipAddress: req.ip
+    });
+
+    return res.json({
+      success: true,
+      message: 'Your password has been successfully reset. You may now log in with your new password.'
+    });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    return res.status(500).json({ success: false, error: 'Server error resetting password.' });
+  }
+});
+
+// POST /api/auth/change-password (Authenticated student or staff changes password)
+router.post('/change-password', authMiddleware, async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmNewPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, error: 'Current password and new password are required.' });
+    }
+
+    // Strong password validation
+    const strength = validatePasswordStrength(newPassword);
+    if (!strength.valid) {
+      return res.status(400).json({ success: false, error: strength.error });
+    }
+
+    if (confirmNewPassword && newPassword !== confirmNewPassword) {
+      return res.status(400).json({ success: false, error: 'New passwords do not match.' });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ success: false, error: 'New password cannot be the same as your current password.' });
+    }
+
+    const user = db.findById('users', req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User account not found.' });
+    }
+
+    // Verify current password strictly with bcrypt
+    const isMatch = comparePassword(currentPassword, user.passwordHash);
+
+    if (!isMatch) {
+      return res.status(400).json({ success: false, error: 'Incorrect current password.' });
+    }
+
+    const newHash = hashPassword(newPassword);
+    const nowIso = new Date().toISOString();
+
+    db.update('users', user.id, {
+      passwordHash: newHash,
+      mustChangePassword: false,
+      passwordChangedAt: nowIso,
+      updatedAt: nowIso
+    });
+
+    // Invalidate any active password reset tokens for this user
+    const pendingTokens = db.find('password_resets', r => r.userId === user.id && !r.used);
+    for (const t of pendingTokens) {
+      db.update('password_resets', t.id, { used: true, invalidatedAt: nowIso });
+    }
+
+    db.addAuditLog({
+      userId: user.id,
+      userRole: user.role,
+      action: 'CHANGE_PASSWORD',
+      targetType: 'user',
+      targetId: user.id,
+      details: `User ${user.name} (${user.email}) changed their account password.`,
+      ipAddress: req.ip
+    });
+
+    const updatedUser = db.findById('users', user.id);
+    const newToken = generateToken(updatedUser);
+
+    return res.json({
+      success: true,
+      message: 'Password updated successfully!',
+      token: newToken
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: 'Error changing password.' });
   }
 });
 
@@ -183,53 +516,22 @@ router.put('/users/:id/status', authMiddleware, requireRole('osa_admin'), (req, 
   res.json({ success: true, message: `User status changed to ${status}`, user: updated });
 });
 
-// POST /api/auth/change-password (Authenticated student or staff changes password)
-router.post('/change-password', authMiddleware, async (req, res) => {
-  try {
-    const { currentPassword, newPassword, confirmNewPassword } = req.body;
-
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ success: false, error: 'Current password and new password are required.' });
+// Test helper: expire token for testing (only available when NODE_ENV === 'test')
+if (process.env.NODE_ENV === 'test') {
+  router.post('/test-expire-token', (req, res) => {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ success: false });
+    const tokenHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
+    const rec = db.findOne('password_resets', r => r.tokenHash === tokenHash);
+    if (rec) {
+      db.update('password_resets', rec.id, {
+        expiresAt: new Date(Date.now() - 60000).toISOString()
+      });
+      return res.json({ success: true, expired: true });
     }
-
-    if (newPassword.length < 6) {
-      return res.status(400).json({ success: false, error: 'New password must be at least 6 characters long.' });
-    }
-
-    if (confirmNewPassword && newPassword !== confirmNewPassword) {
-      return res.status(400).json({ success: false, error: 'New passwords do not match.' });
-    }
-
-    const user = db.findById('users', req.user.id);
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'User account not found.' });
-    }
-
-    const isMatch = comparePassword(currentPassword, user.passwordHash);
-    if (!isMatch) {
-      return res.status(400).json({ success: false, error: 'Incorrect current password.' });
-    }
-
-    const newHash = hashPassword(newPassword);
-    db.update('users', user.id, {
-      passwordHash: newHash,
-      updatedAt: new Date().toISOString()
-    });
-
-    db.addAuditLog({
-      userId: user.id,
-      userRole: user.role,
-      action: 'CHANGE_PASSWORD',
-      targetType: 'user',
-      targetId: user.id,
-      details: `User ${user.name} (${user.email}) changed their account password.`,
-      ipAddress: req.ip
-    });
-
-    return res.json({ success: true, message: 'Password updated successfully!' });
-  } catch (err) {
-    return res.status(500).json({ success: false, error: 'Error changing password.' });
-  }
-});
+    return res.status(404).json({ success: false });
+  });
+}
 
 module.exports = router;
+

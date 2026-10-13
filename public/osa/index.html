@@ -1229,8 +1229,101 @@
 
         <!-- ================= SCREEN 13: SETTINGS & DEMO RESET ================= -->
         <section id="osa-screen-settings" class="osa-screen">
+
+          <!-- Card 1: Authenticated Staff Profile -->
           <div class="app-card" style="max-width: 680px; margin-bottom: 24px;">
-            <h3 style="font-weight: 800; font-size: 1.15rem; margin-bottom: 16px;">⚙️ Campus System Configuration</h3>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
+              <div>
+                <h3 style="font-weight: 800; font-size: 1.15rem; margin: 0; color: #142a6d; display: flex; align-items: center; gap: 8px;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                  <span>Staff Profile & Credentials</span>
+                </h3>
+                <div style="font-size: 0.775rem; color: var(--text-muted); margin-top: 2px;">
+                  Verified administrative identity loaded from current session
+                </div>
+              </div>
+              <span id="osa-profile-status-badge" style="font-size: 0.75rem; padding: 4px 10px; border-radius: 999px; background: #ecfdf5; color: #047857; font-weight: 700;">ACTIVE</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 0.85rem;">
+              <div>
+                <div style="color: #64748b; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Full Name</div>
+                <div id="osa-profile-name" style="font-weight: 700; color: #0f172a; margin-top: 2px;">-</div>
+              </div>
+              <div>
+                <div style="color: #64748b; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Staff / Employee ID</div>
+                <div id="osa-profile-id" style="font-weight: 700; color: #0f172a; font-family: var(--font-mono); margin-top: 2px;">-</div>
+              </div>
+              <div>
+                <div style="color: #64748b; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Registered Email</div>
+                <div id="osa-profile-email" style="font-weight: 700; color: #142a6d; margin-top: 2px;">-</div>
+              </div>
+              <div>
+                <div style="color: #64748b; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Department</div>
+                <div id="osa-profile-dept" style="font-weight: 700; color: #0f172a; margin-top: 2px;">Office of Student Affairs</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Change Account Password -->
+          <div class="app-card" style="max-width: 680px; margin-bottom: 24px;">
+            <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
+              <h3 style="font-weight: 800; font-size: 1.15rem; margin: 0; color: #142a6d; display: flex; align-items: center; gap: 8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <span>Change Account Password</span>
+              </h3>
+              <div style="font-size: 0.775rem; color: var(--text-muted); margin-top: 2px;">
+                Update your administrative credentials (minimum 8 characters with letters & numbers)
+              </div>
+            </div>
+
+            <form onsubmit="handleOsaChangePassword(event)" id="osa-change-password-form">
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label class="form-label">Current Password</label>
+                <input type="password" id="osa-pwd-current" class="form-control" placeholder="Enter current password" required autocomplete="current-password">
+              </div>
+
+              <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                <div class="form-group">
+                  <label class="form-label">New Password</label>
+                  <input type="password" id="osa-pwd-new" class="form-control" placeholder="At least 8 chars" required autocomplete="new-password">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Confirm New Password</label>
+                  <input type="password" id="osa-pwd-confirm" class="form-control" placeholder="Re-type new password" required autocomplete="new-password">
+                </div>
+              </div>
+
+              <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 16px;">
+                🔒 Passwords must be at least 8 characters long and contain both letters and numbers.
+              </div>
+
+              <button type="submit" id="btn-osa-pwd-submit" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+                <span>🔒</span> Update Password
+              </button>
+            </form>
+          </div>
+
+          <!-- Card 3: Campus System Configuration -->
+          <div class="app-card" style="max-width: 680px; margin-bottom: 24px;">
+            <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
+              <h3 style="font-weight: 800; font-size: 1.15rem; margin: 0; color: #142a6d; display: flex; align-items: center; gap: 8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                <span>Campus System Configuration</span>
+              </h3>
+              <div style="font-size: 0.775rem; color: var(--text-muted); margin-top: 2px;">
+                Institutional parameters applied across all public & student interfaces
+              </div>
+            </div>
             <form onsubmit="handleOsaSettingsSave(event)">
               <div class="form-group">
                 <label class="form-label">University / Institution Name</label>

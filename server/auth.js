@@ -19,7 +19,8 @@ function generateToken(user) {
       email: user.email,
       role: user.role,
       name: user.name,
-      idNumber: user.idNumber
+      idNumber: user.idNumber,
+      pwdAt: user.passwordChangedAt || 'initial'
     },
     JWT_SECRET,
     { expiresIn: '7d' }
@@ -49,6 +50,41 @@ function authMiddleware(req, res, next) {
     if (user.status === 'SUSPENDED') {
       return res.status(403).json({ success: false, error: 'Your account has been suspended by OSA.' });
     }
+
+    // Invalidate sessions issued prior to password change/reset
+    if (user.passwordChangedAt) {
+      // Direct timestamp matching ensures microsecond precision regardless of unix-second rounding
+      if (decoded.pwdAt && decoded.pwdAt !== user.passwordChangedAt) {
+        return res.status(401).json({
+          success: false,
+          error: 'Your password was recently changed. Please log in with your new password.',
+          code: 'SESSION_REVOKED'
+        });
+      }
+      // Backward compatibility for tokens signed prior to pwdAt claim
+      if (!decoded.pwdAt && decoded.iat) {
+        const changedAtSec = Math.floor(new Date(user.passwordChangedAt).getTime() / 1000);
+        if (decoded.iat < changedAtSec) {
+          return res.status(401).json({
+            success: false,
+            error: 'Your password was recently changed. Please log in with your new password.',
+            code: 'SESSION_REVOKED'
+          });
+        }
+      }
+    }
+
+    // Server-enforced initial password change requirement
+    // Only /change-password, /me, and /logout may be accessed until password is changed
+    const reqPath = (req.baseUrl || '') + (req.path || '');
+    if (user.mustChangePassword && !reqPath.endsWith('/change-password') && !reqPath.endsWith('/me') && !reqPath.endsWith('/logout')) {
+      return res.status(403).json({
+        success: false,
+        error: 'Initial password change required before accessing system resources.',
+        code: 'MUST_CHANGE_PASSWORD'
+      });
+    }
+
     req.user = user;
     next();
   } catch (err) {
@@ -71,11 +107,26 @@ function requireRole(...allowedRoles) {
   };
 }
 
+function validatePasswordStrength(password) {
+  if (!password || typeof password !== 'string') {
+    return { valid: false, error: 'Password is required.' };
+  }
+  if (password.length < 8) {
+    return { valid: false, error: 'Password must be at least 8 characters long.' };
+  }
+  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+    return { valid: false, error: 'Password must contain both letters and numbers.' };
+  }
+  return { valid: true };
+}
+
 module.exports = {
   hashPassword,
   comparePassword,
+  validatePasswordStrength,
   generateToken,
   authMiddleware,
   requireRole,
   JWT_SECRET
 };
+

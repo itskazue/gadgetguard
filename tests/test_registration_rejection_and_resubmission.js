@@ -205,7 +205,7 @@ function httpRequest(options, postData = null) {
       const res = await httpRequest({
         path: '/api/auth/login',
         method: 'POST'
-      }, { email: osaUser.email, password: 'password123' });
+      }, { email: osaUser.email, password: 'admin123' });
       assert.strictEqual(res.statusCode, 200);
       assert.ok(res.body.token);
       osaToken = res.body.token;

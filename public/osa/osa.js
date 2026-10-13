@@ -46,6 +46,10 @@ async function ensureAdminAuthenticated() {
     return;
   }
 
+  if (user.mustChangePassword) {
+    await api.promptInitialPasswordChange('osa');
+  }
+
   const nameEl = document.getElementById('osa-admin-name');
   if (nameEl) nameEl.textContent = user.name;
 }
@@ -3848,17 +3852,98 @@ async function handleOsaNotificationClick(id, linkUrl) {
 
 // 14. Settings Form & Demo Reset
 async function loadSettingsForm() {
+  // Populate Authenticated Staff Profile Card
+  try {
+    const user = api.getCurrentUser();
+    if (user) {
+      const nameEl = document.getElementById('osa-profile-name');
+      const idEl = document.getElementById('osa-profile-id');
+      const emailEl = document.getElementById('osa-profile-email');
+      const deptEl = document.getElementById('osa-profile-dept');
+      const statusEl = document.getElementById('osa-profile-status-badge');
+
+      if (nameEl) nameEl.textContent = user.name || '-';
+      if (idEl) idEl.textContent = user.idNumber || user.id || '-';
+      if (emailEl) emailEl.textContent = user.email || '-';
+      if (deptEl) deptEl.textContent = user.department || 'Office of Student Affairs';
+      if (statusEl) statusEl.textContent = user.status || 'ACTIVE';
+    }
+  } catch (err) {}
+
+  // Populate Campus System Configuration Card
   try {
     const res = await api.getSettings();
     if (res.success && res.settings) {
       const s = res.settings;
-      document.getElementById('osa-set-school').value = s.schoolName;
-      document.getElementById('osa-set-loc').value = s.osaOfficeLocation;
-      document.getElementById('osa-set-phone').value = s.osaContactPhone;
-      document.getElementById('osa-set-email').value = s.osaEmail;
-      document.getElementById('osa-set-hours').value = s.operatingHours;
+      const schoolEl = document.getElementById('osa-set-school');
+      const locEl = document.getElementById('osa-set-loc');
+      const phoneEl = document.getElementById('osa-set-phone');
+      const emailEl = document.getElementById('osa-set-email');
+      const hoursEl = document.getElementById('osa-set-hours');
+
+      if (schoolEl) schoolEl.value = s.schoolName || '';
+      if (locEl) locEl.value = s.osaOfficeLocation || '';
+      if (phoneEl) phoneEl.value = s.osaContactPhone || '';
+      if (emailEl) emailEl.value = s.osaEmail || '';
+      if (hoursEl) hoursEl.value = s.operatingHours || '';
     }
   } catch (e) {}
+}
+
+async function handleOsaChangePassword(e) {
+  e.preventDefault();
+  const currentPassword = document.getElementById('osa-pwd-current').value;
+  const newPassword = document.getElementById('osa-pwd-new').value;
+  const confirmNewPassword = document.getElementById('osa-pwd-confirm').value;
+
+  if (!currentPassword || !newPassword) {
+    await SwalHelper.warning('Missing Fields', 'Please enter your current password and a new password.');
+    return;
+  }
+
+  if (newPassword.length < 8) {
+    await SwalHelper.warning('Password Too Short', 'New password must be at least 8 characters long.');
+    return;
+  }
+
+  if (!/[A-Za-z]/.test(newPassword) || !/\d/.test(newPassword)) {
+    await SwalHelper.warning('Weak Password', 'New password must contain both letters and numbers.');
+    return;
+  }
+
+  if (newPassword !== confirmNewPassword) {
+    await SwalHelper.warning('Passwords Do Not Match', 'The new password and confirmation password do not match.');
+    return;
+  }
+
+  if (currentPassword === newPassword) {
+    await SwalHelper.warning('Duplicate Password', 'Your new password cannot be the same as your current password.');
+    return;
+  }
+
+  const submitBtn = document.getElementById('btn-osa-pwd-submit');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Updating Password...';
+  }
+
+  try {
+    const res = await api.changePassword(currentPassword, newPassword, confirmNewPassword);
+    if (res.success) {
+      await SwalHelper.success('Password Updated! 🔒', 'Your OSA account password has been successfully updated.');
+      const form = document.getElementById('osa-change-password-form');
+      if (form) form.reset();
+    } else {
+      throw new Error(res.error || 'Could not update password.');
+    }
+  } catch (err) {
+    await SwalHelper.error('Update Failed', err.message || 'Could not update password.');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<span>🔒</span> Update Password';
+    }
+  }
 }
 
 async function handleOsaSettingsSave(e) {

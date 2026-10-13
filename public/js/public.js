@@ -185,6 +185,58 @@ function closeModal(modalId) {
   if (el) el.classList.remove('active');
 }
 
+function openForgotPasswordModal() {
+  closeModal('login-modal');
+  const modal = document.getElementById('forgot-password-modal');
+  if (modal) {
+    modal.classList.add('active');
+    const input = document.getElementById('forgot-email');
+    if (input) {
+      const loginEmail = document.getElementById('login-email');
+      if (loginEmail && loginEmail.value.trim()) {
+        input.value = loginEmail.value.trim();
+      }
+      setTimeout(() => input.focus(), 100);
+    }
+  }
+}
+
+async function handleForgotPasswordSubmit(e) {
+  e.preventDefault();
+  const emailInput = document.getElementById('forgot-email');
+  if (!emailInput) return;
+  const email = emailInput.value.trim();
+
+  if (!email) {
+    await SwalHelper.warning('Email Required', 'Please enter your registered NCST school email address or Student ID.');
+    return;
+  }
+
+  const submitBtn = document.getElementById('btn-submit-forgot');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Processing Password Reset Request...';
+  }
+
+  try {
+    const res = await api.forgotPassword(email);
+    closeModal('forgot-password-modal');
+    await SwalHelper.info(
+      'Password Reset Request',
+      res.message || 'If an active account with that email exists, password reset instructions have been recorded.',
+      4000
+    );
+    emailInput.value = '';
+  } catch (err) {
+    await SwalHelper.error('Request Failed', err.message || 'Could not process password reset request.');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = '🔐 Request Password Reset';
+    }
+  }
+}
+
 async function quickFillLogin(identifier, password) {
   const emailInput = document.getElementById('login-email');
   const passInput = document.getElementById('login-password');

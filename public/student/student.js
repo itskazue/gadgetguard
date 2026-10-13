@@ -85,6 +85,9 @@ async function ensureStudentAuthenticated() {
       user = meRes.user;
       api.setCurrentUser(user);
       populateStudentUserUI(user);
+      if (user.mustChangePassword) {
+        await api.promptInitialPasswordChange('student');
+      }
     } else {
       api.clearAuth();
       window.location.href = '/?login=1';
@@ -921,8 +924,13 @@ async function handleStudentChangePasswordSubmit(e) {
     return;
   }
 
-  if (newPassword.length < 6) {
-    await SwalHelper.warning('Password Too Short', 'New password must be at least 6 characters long.');
+  if (newPassword.length < 8) {
+    await SwalHelper.warning('Password Too Short', 'New password must be at least 8 characters long.');
+    return;
+  }
+
+  if (!/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+    await SwalHelper.warning('Password Policy', 'New password must contain both letters and numbers.');
     return;
   }
 

@@ -267,6 +267,10 @@ app.get(/^\/device/, (req, res) => {
   res.sendFile('device/index.html', { root: PUBLIC_DIR });
 });
 
+app.get(/^\/reset-password/, (req, res) => {
+  res.sendFile('reset-password.html', { root: PUBLIC_DIR });
+});
+
 // Fallback all other non-API GET requests to public index.html
 app.get(/^\/(?!api|uploads).*/, (req, res) => {
   res.sendFile('index.html', { root: PUBLIC_DIR });
@@ -287,11 +291,7 @@ async function startServer() {
 🔍 PUBLIC QR SCAN VERIFICATION:   http://localhost:${PORT}/device/gg_dev_7c3b881e
 🚀 SHARED REST API & SSE HUB:     http://localhost:${PORT}/api/
 ===============================================================
-Demo Accounts:
-- OSA Admin:   osa.admin@univ.edu         / admin123
-- Student 1:   juan.delacruz@student.univ.edu / student123
-- Student 2:   maria.santos@student.univ.edu  / student123
-- Faculty:     prof.reyes@faculty.univ.edu    / faculty123
+Authentication: Secure password-hashed login active.
 ===============================================================
     `);
   });

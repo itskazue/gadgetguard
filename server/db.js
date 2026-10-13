@@ -19,6 +19,7 @@ let dbData = {
   audit_logs: [],
   recovery_chats: [],
   uploaded_files: [],
+  password_resets: [],
   system_settings: {
     schoolName: "National College of Science and Technology (NCST)",
     campusName: "Main Campus - Emilio Aguinaldo Hwy, Dasmariñas, Cavite",
@@ -200,7 +201,7 @@ const db = {
         const collections = [
           'users', 'gadgets', 'missing_reports', 'found_reports', 
           'claims', 'returns', 'qr_scans', 'notifications', 
-          'audit_logs', 'recovery_chats', 'uploaded_files'
+          'audit_logs', 'recovery_chats', 'uploaded_files', 'password_resets'
         ];
         for (const col of collections) {
           const items = dbData[col] || [];

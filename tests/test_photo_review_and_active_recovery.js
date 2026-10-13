@@ -207,7 +207,7 @@ function sleep(ms) {
     // Login
     const loginOsa = await httpRequest('/auth/login', {
       method: 'POST',
-      body: { email: osaUser.email, password: 'password123' }
+      body: { email: osaUser.email, password: 'admin123' }
     });
     const tokenOsa = loginOsa.data?.token;
 
