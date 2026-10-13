@@ -272,6 +272,29 @@ const db = {
     return list[index];
   },
 
+  updateMany(collection, filterFn, updates) {
+    const list = this.get(collection);
+    const updated = [];
+    const now = new Date().toISOString();
+    for (let i = 0; i < list.length; i++) {
+      if (filterFn(list[i])) {
+        list[i] = {
+          ...list[i],
+          ...updates,
+          updatedAt: now
+        };
+        updated.push(list[i]);
+      }
+    }
+    if (updated.length > 0) {
+      saveDBSync();
+      for (const item of updated) {
+        syncToPg(collection, item.id, item, 'upsert');
+      }
+    }
+    return updated;
+  },
+
   delete(collection, id) {
     const list = this.get(collection);
     const index = list.findIndex(item => item.id === id);

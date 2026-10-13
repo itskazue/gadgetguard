@@ -1968,8 +1968,8 @@ async function loadNotificationsFeed() {
     const unread = res.unreadCount || 0;
 
     if (badge) {
+      badge.textContent = unread;
       if (unread > 0) {
-        badge.textContent = unread;
         badge.style.display = 'inline-block';
       } else {
         badge.style.display = 'none';
@@ -2345,11 +2345,12 @@ async function toggleNotificationItem(id, event) {
 
       // Decrement sidebar unread badge
       const badge = document.getElementById('badge-notif-count');
-      if (badge && badge.style.display !== 'none') {
+      if (badge) {
         let currentCount = parseInt(badge.textContent) || 0;
         currentCount = Math.max(0, currentCount - 1);
+        badge.textContent = currentCount;
         if (currentCount > 0) {
-          badge.textContent = currentCount;
+          badge.style.display = 'inline-block';
         } else {
           badge.style.display = 'none';
         }
@@ -2471,9 +2472,12 @@ async function handleNotifActionClick(id, actionTarget) {
 
 async function markAllNotificationsRead() {
   try {
-    await api.markAllNotificationsRead();
-    showToast('info', 'Updated', 'All notifications marked as read.');
-    
+    const res = await api.markAllNotificationsRead();
+    if (!res || !res.success) {
+      showToast('error', 'Update Failed', (res && res.error) || 'Could not mark notifications as read.');
+      return;
+    }
+
     // Smoothly update existing cards without collapsing active items
     studentNotifsCache.forEach(n => { n.read = true; });
     const cards = document.querySelectorAll('.notif-accordion-card.unread');
@@ -2485,10 +2489,20 @@ async function markAllNotificationsRead() {
     dots.forEach(d => d.remove());
 
     const badge = document.getElementById('badge-notif-count');
-    if (badge) badge.style.display = 'none';
+    if (badge) {
+      badge.textContent = '0';
+      badge.style.display = 'none';
+    }
+
+    showToast('info', 'Updated', 'All notifications marked as read.');
   } catch (e) {
     console.error('Error marking all notifications read:', e);
+    showToast('error', 'Update Failed', e.message || 'Could not mark notifications as read.');
   }
+}
+
+if (typeof window !== 'undefined') {
+  window.markAllNotificationsRead = markAllNotificationsRead;
 }
 
 function showCustodyFallbackNotice(notif) {

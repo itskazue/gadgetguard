@@ -42,12 +42,14 @@ router.put('/:id/read', authMiddleware, (req, res) => {
 // PUT /api/notifications/read-all (Mark all as read)
 router.put('/read-all', authMiddleware, (req, res) => {
   try {
-    const userNotifs = db.find('notifications', n => n.userId === req.user.id && !n.read);
-    userNotifs.forEach(n => {
-      db.update('notifications', n.id, { read: true });
-    });
+    const updated = db.updateMany('notifications', n => n.userId === req.user.id && !n.read, { read: true });
 
-    return res.json({ success: true, message: 'All notifications marked as read.' });
+    return res.json({
+      success: true,
+      unreadCount: 0,
+      updatedCount: updated.length,
+      message: 'All notifications marked as read.'
+    });
   } catch (err) {
     return res.status(500).json({ success: false, error: 'Error marking notifications read.' });
   }
