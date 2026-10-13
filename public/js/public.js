@@ -15,6 +15,20 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast('info', 'Sign In Required', 'Please log in with your NCST Student ID or Email.');
   }
 
+  // Direct anchor navigation for OSA surrender drop-off instructions
+  const hash = window.location.hash;
+  if (hash === '#osa-surrender' || hash === '#contact') {
+    setTimeout(() => {
+      const target = document.getElementById('osa-surrender') || document.getElementById('contact');
+      if (target) {
+        const navHeader = document.querySelector('.public-nav');
+        const navHeight = navHeader ? navHeader.offsetHeight : 70;
+        const targetTop = target.getBoundingClientRect().top + window.pageYOffset - navHeight - 10;
+        window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+      }
+    }, 150);
+  }
+
   // Re-fetch on live server events
   onLiveEvent((evt) => {
     loadPublicStats();

@@ -567,7 +567,7 @@ textarea.form-control {
   color: #0f172a;
   border: 2px dashed #2563eb;
   border-radius: 14px;
-  padding: 16px 18px 18px;
+  padding: 16px 16px 14px;
   text-align: center;
   width: 250px;
   max-width: 100%;
@@ -581,9 +581,9 @@ textarea.form-control {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 800;
-  color: #1d4ed8;
+  color: #142a6d;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 6px;
@@ -591,7 +591,7 @@ textarea.form-control {
 
 .sticker-scan-me {
   display: inline-block;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 900;
   color: #1d4ed8;
   background: #eff6ff;
@@ -600,17 +600,17 @@ textarea.form-control {
   border-radius: 9999px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .sticker-qr-img {
-  width: 175px;
-  height: 175px;
+  width: 170px;
+  height: 170px;
   border-radius: 8px;
   border: 1px solid #cbd5e1;
   padding: 4px;
   background: #ffffff;
-  margin: 0 auto 10px;
+  margin: 0 auto 8px;
   display: block;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
@@ -620,20 +620,53 @@ textarea.form-control {
 }
 
 .sticker-token-wrap {
-  margin: 0;
+  margin: 0 0 8px;
 }
 
 .sticker-token {
   font-family: var(--font-mono, 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 800;
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
-  padding: 3px 12px;
+  padding: 3px 10px;
   border-radius: 6px;
   display: inline-block;
   color: #0f172a;
   letter-spacing: 0.03em;
+}
+
+.sticker-fallback {
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 8px;
+  margin-top: 4px;
+  text-align: center;
+}
+
+.sticker-fallback-label {
+  font-size: 0.67rem;
+  font-weight: 800;
+  color: #142a6d;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sticker-fallback-sub {
+  font-size: 0.64rem;
+  color: #64748b;
+  line-height: 1.3;
+  margin: 2px 0 4px;
+}
+
+.sticker-fallback-link {
+  display: inline-block;
+  font-family: var(--font-mono, 'SFMono-Regular', Consolas, monospace);
+  font-size: 0.61rem;
+  font-weight: 700;
+  color: #2563eb;
+  text-decoration: underline;
+  word-break: break-all;
+  line-height: 1.25;
 }
 
 /* Printable Official QR Sticker Sheet */
@@ -727,7 +760,7 @@ textarea.form-control {
     border: 2px dashed #2563eb !important;
     border-radius: 14px !important;
     background: #ffffff !important;
-    padding: 16px 18px 18px !important;
+    padding: 16px 16px 14px !important;
     width: 250px !important;
     max-width: 250px !important;
     box-sizing: border-box !important;

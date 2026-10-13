@@ -230,6 +230,9 @@
         </div>
 
         <div style="display: flex; align-items: center; gap: 10px;">
+          <a href="/campus-poster.html" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration: none; color: inherit; display: inline-flex; align-items: center; gap: 6px;">
+            <span>📋</span> Campus Poster
+          </a>
           <button class="btn btn-secondary btn-sm" onclick="reloadCurrentOsaScreen()">🔄 Refresh</button>
           <button class="btn btn-danger btn-sm" onclick="logoutCurrentSession()">Sign Out</button>
         </div>
@@ -1642,12 +1645,17 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
-            <span>GADGETGUARD VERIFIED</span>
+            <span>NCST GADGETGUARD</span>
           </div>
           <div class="sticker-scan-me">SCAN ME</div>
-          <img id="admin-sticker-qr-img" class="sticker-qr-img" src="" alt="QR Code">
+          <img id="admin-sticker-qr-img" class="sticker-qr-img" src="" alt="Device QR Code">
           <div class="sticker-token-wrap">
             <span class="sticker-token" id="admin-sticker-token">gg_dev_xxxx</span>
+          </div>
+          <div class="sticker-fallback">
+            <div class="sticker-fallback-label">FOUND THIS DEVICE?</div>
+            <div class="sticker-fallback-sub">Scan QR to notify owner or surrender to OSA</div>
+            <a class="sticker-fallback-link" href="https://ncstgadgetguard.onrender.com/#osa-surrender" target="_blank" rel="noopener">ncstgadgetguard.onrender.com/#osa-surrender</a>
           </div>
         </div>
       </div>

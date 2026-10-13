@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NCST GadgetGuard — Campus Awareness Poster (A4)</title>
+  <link rel="icon" type="image/png" href="/assets/ncst_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ncst-navy: #142a6d;
+      --ncst-navy-dark: #0d1b46;
+      --ncst-blue: #1e40af;
+      --ncst-blue-light: #2563eb;
+      --ncst-gold: #ffc72c;
+      --ncst-gold-dark: #d97706;
+      --ncst-gold-light: #fef3c7;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #e2e8f0;
+      color: var(--slate-900);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Screen-Only Control Toolbar */
+    .no-print-toolbar {
+      width: 100%;
+      max-width: 820px;
+      background: #ffffff;
+      border: 1px solid var(--slate-300);
+      border-radius: 14px;
+      padding: 14px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .toolbar-badge {
+      background: #eff6ff;
+      color: var(--ncst-blue);
+      border: 1px solid #bfdbfe;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .toolbar-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--slate-800);
+    }
+
+    .toolbar-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 10px 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      border: none;
+    }
+
+    .btn-secondary {
+      background: var(--slate-100);
+      color: var(--slate-700);
+      border: 1px solid var(--slate-300);
+    }
+    .btn-secondary:hover {
+      background: var(--slate-200);
+      color: var(--slate-900);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--ncst-navy) 0%, var(--ncst-blue) 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(30, 64, 175, 0.4);
+    }
+
+    /* A4 Portrait Poster Sheet */
+    .poster-sheet {
+      width: 100%;
+      max-width: 794px; /* A4 aspect ratio @ ~96dpi */
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12), 0 1px 3px rgba(15, 23, 42, 0.05);
+      border: 2px solid #cbd5e1;
+      padding: 36px 42px 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-sizing: border-box;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Outer Gold/Navy Accent Border */
+    .poster-sheet::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 10px;
+      background: linear-gradient(90deg, var(--ncst-navy) 0%, var(--ncst-blue) 60%, var(--ncst-gold) 100%);
+    }
+
+    /* Poster Header */
+    .poster-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid var(--slate-100);
+      padding-bottom: 18px;
+      margin-bottom: 22px;
+      gap: 16px;
+    }
+
+    .brand-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .ncst-logo-img {
+      width: 58px;
+      height: 58px;
+      object-fit: contain;
+    }
+
+    .school-title {
+      font-size: 0.85rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ncst-navy);
+      line-height: 1.2;
+    }
+
+    .office-subtitle {
+      font-size: 0.78rem;
+      color: var(--slate-600);
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .poster-tag-badge {
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      border: 1.5px solid #93c5fd;
+      color: var(--ncst-blue);
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    /* Main Headline */
+    .poster-headline-section {
+      text-align: center;
+      margin-bottom: 22px;
+    }
+
+    .poster-main-title {
+      font-size: 2.35rem;
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      color: var(--ncst-navy);
+      margin-bottom: 8px;
+    }
+
+    .poster-main-title .gold-accent {
+      color: var(--ncst-gold-dark);
+      background: linear-gradient(135deg, #b45309 0%, #d97706 50%, #f59e0b 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .poster-sub-title {
+      font-size: 1rem;
+      color: var(--slate-600);
+      font-weight: 500;
+      max-width: 620px;
+      margin: 0 auto;
+      line-height: 1.45;
+    }
+
+    /* Central Hero QR Card */
+    .hero-qr-container {
+      background: linear-gradient(180deg, #f8fafc 0%, #eff6ff 100%);
+      border: 2px solid #bfdbfe;
+      border-radius: 20px;
+      padding: 24px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 36px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 25px -5px rgba(30, 64, 175, 0.08);
+    }
+
+    .qr-card-visual {
+      background: #ffffff;
+      border: 2px solid #93c5fd;
+      border-radius: 16px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+      flex-shrink: 0;
+    }
+
+    .qr-badge-top {
+      font-size: 0.72rem;
+      font-weight: 900;
+      color: var(--ncst-blue);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .campus-qr-image {
+      width: 210px;
+      height: 210px;
+      object-fit: contain;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+      image-rendering: pixelated;
+      display: block;
+      border-radius: 8px;
+    }
+
+    .qr-badge-bottom {
+      margin-top: 10px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: var(--ncst-blue);
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 3px 12px;
+      border-radius: 9999px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .qr-info-right {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .qr-step-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--ncst-gold-dark);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+
+    .qr-hero-callout {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--ncst-navy);
+      line-height: 1.25;
+      margin-bottom: 10px;
+    }
+
+    .qr-hero-desc {
+      font-size: 0.88rem;
+      color: var(--slate-600);
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .url-display-box {
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 10px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .url-display-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--slate-600);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .url-display-link {
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--ncst-blue);
+      word-break: break-all;
+      text-decoration: none;
+    }
+
+    /* 3-Step Information Grid */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .feature-card {
+      background: #ffffff;
+      border: 1.5px solid var(--slate-200);
+      border-radius: 14px;
+      padding: 16px 16px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .feature-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .feature-icon-bubble {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .feature-card-title {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: var(--ncst-navy);
+      line-height: 1.25;
+    }
+
+    .feature-card-desc {
+      font-size: 0.775rem;
+      color: var(--slate-600);
+      line-height: 1.45;
+    }
+
+    /* Drop-off & Office Surrender Banner */
+    .osa-turnin-banner {
+      background: #ffffff;
+      border: 1.5px solid #bfdbfe;
+      border-left: 6px solid var(--ncst-blue);
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .turnin-text-left {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .turnin-icon {
+      font-size: 1.4rem;
+      line-height: 1;
+      margin-top: 2px;
+    }
+
+    .turnin-title {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: var(--ncst-navy);
+      margin-bottom: 2px;
+    }
+
+    .turnin-detail {
+      font-size: 0.775rem;
+      color: var(--slate-600);
+      line-height: 1.4;
+    }
+
+    .turnin-badge-right {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 6px 12px;
+      border-radius: 8px;
+      text-align: right;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .turnin-badge-hours {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--ncst-blue);
+    }
+
+    .turnin-badge-sub {
+      font-size: 0.68rem;
+      color: var(--slate-600);
+    }
+
+    /* Poster Bottom Footer */
+    .poster-footer {
+      border-top: 1.5px solid var(--slate-200);
+      padding-top: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+      color: var(--slate-600);
+    }
+
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+    }
+
+    .footer-right {
+      font-weight: 600;
+      color: var(--slate-700);
+    }
+
+    /* Print Specific Media Rules */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 8mm 10mm;
+      }
+
+      body {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .no-print,
+      .no-print-toolbar {
+        display: none !important;
+      }
+
+      .poster-sheet {
+        box-shadow: none !important;
+        border: 2px solid var(--ncst-navy) !important;
+        border-radius: 12px !important;
+        margin: 0 auto !important;
+        padding: 24px 28px 20px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      .hero-qr-container {
+        padding: 18px 22px !important;
+        gap: 28px !important;
+        margin-bottom: 18px !important;
+      }
+
+      .campus-qr-image {
+        width: 190px !important;
+        height: 190px !important;
+      }
+
+      .poster-main-title {
+        font-size: 2.1rem !important;
+      }
+    }
+
+    /* Responsive for small mobile previews */
+    @media (max-width: 640px) {
+      .poster-sheet {
+        padding: 24px 18px;
+      }
+      .poster-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .poster-main-title {
+        font-size: 1.8rem;
+      }
+      .hero-qr-container {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+        padding: 20px 16px;
+      }
+      .qr-info-right {
+        align-items: center;
+      }
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+      .osa-turnin-banner {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .turnin-badge-right {
+        text-align: left;
+      }
+      .poster-footer {
+        flex-direction: column;
+        gap: 6px;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Screen-Only Action Bar -->
+  <div class="no-print-toolbar no-print">
+    <div class="toolbar-info">
+      <span class="toolbar-badge">A4 Portrait</span>
+      <div>
+        <div class="toolbar-title">NCST Campus Awareness Poster</div>
+        <div style="font-size: 0.75rem; color: #64748b;">Ready to print or save as PDF for bulletin boards, kiosks, and hallways.</div>
+      </div>
+    </div>
+    <div class="toolbar-actions">
+      <a href="/" class="btn btn-secondary">
+        &larr; Back to GadgetGuard
+      </a>
+      <button onclick="window.print()" class="btn btn-primary">
+        🖨️ Print / Save as PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- A4 Printable Poster Sheet -->
+  <main class="poster-sheet">
+    
+    <!-- Header -->
+    <header class="poster-header">
+      <div class="brand-left">
+        <img src="/assets/ncst_logo.png" alt="NCST Official Seal" class="ncst-logo-img">
+        <div>
+          <div class="school-title">National College of Science and Technology</div>
+          <div class="office-subtitle">Office of Student Affairs (OSA) &bull; Student Services</div>
+        </div>
+      </div>
+      <div class="poster-tag-badge">
+        Official Lost & Found System
+      </div>
+    </header>
+
+    <!-- Main Headline -->
+    <section class="poster-headline-section">
+      <h1 class="poster-main-title">
+        LOST A GADGET? <span class="gold-accent">FOUND ONE?</span>
+      </h1>
+      <p class="poster-sub-title">
+        Scan the official QR code below with your phone camera to discover the NCST GadgetGuard campus recovery network.
+      </p>
+    </section>
+
+    <!-- Central Hero QR Container -->
+    <section class="hero-qr-container">
+      <div class="qr-card-visual">
+        <div class="qr-badge-top">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          CAMPUS DISCOVERY QR
+        </div>
+        <img src="/assets/campus_qr.png" alt="Scan to visit NCST GadgetGuard" class="campus-qr-image">
+        <div class="qr-badge-bottom">
+          Scan With Phone Camera
+        </div>
+      </div>
+
+      <div class="qr-info-right">
+        <div class="qr-step-tag">
+          <span>✨</span> Fast &bull; Anonymous &bull; Mobile-Friendly
+        </div>
+        <h2 class="qr-hero-callout">
+          Connect to Campus Lost & Found
+        </h2>
+        <p class="qr-hero-desc">
+          Scan anytime from hallways, classrooms, and cafeteria to register personal devices, report missing items, or check surrender instructions.
+        </p>
+
+        <div class="url-display-box">
+          <span class="url-display-label">Or visit directly on your web browser:</span>
+          <a href="https://ncstgadgetguard.onrender.com/" class="url-display-link" target="_blank" rel="noopener">
+            https://ncstgadgetguard.onrender.com/
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 Action Columns -->
+    <section class="features-grid">
+      <div class="feature-card">
+        <div class="feature-card-header">
+          <div class="feature-icon-bubble">📱</div>
+          <div class="feature-card-title">1. Register Devices</div>
+        </div>
+        <p class="feature-card-desc">
+          Students can log in to register laptops, phones, and tablets to claim verified anti-theft QR protection stickers.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-card-header">
+          <div class="feature-icon-bubble">🔍</div>
+          <div class="feature-card-title">2. Report Missing</div>
+        </div>
+        <p class="feature-card-desc">
+          Misplaced your device on campus? Broadcast a missing alert to campus security and the real-time public bulletin board.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-card-header">
+          <div class="feature-icon-bubble">🏢</div>
+          <div class="feature-card-title">3. Surrender Found Items</div>
+        </div>
+        <p class="feature-card-desc">
+          Found an unattended gadget? Scan its sticker to notify the registered owner, or turn it over safely to OSA Room 1109.
+        </p>
+      </div>
+    </section>
+
+    <!-- Custody & Drop-Off Guidance -->
+    <section class="osa-turnin-banner">
+      <div class="turnin-text-left">
+        <div class="turnin-icon">🏢</div>
+        <div>
+          <div class="turnin-title">Official Turn-In Point: Office of Student Affairs (OSA)</div>
+          <div class="turnin-detail">
+            Student Center Bldg, Room 1109 &bull; Hand over found gadgets to OSA staff for vault logging and owner claim verification.
+          </div>
+        </div>
+      </div>
+      <div class="turnin-badge-right">
+        <div class="turnin-badge-hours">Mon–Fri: 8:00 AM – 5:00 PM</div>
+        <div class="turnin-badge-sub">After-hours: Main Gate Security Post</div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="poster-footer">
+      <div class="footer-left">
+        <span>🛡️ NCST GadgetGuard System</span>
+        <span>&bull;</span>
+        <span>Campus Asset Tracking & Recovery Prototype</span>
+      </div>
+      <div class="footer-right">
+        Visit: ncstgadgetguard.onrender.com
+      </div>
+    </footer>
+
+  </main>
+
+</body>
+</html>

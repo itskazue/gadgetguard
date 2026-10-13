@@ -337,7 +337,7 @@
           <span style="color: #2563eb; font-size: 1.2rem; font-weight: 800;">+</span>
         </summary>
         <p style="margin: 12px 0 0; color: #64748b; font-size: 0.85rem; line-height: 1.6;">
-          All NCST student accounts are pre-provisioned via the official Student Information System. Click the "Student Login" button in the upper right and enter your Student ID number (e.g. 2024-58694) or your active registered email.
+          Student accounts are pre-configured for the presentation demonstration. Click the "Student Login" button in the upper right and enter your Student ID or school email. For assistance with your account credentials, please visit Cubicle 8, Multipurpose Building.
         </p>
       </details>
     </div>
@@ -345,6 +345,7 @@
 
   <!-- Section 6: OSA Information & Drop-off -->
   <section id="contact" class="section-container" style="background: #ffffff; border-top: 1px solid #e2e8f0;">
+    <div id="osa-surrender" style="scroll-margin-top: 85px;"></div>
     <div class="contact-card-box">
       <div>
         <span class="section-tag">Direct Drop-Off</span>
@@ -419,6 +420,7 @@
         <a href="/">🌐 Public Website</a>
         <a href="javascript:void(0)" onclick="handleStudentPortalClick()">📱 Student Portal</a>
         <a href="/scan">🔍 QR Verification Scanner</a>
+        <a href="/campus-poster.html" target="_blank">📋 Campus Poster (A4)</a>
       </div>
 
       <div class="footer-links-col">
@@ -427,6 +429,7 @@
         <a href="#missing-board">Missing Board</a>
         <a href="#about">About System</a>
         <a href="#faqs">FAQs</a>
+        <a href="#osa-surrender">OSA Drop-Off Guide</a>
       </div>
     </div>
 
@@ -454,13 +457,13 @@
       <div style="padding: 24px 26px; background: #ffffff;">
         <div style="margin-bottom: 16px;">
           <h4 style="font-weight: 800; font-size: 1.15rem; color: #0f172a; margin: 0;">Student Sign In</h4>
-          <p style="font-size: 0.8rem; color: #64748b; margin: 3px 0 0;">Enter your NCST Student ID or Email Address to proceed</p>
+          <p style="font-size: 0.8rem; color: #64748b; margin: 3px 0 0;">Sign in using your NCST Student ID or school email.</p>
         </div>
 
         <form onsubmit="handleLoginSubmit(event)">
           <div class="form-group" style="margin-bottom: 12px;">
-            <label class="form-label" style="font-size: 0.775rem; font-weight: 600; color: #334155;">Student ID / Email Address</label>
-            <input type="text" id="login-email" class="form-control" placeholder="e.g. 2024-58694 or dkalingking@gmail.com" required style="height: 42px; border-radius: 10px; font-size: 0.875rem;">
+            <label class="form-label" style="font-size: 0.775rem; font-weight: 600; color: #334155;">Student ID or School Email</label>
+            <input type="text" id="login-email" class="form-control" placeholder="e.g. 2024-XXXXX or name@ncst.edu.ph" required style="height: 42px; border-radius: 10px; font-size: 0.875rem;">
           </div>
 
           <div class="form-group" style="margin-bottom: 8px;">
@@ -475,10 +478,10 @@
             🔐 Sign In to Student Portal
           </button>
 
-          <!-- SIS Integration Notice -->
+          <!-- Account Assistance Notice -->
           <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 10px 12px; font-size: 0.725rem; color: #1e40af; line-height: 1.4; display: flex; align-items: flex-start; gap: 8px;">
             <span style="font-size: 0.9rem;">ℹ️</span>
-            <div><strong>NCST Student Database Ready:</strong> Student accounts are synchronized directly with the official NCST Student Information System. Self-registration is disabled.</div>
+            <div><strong>Need Help With Your Account?</strong><br>For assistance with your Student ID, NCST school email, or account password, please visit Cubicle 8, Multipurpose Building.</div>
           </div>
         </form>
       </div>
