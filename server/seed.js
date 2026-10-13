@@ -20,6 +20,14 @@ async function generateSampleQRCode(token) {
 }
 
 async function seedDatabase() {
+  // Safety guard: If PostgreSQL is configured in environment but failed to connect,
+  // abort seeding to prevent overwriting or repopulating live data from local fallbacks.
+  const hasPgConfig = Boolean(process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.PG_CONNECTION_STRING);
+  if (hasPgConfig && !db.isPostgresActive()) {
+    console.warn('⚠️ [Seed] PostgreSQL is configured but connection is not active. Skipping seeding to protect live database.');
+    return;
+  }
+
   console.log('🌱 Verifying persistent NCST GadgetGuard accounts and baseline records...');
 
   const token1 = 'gg_dev_9a4f210d';
@@ -38,10 +46,10 @@ async function seedDatabase() {
     {
       id: 'usr_admin_01',
       name: 'Carlos Mendoza',
-      email: 'osa.admin@univ.edu',
+      email: 'mrconsonants@gmail.com',
       passwordHash: hashPassword('admin123'),
       role: 'osa_admin',
-      idNumber: 'OSA-DIR-001',
+      idNumber: 'OSA-12345',
       department: 'Office of Student Affairs',
       contactNumber: '+63 917 555 4234',
       status: 'ACTIVE',
@@ -51,172 +59,50 @@ async function seedDatabase() {
     },
     {
       id: 'usr_student_01',
-      name: 'Denzel Kalingking',
-      email: 'dkalingking@gmail.com',
+      name: 'Frnklynrd Rosales',
+      email: 'rosales.frnklynrd@ncst.edu.ph',
       passwordHash: hashPassword('password123'),
       role: 'student',
       idNumber: '2024-58694',
-      department: 'College - BS Electronics Engineering',
+      department: 'College - BS Information Technology',
       contactNumber: '09925792602',
       status: 'ACTIVE',
-      avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Denzel%20Kalingking',
+      avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Frnklynrd%20Rosales',
       createdAt: '2026-09-05T09:30:00.000Z',
       updatedAt: '2026-09-05T09:30:00.000Z'
     },
     {
       id: 'usr_student_02',
-      name: 'Thirdy Manaog',
-      email: 'rogeliomanaog3@gmail.com',
+      name: 'Rogelio III Manaog',
+      email: 'manaog.rogelio@ncst.edu.ph',
       passwordHash: hashPassword('password123'),
       role: 'student',
-      idNumber: '2024-12345',
-      department: 'College - BS-Information Technology',
-      contactNumber: '09925792602',
+      idNumber: '2024-58135',
+      department: 'College - BS Information Technology',
+      contactNumber: '09773955453',
       status: 'ACTIVE',
-      avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Thirdy%20Manaog',
+      avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Rogelio%20Manaog',
       createdAt: '2026-09-06T10:00:00.000Z',
       updatedAt: '2026-09-06T10:00:00.000Z'
-    },
-    {
-      id: 'usr_student_03',
-      name: 'Maria Santos',
-      email: 'msantos@gmail.com',
-      passwordHash: hashPassword('password123'),
-      role: 'student',
-      idNumber: '2023-10294',
-      department: 'College - BS-Computer Science',
-      contactNumber: '09171234567',
-      status: 'ACTIVE',
-      avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Maria%20Santos',
-      createdAt: '2026-09-07T11:00:00.000Z',
-      updatedAt: '2026-09-07T11:00:00.000Z'
-    },
-    {
-      id: 'usr_student_04',
-      name: 'Juan Dela Cruz',
-      email: 'jdelacruz@gmail.com',
-      passwordHash: hashPassword('password123'),
-      role: 'student',
-      idNumber: '2024-88412',
-      department: 'SHS - STEM - Science, Technology, Engineering & Mathematics',
-      contactNumber: '09189876543',
-      status: 'ACTIVE',
-      avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Juan%20Dela%20Cruz',
-      createdAt: '2026-09-08T08:15:00.000Z',
-      updatedAt: '2026-09-08T08:15:00.000Z'
     }
   ];
 
-  const cleanGadgets = [
-    {
-      id: 'gdt_01',
-      userId: 'usr_student_01',
-      category: 'Smartphone',
-      brand: 'Samsung',
-      model: 'Galaxy S23 Ultra',
-      serialNumber: '354892019482910',
-      color: 'Phantom Black',
-      description: 'Matte black protective case with official NCST security tamper sticker.',
-      photoUrl: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500&auto=format&fit=crop&q=80',
-      status: 'REGISTERED',
-      secureToken: token1,
-      qrCodeDataUrl: qr1,
-      rejectionReason: null,
-      registrationDate: '2026-09-06T14:20:00.000Z',
-      approvedAt: '2026-09-07T09:10:00.000Z',
-      approvedBy: 'usr_admin_01',
-      createdAt: '2026-09-06T14:20:00.000Z',
-      updatedAt: '2026-09-07T09:10:00.000Z'
-    },
-    {
-      id: 'gdt_02',
-      userId: 'usr_student_02',
-      category: 'Laptop',
-      brand: 'Apple',
-      model: 'MacBook Air M2',
-      serialNumber: 'C02G410JMD6T',
-      color: 'Space Gray',
-      description: '13-inch Space Gray MacBook Air in a clear protective shell.',
-      photoUrl: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&auto=format&fit=crop&q=80',
-      status: 'REGISTERED',
-      secureToken: token2,
-      qrCodeDataUrl: qr2,
-      rejectionReason: null,
-      registrationDate: '2026-09-08T10:15:00.000Z',
-      approvedAt: '2026-09-08T11:30:00.000Z',
-      approvedBy: 'usr_admin_01',
-      createdAt: '2026-09-08T10:15:00.000Z',
-      updatedAt: '2026-09-08T11:30:00.000Z'
-    },
-    {
-      id: 'gdt_03',
-      userId: 'usr_student_03',
-      category: 'Tablet',
-      brand: 'Apple',
-      model: 'iPad Air 5th Gen',
-      serialNumber: 'DMPV348LHG81',
-      color: 'Starlight',
-      description: '64GB Wi-Fi tablet with Apple Pencil 2 attached.',
-      photoUrl: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500&auto=format&fit=crop&q=80',
-      status: 'REGISTERED',
-      secureToken: token3,
-      qrCodeDataUrl: qr3,
-      rejectionReason: null,
-      registrationDate: '2026-09-09T08:45:00.000Z',
-      approvedAt: '2026-09-09T09:20:00.000Z',
-      approvedBy: 'usr_admin_01',
-      createdAt: '2026-09-09T08:45:00.000Z',
-      updatedAt: '2026-09-09T09:20:00.000Z'
-    },
-    {
-      id: 'gdt_04',
-      userId: 'usr_student_04',
-      category: 'Laptop',
-      brand: 'Asus',
-      model: 'ROG Zephyrus G14',
-      serialNumber: 'M5NRCX0349281',
-      color: 'Eclipse Gray',
-      description: 'Gaming laptop with AniMe Matrix LED display lid.',
-      photoUrl: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=500&auto=format&fit=crop&q=80',
-      status: 'REGISTERED',
-      secureToken: token4,
-      qrCodeDataUrl: qr4,
-      rejectionReason: null,
-      registrationDate: '2026-09-10T13:00:00.000Z',
-      approvedAt: '2026-09-10T14:10:00.000Z',
-      approvedBy: 'usr_admin_01',
-      createdAt: '2026-09-10T13:00:00.000Z',
-      updatedAt: '2026-09-10T14:10:00.000Z'
-    }
-  ];
+  // Clean initial state starts with 0 gadgets (no auto-population)
+  const cleanGadgets = [];
 
-  // 1. Ensure required test accounts exist without overwriting or deleting user data
-  for (const user of cleanUsers) {
-    const existing = db.findOne('users', u => 
-      u.id === user.id || 
-      (u.email && u.email.toLowerCase() === user.email.toLowerCase()) || 
-      (u.idNumber && u.idNumber === user.idNumber)
-    );
-    if (!existing) {
+  // 1. Ensure required presentation accounts exist if users collection is empty
+  const currentUsers = db.get('users') || [];
+  if (currentUsers.length === 0) {
+    for (const user of cleanUsers) {
       db.insert('users', user);
-      console.log(`  + Seeded test account: ${user.name} (${user.idNumber})`);
+      console.log(`  + Seeded presentation account: ${user.name} (${user.idNumber})`);
     }
   }
 
-  // 2. Ensure initial baseline gadgets exist if no gadgets in database
-  const currentGadgets = db.get('gadgets') || [];
-  if (currentGadgets.length === 0) {
+  // 2. Baseline gadgets: clean state starts with 0 gadgets
+  if (cleanGadgets.length > 0) {
     for (const gadget of cleanGadgets) {
       db.insert('gadgets', gadget);
-      console.log(`  + Seeded baseline gadget: ${gadget.brand} ${gadget.model}`);
-    }
-  } else {
-    // If gadgets exist, verify baseline test gadgets are present by ID if not already there
-    for (const gadget of cleanGadgets) {
-      const existing = db.findById('gadgets', gadget.id);
-      if (!existing && !currentGadgets.some(g => g.serialNumber === gadget.serialNumber)) {
-        db.insert('gadgets', gadget);
-      }
     }
   }
 

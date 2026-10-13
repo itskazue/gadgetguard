@@ -186,9 +186,14 @@ const db = {
           if (!pgData[row.collection]) pgData[row.collection] = [];
           pgData[row.collection].push(row.data);
         }
-        // Merge with dbData
-        for (const col of Object.keys(pgData)) {
-          dbData[col] = pgData[col];
+        // Initialize all known collections from remote DB (empty array if 0 records in remote DB)
+        const knownCollections = [
+          'users', 'gadgets', 'missing_reports', 'found_reports', 
+          'claims', 'returns', 'qr_scans', 'notifications', 
+          'audit_logs', 'recovery_chats', 'uploaded_files', 'password_resets'
+        ];
+        for (const col of knownCollections) {
+          dbData[col] = pgData[col] || [];
         }
         if (settingsRes.rows.length > 0 && settingsRes.rows[0].data) {
           dbData.system_settings = settingsRes.rows[0].data;
@@ -334,6 +339,10 @@ const db = {
       dbData = { ...dbData, ...freshData };
       saveDBSync();
     }
+  },
+
+  isPostgresActive() {
+    return isPgActive;
   },
 
   addAuditLog({ userId, userRole, action, targetType, targetId, details, ipAddress }) {
