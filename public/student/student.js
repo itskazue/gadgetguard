@@ -304,40 +304,91 @@ function filterStudentGadgets(status) {
   renderStudentAllGadgets();
 }
 
+function getCategoryIconSvg(category) {
+  const cat = (category || '').toLowerCase();
+  if (cat.includes('laptop')) {
+    return `<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"></rect><path d="M2 20h20"></path></svg>`;
+  } else if (cat.includes('phone') || cat.includes('smart')) {
+    return `<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="3"></rect><path d="M12 18h.01"></path></svg>`;
+  } else if (cat.includes('tablet') || cat.includes('ipad')) {
+    return `<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"></rect><circle cx="12" cy="18" r="1"></circle></svg>`;
+  } else if (cat.includes('earbud') || cat.includes('headphone')) {
+    return `<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg>`;
+  } else if (cat.includes('watch')) {
+    return `<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"></circle><polyline points="12 9 12 12 13.5 13.5"></polyline><path d="M16.51 17.35l-.85 4.65H8.34l-.85-4.65M7.49 6.65l.85-4.65h7.32l.85 4.65"></path></svg>`;
+  } else if (cat.includes('calc')) {
+    return `<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"></path></svg>`;
+  } else if (cat.includes('camera')) {
+    return `<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>`;
+  }
+  return `<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>`;
+}
+
+function renderDevicePhotoThumbnail(photoUrl, category, altText) {
+  if (photoUrl && photoUrl.trim()) {
+    return `<img src="${escapeHtml(photoUrl.trim())}" alt="${escapeHtml(altText || 'Device')}" class="gadget-item-img">`;
+  }
+  return `
+    <div class="gadget-item-no-photo">
+      <div class="no-photo-icon-wrap">${getCategoryIconSvg(category)}</div>
+      <div class="no-photo-text">No Photo Uploaded</div>
+      <div class="no-photo-sub">${escapeHtml(category || 'Device')}</div>
+    </div>
+  `;
+}
+
 function createGadgetCardHtml(g) {
   const isRejected = g.status === 'REJECTED';
+  const formattedDate = formatDate(g.registrationDate).split(',')[0];
+
   return `
     <div class="gadget-item-card ${isRejected ? 'rejected-card' : ''}">
       <div class="gadget-item-img-box">
-        <img src="${g.photoUrl || 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500'}" alt="${escapeHtml(g.model)}" class="gadget-item-img">
+        ${renderDevicePhotoThumbnail(g.photoUrl, g.category, `${g.brand} ${g.model}`)}
         <div class="gadget-item-status-pill">
           ${renderStatusBadge(g.status)}
         </div>
       </div>
       <div class="gadget-item-body">
-        <div class="gadget-item-title">${escapeHtml(g.brand)} ${escapeHtml(g.model)}</div>
+        <div class="gadget-item-title" title="${escapeHtml(g.brand)} ${escapeHtml(g.model)}">${escapeHtml(g.brand)} ${escapeHtml(g.model)}</div>
         <div class="gadget-item-meta-row">
           <span>${escapeHtml(g.category)}</span>
           <span>Color: ${escapeHtml(g.color || 'Standard')}</span>
         </div>
-        <div>
+        <div class="gadget-item-sn-row">
           <span class="gadget-item-sn">S/N: ${escapeHtml(g.serialNumber)}</span>
         </div>
+
         ${isRejected ? `
-          <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 6px 10px; font-size: 0.76rem; color: #991b1b; margin-top: 6px; line-height: 1.4;">
-            <strong>Reason:</strong> ${escapeHtml(g.rejectionReason || 'Registration rejected by OSA')}
+          <div class="gadget-card-rejection-alert">
+            <div class="rejection-alert-header">
+              <span>⚠️</span>
+              <span>OSA Rejection Reason</span>
+            </div>
+            <div class="rejection-alert-body" title="${escapeHtml(g.rejectionReason || 'Registration details unverified')}">
+              ${escapeHtml(g.rejectionReason || 'Registration rejected by OSA. Please edit details and resubmit.')}
+            </div>
           </div>
         ` : ''}
-        <div class="gadget-item-footer" style="gap: 6px; flex-wrap: wrap;">
-          <span style="font-size: 0.75rem; color: var(--text-dim); margin-right: auto;">${formatDate(g.registrationDate).split(',')[0]}</span>
-          ${isRejected ? `
-            <button class="btn btn-primary btn-sm" onclick="openEditResubmitGadgetModal('${g.id}')" style="background: #b91c1c; border-color: #b91c1c; font-weight: 700;">
-              ✏️ Edit & Resubmit
-            </button>
-          ` : ''}
-          <button class="btn btn-secondary btn-sm" onclick="openGadgetDetailsModal('${g.id}')">
-            View Details →
-          </button>
+
+        <div class="gadget-item-footer">
+          <div class="gadget-item-footer-meta">
+            <span>Registered: ${formattedDate}</span>
+          </div>
+          <div class="gadget-item-footer-actions">
+            ${isRejected ? `
+              <button class="btn btn-resubmit-primary" onclick="openEditResubmitGadgetModal('${g.id}')">
+                ✏️ Edit & Resubmit
+              </button>
+              <button class="btn btn-details-secondary" onclick="openGadgetDetailsModal('${g.id}')">
+                Details →
+              </button>
+            ` : `
+              <button class="btn btn-details-secondary" style="width: 100%; text-align: center;" onclick="openGadgetDetailsModal('${g.id}')">
+                View Details →
+              </button>
+            `}
+          </div>
         </div>
       </div>
     </div>
@@ -379,7 +430,24 @@ function openGadgetDetailsModal(gadgetId) {
   document.getElementById('gmodal-cat').textContent = gadget.category;
   document.getElementById('gmodal-color').textContent = gadget.color || 'Standard';
   document.getElementById('gmodal-date').textContent = formatDate(gadget.registrationDate);
-  document.getElementById('gmodal-img').src = gadget.photoUrl || 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500';
+  const imgEl = document.getElementById('gmodal-img');
+  const noPhotoEl = document.getElementById('gmodal-no-photo');
+  const noPhotoIcon = document.getElementById('gmodal-no-photo-icon');
+
+  if (gadget.photoUrl && gadget.photoUrl.trim()) {
+    if (imgEl) {
+      imgEl.src = gadget.photoUrl.trim();
+      imgEl.style.display = 'block';
+    }
+    if (noPhotoEl) noPhotoEl.style.display = 'none';
+  } else {
+    if (imgEl) imgEl.style.display = 'none';
+    if (noPhotoEl) {
+      noPhotoEl.style.display = 'block';
+      if (noPhotoIcon) noPhotoIcon.innerHTML = getCategoryIconSvg(gadget.category);
+    }
+  }
+
   document.getElementById('gmodal-badge').innerHTML = renderStatusBadge(gadget.status);
 
   const securitySection = document.getElementById('gmodal-security-section');
@@ -544,9 +612,23 @@ function openUpdatePhotoModal(gadgetId) {
 
   document.getElementById('update-photo-gadget-id').value = gadget.id;
   document.getElementById('update-photo-url').value = gadget.photoUrl || '';
+  const fileInput = document.getElementById('update-photo-file');
+  if (fileInput) fileInput.value = '';
+
   const preview = document.getElementById('update-photo-preview');
   if (preview) {
-    preview.src = gadget.photoUrl || 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500';
+    if (gadget.photoUrl && gadget.photoUrl.trim()) {
+      preview.src = gadget.photoUrl.trim();
+      preview.style.display = 'inline-block';
+    } else {
+      preview.src = '';
+      preview.style.display = 'none';
+    }
+  }
+
+  const btnSave = document.getElementById('btn-save-photo');
+  if (btnSave) {
+    btnSave.textContent = 'Save Photo Proof';
   }
 
   document.getElementById('update-photo-modal').classList.add('active');
@@ -555,7 +637,7 @@ function openUpdatePhotoModal(gadgetId) {
 async function handleUpdatePhotoSubmit(e) {
   e.preventDefault();
   const gadgetId = document.getElementById('update-photo-gadget-id').value;
-  const photoUrl = document.getElementById('update-photo-url').value.trim() || document.getElementById('update-photo-preview').src;
+  const photoUrl = (document.getElementById('update-photo-url').value || '').trim() || (document.getElementById('update-photo-preview').src || '').trim();
 
   if (!photoUrl) {
     await SwalHelper.warning('Photo Required', 'Please select or upload an image file or provide an Image URL.');
@@ -571,7 +653,7 @@ async function handleUpdatePhotoSubmit(e) {
   try {
     const res = await api.updateGadgetPhoto(gadgetId, photoUrl, false);
     if (res.success) {
-      await SwalHelper.success('Photo Proof Updated! 📷', 'Your updated device photo has been saved and is visible to OSA administrators.');
+      await SwalHelper.success('Photo Proof Updated! 📷', 'Your device photo has been updated successfully.');
       closeModal('update-photo-modal');
       closeModal('gadget-details-modal');
       await loadMyGadgetsData();
@@ -617,6 +699,72 @@ async function handleRemovePhotoSubmit() {
   }
 }
 
+// Edit & Resubmit Photo Helper Functions
+function handleResubmitPhotoFileSelect(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    SwalHelper.warning('Invalid File', 'Please select an image file (PNG, JPG, JPEG, WEBP).');
+    e.target.value = '';
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    SwalHelper.warning('File Too Large', 'Please select an image smaller than 5MB.');
+    e.target.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    const dataUrl = evt.target.result;
+    window.selectedResubmitPhoto = dataUrl;
+    const preview = document.getElementById('edit-resubmit-photo-preview');
+    const wrap = document.getElementById('edit-resubmit-photo-wrap');
+    const placeholder = document.getElementById('edit-resubmit-photo-placeholder');
+    const urlInput = document.getElementById('edit-resubmit-photo-url');
+
+    if (preview) preview.src = dataUrl;
+    if (wrap) wrap.style.display = 'block';
+    if (placeholder) placeholder.style.display = 'none';
+    if (urlInput) urlInput.value = '';
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleResubmitPhotoUrlInput(url) {
+  const preview = document.getElementById('edit-resubmit-photo-preview');
+  const wrap = document.getElementById('edit-resubmit-photo-wrap');
+  const placeholder = document.getElementById('edit-resubmit-photo-placeholder');
+  const fileInput = document.getElementById('edit-resubmit-photo-file');
+
+  if (url && url.trim()) {
+    window.selectedResubmitPhoto = url.trim();
+    if (preview) preview.src = url.trim();
+    if (wrap) wrap.style.display = 'block';
+    if (placeholder) placeholder.style.display = 'none';
+    if (fileInput) fileInput.value = '';
+  } else {
+    window.selectedResubmitPhoto = null;
+    if (wrap) wrap.style.display = 'none';
+    if (placeholder) placeholder.style.display = 'flex';
+  }
+}
+
+function handleClearResubmitPhoto() {
+  window.selectedResubmitPhoto = ''; // explicitly cleared
+  const fileInput = document.getElementById('edit-resubmit-photo-file');
+  const urlInput = document.getElementById('edit-resubmit-photo-url');
+  const wrap = document.getElementById('edit-resubmit-photo-wrap');
+  const placeholder = document.getElementById('edit-resubmit-photo-placeholder');
+
+  if (fileInput) fileInput.value = '';
+  if (urlInput) urlInput.value = '';
+  if (wrap) wrap.style.display = 'none';
+  if (placeholder) placeholder.style.display = 'flex';
+}
+
 // Edit & Resubmit Rejected Gadget Modal & Form Handlers
 async function openEditResubmitGadgetModal(gadgetId) {
   let gadget = myGadgetsData.find(g => g.id === gadgetId);
@@ -656,6 +804,27 @@ async function openEditResubmitGadgetModal(gadgetId) {
   if (serialInput) serialInput.value = (gadget.serialNumber && !gadget.serialNumber.startsWith('NO-SN-')) ? gadget.serialNumber : '';
   if (colorInput) colorInput.value = (gadget.color && gadget.color !== 'Standard') ? gadget.color : '';
   if (descInput) descInput.value = gadget.description || '';
+
+  // Photo preview / placeholder setup
+  const photoPreview = document.getElementById('edit-resubmit-photo-preview');
+  const photoWrap = document.getElementById('edit-resubmit-photo-wrap');
+  const photoPlaceholder = document.getElementById('edit-resubmit-photo-placeholder');
+  const photoFileInput = document.getElementById('edit-resubmit-photo-file');
+  const photoUrlInput = document.getElementById('edit-resubmit-photo-url');
+
+  if (photoFileInput) photoFileInput.value = '';
+  window.selectedResubmitPhoto = gadget.photoUrl || null;
+
+  if (gadget.photoUrl && gadget.photoUrl.trim()) {
+    if (photoPreview) photoPreview.src = gadget.photoUrl.trim();
+    if (photoWrap) photoWrap.style.display = 'block';
+    if (photoPlaceholder) photoPlaceholder.style.display = 'none';
+    if (photoUrlInput) photoUrlInput.value = gadget.photoUrl.trim();
+  } else {
+    if (photoWrap) photoWrap.style.display = 'none';
+    if (photoPlaceholder) photoPlaceholder.style.display = 'flex';
+    if (photoUrlInput) photoUrlInput.value = '';
+  }
 
   const modal = document.getElementById('edit-resubmit-gadget-modal');
   if (modal) modal.classList.add('active');
@@ -701,7 +870,8 @@ async function handleEditResubmitGadgetSubmit(e) {
       model,
       serialNumber,
       color,
-      description
+      description,
+      photoUrl: window.selectedResubmitPhoto
     });
 
     if (res && res.success) {
@@ -727,6 +897,10 @@ async function handleEditResubmitGadgetSubmit(e) {
 
 window.openEditResubmitGadgetModal = openEditResubmitGadgetModal;
 window.handleEditResubmitGadgetSubmit = handleEditResubmitGadgetSubmit;
+window.handleResubmitPhotoFileSelect = handleResubmitPhotoFileSelect;
+window.handleResubmitPhotoUrlInput = handleResubmitPhotoUrlInput;
+window.handleClearResubmitPhoto = handleClearResubmitPhoto;
+window.filterStudentGadgets = filterStudentGadgets;
 
 // Student Change Password Handler
 async function handleStudentChangePasswordSubmit(e) {
@@ -826,19 +1000,9 @@ function updatePhotoUrlPreview(url, previewImgId) {
 }
 
 function handleCategoryChange(cat) {
-  const defaultPhotos = {
-    Laptop: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=500',
-    Smartphone: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500',
-    Tablet: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500',
-    Earbuds: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500',
-    Calculator: 'https://images.unsplash.com/photo-1587145820266-a5951ee6f620?w=500',
-    Smartwatch: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500',
-    Camera: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500',
-    Other: 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=500'
-  };
   const photoInput = document.getElementById('modal-reg-photo');
   if (photoInput && !photoInput.value) {
-    photoInput.placeholder = defaultPhotos[cat] || 'https://...';
+    photoInput.placeholder = 'Optional Image URL (https://...)';
   }
 
   const snInput = document.getElementById('modal-reg-sn');
@@ -896,18 +1060,7 @@ async function handleRegisterGadgetSubmit(e) {
     return;
   }
 
-  const defaultPhotos = {
-    Laptop: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=500',
-    Smartphone: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500',
-    Tablet: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500',
-    Earbuds: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500',
-    Calculator: 'https://images.unsplash.com/photo-1587145820266-a5951ee6f620?w=500',
-    Smartwatch: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500',
-    Camera: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500',
-    Other: 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=500'
-  };
-
-  const finalPhoto = photoUrl || defaultPhotos[category] || defaultPhotos.Other;
+  const finalPhoto = (photoUrl && photoUrl.trim()) ? photoUrl.trim() : null;
 
   window.pendingGadgetRegistration = {
     category,
@@ -925,12 +1078,23 @@ async function handleRegisterGadgetSubmit(e) {
   const snEl = document.getElementById('student-conf-sn');
   const colEl = document.getElementById('student-conf-color');
   const photoEl = document.getElementById('student-conf-photo');
+  const noPhotoEl = document.getElementById('student-conf-no-photo');
 
   if (devEl) devEl.textContent = `${brand} ${model}`;
   if (catEl) catEl.textContent = category;
   if (snEl) snEl.textContent = serialNumber || 'N/A (Optional)';
   if (colEl) colEl.textContent = color || 'Standard';
-  if (photoEl) photoEl.src = finalPhoto;
+  
+  if (finalPhoto) {
+    if (photoEl) {
+      photoEl.src = finalPhoto;
+      photoEl.style.display = 'inline-block';
+    }
+    if (noPhotoEl) noPhotoEl.style.display = 'none';
+  } else {
+    if (photoEl) photoEl.style.display = 'none';
+    if (noPhotoEl) noPhotoEl.style.display = 'block';
+  }
 
   document.getElementById('confirm-gadget-reg-modal').classList.add('active');
 }
@@ -1415,7 +1579,7 @@ async function loadLostStatusScreen(openGadgetIdOnLoad = null) {
       boardContainer.innerHTML = reports.map(r => `
         <div class="gadget-item-card">
           <div class="gadget-item-img-box">
-            <img src="${r.gadget?.photoUrl || 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500'}" alt="${escapeHtml(r.gadget?.model)}" class="gadget-item-img">
+            ${renderDevicePhotoThumbnail(r.gadget?.photoUrl, r.gadget?.category, r.gadget?.model)}
             <div class="gadget-item-status-pill">
               <span class="status-badge MISSING">MISSING</span>
             </div>

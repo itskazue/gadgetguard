@@ -635,6 +635,32 @@
             <label class="form-label">Identifying Marks / Remarks</label>
             <textarea id="edit-resubmit-desc" class="form-control" rows="2" placeholder="e.g. Stickers, scratches, casing color, distinctive features..."></textarea>
           </div>
+
+          <!-- Optional Photo Proof Section -->
+          <div class="form-group">
+            <label class="form-label">Device Photo / Proof of Ownership (Optional)</label>
+            <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+              <input type="file" id="edit-resubmit-photo-file" accept="image/*" class="form-control" style="padding: 6px 10px; font-size: 0.8rem;" onchange="handleResubmitPhotoFileSelect(event)">
+            </div>
+            <input type="url" id="edit-resubmit-photo-url" class="form-control" placeholder="Or enter Image URL (https://...)" oninput="handleResubmitPhotoUrlInput(this.value)">
+
+            <!-- Preview Box / Clear Option -->
+            <div id="edit-resubmit-photo-wrap" style="display: none; margin-top: 8px; text-align: center; position: relative; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px;">
+              <img id="edit-resubmit-photo-preview" src="" alt="Device Preview" style="max-height: 120px; max-width: 100%; border-radius: 6px; object-fit: contain;">
+              <div style="margin-top: 6px; display: flex; justify-content: center; gap: 8px; align-items: center;">
+                <span style="font-size: 0.72rem; color: #059669; font-weight: 600;">✓ Attached Photo Proof</span>
+                <button type="button" class="btn btn-outline-danger btn-xs" onclick="handleClearResubmitPhoto()" style="font-size: 0.7rem; padding: 2px 8px; color: #dc2626; border-color: #fca5a5; background: #fff;">
+                  🗑️ Remove Photo
+                </button>
+              </div>
+            </div>
+
+            <!-- Placeholder when no photo attached -->
+            <div id="edit-resubmit-photo-placeholder" style="display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 0.75rem; color: #64748b; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 8px 10px;">
+              <span>📷</span>
+              <span>No photo attached. Physical inspection will be conducted at OSA.</span>
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('edit-resubmit-gadget-modal')">Cancel</button>

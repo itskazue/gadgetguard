@@ -70,18 +70,6 @@ router.post('/register', authMiddleware, async (req, res) => {
       }
     }
 
-    // Default category photo placeholders if not uploaded
-    const defaultPhotos = {
-      Laptop: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=500&auto=format&fit=crop&q=80',
-      Smartphone: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500&auto=format&fit=crop&q=80',
-      Tablet: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500&auto=format&fit=crop&q=80',
-      Earbuds: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=500&auto=format&fit=crop&q=80',
-      Calculator: 'https://images.unsplash.com/photo-1587145820266-a5951ee6f620?w=500&auto=format&fit=crop&q=80',
-      Smartwatch: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&auto=format&fit=crop&q=80',
-      Camera: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&auto=format&fit=crop&q=80',
-      Other: 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=500&auto=format&fit=crop&q=80'
-    };
-
     const finalSn = (serialNumber && serialNumber.trim())
       ? serialNumber.trim()
       : `NO-SN-${Date.now().toString(36).toUpperCase()}`;
@@ -95,7 +83,7 @@ router.post('/register', authMiddleware, async (req, res) => {
       serialNumber: finalSn,
       color: color ? color.trim() : 'Standard',
       description: description ? description.trim() : '',
-      photoUrl: photoUrl || defaultPhotos[category] || defaultPhotos.Other,
+      photoUrl: (photoUrl && photoUrl.trim()) ? photoUrl.trim() : null,
       status: 'PENDING_APPROVAL',
       secureToken: null,
       qrCodeDataUrl: null,
@@ -588,7 +576,7 @@ const handleResubmit = async (req, res) => {
       serialNumber: finalSn,
       color: color ? color.trim() : (gadget.color || 'Standard'),
       description: description !== undefined ? description.trim() : (gadget.description || ''),
-      photoUrl: photoUrl || gadget.photoUrl,
+      photoUrl: (photoUrl !== undefined) ? (photoUrl && photoUrl.trim() ? photoUrl.trim() : null) : (gadget.photoUrl || null),
       status: 'PENDING_APPROVAL',
       rejectionReason: null,
       lastResubmittedAt: new Date().toISOString(),
@@ -627,7 +615,7 @@ const handleResubmit = async (req, res) => {
 router.put('/:id/resubmit', authMiddleware, handleResubmit);
 router.post('/:id/resubmit', authMiddleware, handleResubmit);
 
-// PATCH /api/gadgets/:id/photo (Student or OSA updates or removes gadget photo/proof)
+// PATCH /api/gadgets/:id/photo (Student or OSA directly updates or removes gadget photo)
 router.patch('/:id/photo', authMiddleware, (req, res) => {
   try {
     const { photoUrl, removePhoto } = req.body;
@@ -636,32 +624,28 @@ router.patch('/:id/photo', authMiddleware, (req, res) => {
       return res.status(404).json({ success: false, error: 'Gadget not found.' });
     }
 
-    // Must be owner or OSA admin
-    if (req.user.role !== 'osa_admin' && gadget.userId !== req.user.id) {
-      return res.status(403).json({ success: false, error: 'Permission denied to update this device photo.' });
+    // Only the authenticated gadget owner can update or remove their gadget photo
+    if (gadget.userId !== req.user.id) {
+      return res.status(403).json({ success: false, error: 'Permission denied. Only the gadget owner can update this photo.' });
     }
-
-    const defaultPhotos = {
-      Smartphone: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500&auto=format&fit=crop&q=80',
-      Laptop: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&auto=format&fit=crop&q=80',
-      Tablet: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500&auto=format&fit=crop&q=80',
-      Earbuds: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=500&auto=format&fit=crop&q=80',
-      Calculator: 'https://images.unsplash.com/photo-1587145820266-a5951ee6f620?w=500&auto=format&fit=crop&q=80',
-      Smartwatch: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&auto=format&fit=crop&q=80',
-      Camera: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&auto=format&fit=crop&q=80',
-      Other: 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=500&auto=format&fit=crop&q=80'
-    };
 
     let newPhoto = null;
     let actionLog = '';
+
     if (removePhoto || !photoUrl || !photoUrl.trim()) {
-      newPhoto = defaultPhotos[gadget.category] || defaultPhotos.Other;
-      actionLog = `Removed custom photo/proof for ${gadget.brand} ${gadget.model}`;
+      newPhoto = null;
+      actionLog = `Removed photo for ${gadget.brand} ${gadget.model}`;
     } else {
-      newPhoto = photoUrl.trim();
-      actionLog = `Updated device photo/proof for ${gadget.brand} ${gadget.model}`;
+      const trimmed = photoUrl.trim();
+      // Safe image validation: allow data URLs (base64 image uploads) or http(s) URLs
+      if (!trimmed.startsWith('data:image/') && !trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+        return res.status(400).json({ success: false, error: 'Invalid photo format. Must be an image URL or base64 image data.' });
+      }
+      newPhoto = trimmed;
+      actionLog = `Updated photo for ${gadget.brand} ${gadget.model}`;
     }
 
+    // Update gadget photo directly without altering lifecycle status or QR tokens
     const updated = db.update('gadgets', gadget.id, {
       photoUrl: newPhoto
     });
@@ -678,10 +662,11 @@ router.patch('/:id/photo', authMiddleware, (req, res) => {
 
     return res.json({
       success: true,
-      message: removePhoto ? 'Photo proof removed successfully.' : 'Gadget photo updated successfully.',
+      message: removePhoto ? 'Photo removed successfully.' : 'Gadget photo updated successfully.',
       gadget: updated
     });
   } catch (err) {
+    console.error('Update photo error:', err);
     return res.status(500).json({ success: false, error: 'Error updating gadget photo.' });
   }
 });

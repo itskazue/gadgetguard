@@ -654,7 +654,14 @@ function renderApprovalsTable(gadgets, hasActiveFilter = false) {
           return `
           <tr class="${rowClass}">
             <td>
-              <img src="${g.photoUrl || 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500'}" alt="Proof" style="width: 52px; height: 52px; object-fit: cover; border-radius: 8px; border: 1.5px solid #cbd5e1; cursor: pointer;" onclick="previewOsaDevicePhoto('${g.photoUrl || 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500'}', '${escapeHtml(g.brand + ' ' + g.model)}', '${escapeHtml(g.owner?.name || 'Student')}')" title="Click to enlarge photo proof">
+              ${g.photoUrl ? `
+                <img src="${g.photoUrl}" alt="Proof" style="width: 52px; height: 52px; object-fit: cover; border-radius: 8px; border: 1.5px solid #cbd5e1; cursor: pointer;" onclick="previewOsaDevicePhoto('${g.photoUrl}', '${escapeHtml(g.brand + ' ' + g.model)}', '${escapeHtml(g.owner?.name || 'Student')}')" title="Click to enlarge photo proof">
+              ` : `
+                <div style="width: 52px; height: 52px; border-radius: 8px; background: #f8fafc; border: 1.5px dashed #cbd5e1; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.65rem; color: #94a3b8; text-align: center; vertical-align: middle;" title="No photo uploaded (Physical inspection required)">
+                  <span style="font-size: 1.1rem; line-height: 1;">📷</span>
+                  <span style="font-size: 0.58rem; margin-top: 2px;">No Photo</span>
+                </div>
+              `}
             </td>
             <td>
               <div class="table-primary-title">${escapeHtml(g.brand)} ${escapeHtml(g.model)}</div>
@@ -851,6 +858,8 @@ async function handleRejectGadgetSubmit(e) {
 window.handleRejectReasonCategoryChange = handleRejectReasonCategoryChange;
 window.openRejectGadgetModal = openRejectGadgetModal;
 window.handleRejectGadgetSubmit = handleRejectGadgetSubmit;
+
+
 
 // 3. Registered Vault
 async function loadRegisteredVault() {
