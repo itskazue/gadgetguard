@@ -46,9 +46,6 @@ async function ensureAdminAuthenticated() {
     return;
   }
 
-  if (user.mustChangePassword) {
-    await api.promptInitialPasswordChange('osa');
-  }
 
   const nameEl = document.getElementById('osa-admin-name');
   if (nameEl) nameEl.textContent = user.name;

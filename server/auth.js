@@ -74,16 +74,6 @@ function authMiddleware(req, res, next) {
       }
     }
 
-    // Server-enforced initial password change requirement
-    // Only /change-password, /me, and /logout may be accessed until password is changed
-    const reqPath = (req.baseUrl || '') + (req.path || '');
-    if (user.mustChangePassword && !reqPath.endsWith('/change-password') && !reqPath.endsWith('/me') && !reqPath.endsWith('/logout')) {
-      return res.status(403).json({
-        success: false,
-        error: 'Initial password change required before accessing system resources.',
-        code: 'MUST_CHANGE_PASSWORD'
-      });
-    }
 
     req.user = user;
     next();

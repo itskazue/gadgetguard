@@ -85,9 +85,7 @@ async function ensureStudentAuthenticated() {
       user = meRes.user;
       api.setCurrentUser(user);
       populateStudentUserUI(user);
-      if (user.mustChangePassword) {
-        await api.promptInitialPasswordChange('student');
-      }
+
     } else {
       api.clearAuth();
       window.location.href = '/?login=1';
