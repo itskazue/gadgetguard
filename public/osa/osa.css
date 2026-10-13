@@ -1057,3 +1057,159 @@ table thead th, .osa-table thead th {
 table tbody tr:hover, .osa-table tbody tr:hover {
   background-color: #eef3ff !important;
 }
+
+/* ==========================================================================
+   TASK #5: OSA Users Management — Registered Gadgets Modal Styles
+   ========================================================================== */
+
+.user-gadgets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.user-gadget-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md, 10px);
+  padding: 14px 16px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.user-gadget-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(20, 42, 109, 0.06);
+}
+
+.user-gadget-photo-box {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-gadget-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+  display: block;
+  transition: transform 0.2s ease;
+}
+
+.user-gadget-photo-img:hover {
+  transform: scale(1.05);
+}
+
+.user-gadget-photo-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.user-gadget-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.user-gadget-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.user-gadget-title {
+  font-weight: 700;
+  font-size: 0.96rem;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.user-gadget-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  font-size: 0.78rem;
+  margin-top: 3px;
+}
+
+.user-gadget-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.user-gadget-id-chip {
+  font-size: 0.74rem;
+  color: #64748b;
+}
+
+.user-gadget-id-chip code {
+  font-family: var(--font-mono, monospace);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 1px 6px;
+  color: #334155;
+  font-size: 0.75rem;
+}
+
+.user-gadget-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed #f1f5f9;
+  font-size: 0.78rem;
+}
+
+.user-gadget-date strong {
+  color: #334155;
+}
+
+@keyframes osa-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 600px) {
+  .user-gadget-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .user-gadget-photo-box {
+    width: 100%;
+    height: 120px;
+  }
+}
+

@@ -2791,7 +2791,7 @@ function renderUsersTable(users, hasFilter = false) {
           <th>Phone</th>
           <th>Registered Devices</th>
           <th>Status</th>
-          <th class="text-right">Access Control</th>
+          <th class="text-right">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -2814,11 +2814,8 @@ function renderUsersTable(users, hasFilter = false) {
             <td class="text-right">
               <div class="table-action-btns">
                 ${u.role !== 'osa_admin' ? `
-                  <button class="btn btn-secondary btn-sm" onclick="resendApprovalEmail('${u.id}', '${escapeHtml(u.email)}')">
-                    📧 Resend Email
-                  </button>
-                  <button class="btn btn-secondary btn-sm" onclick="toggleUserStatus('${u.id}', '${u.status}')">
-                    ${u.status === 'ACTIVE' ? '🚫 Suspend' : '✓ Activate'}
+                  <button class="btn btn-secondary btn-sm btn-view-user-gadgets" onclick="openUserGadgetsModal('${escapeHtml(u.id)}')" style="display: inline-flex; align-items: center; gap: 5px; font-weight: 600;" title="View registered gadgets for this student">
+                    📱 View Registered Gadgets
                   </button>
                 ` : '<span class="text-muted" style="font-size:0.75rem;">Admin</span>'}
               </div>
@@ -2829,6 +2826,151 @@ function renderUsersTable(users, hasFilter = false) {
     </table>
   `;
 }
+
+// ==========================================================================
+// TASK #5: OSA Users Management — View Registered Gadgets Modal
+// ==========================================================================
+let activeUserGadgetsRequestId = 0;
+
+async function openUserGadgetsModal(userId, optionalName, optionalIdNumber, optionalDept) {
+  const modal = document.getElementById('osa-user-gadgets-modal');
+  const subtitleEl = document.getElementById('user-gadgets-modal-subtitle');
+  const bodyEl = document.getElementById('user-gadgets-modal-body');
+  if (!modal || !bodyEl) return;
+
+  const currentRequestId = ++activeUserGadgetsRequestId;
+
+  // Resolve user info from cache or optional parameters
+  const usersList = (typeof allUsersCache !== 'undefined' && allUsersCache && allUsersCache.length > 0)
+    ? allUsersCache
+    : ((typeof window !== 'undefined' && window.allUsersCache) ? window.allUsersCache : []);
+  const user = usersList.find(u => String(u.id) === String(userId));
+  const userName = optionalName || (user ? user.name : 'Student');
+  const userStudentId = optionalIdNumber !== undefined ? optionalIdNumber : (user ? (user.idNumber || '') : '');
+  const department = optionalDept !== undefined ? optionalDept : (user ? (user.department || '') : '');
+
+  // Reset modal header and body immediately (prevents stale data from previous student)
+  if (subtitleEl) {
+    subtitleEl.innerHTML = `
+      <span style="font-weight: 700; color: #0f172a;">${escapeHtml(userName)}</span>
+      ${userStudentId ? ` • <span style="font-family: var(--font-mono); color: var(--primary); font-weight: 600;">ID: ${escapeHtml(userStudentId)}</span>` : ''}
+      ${department ? ` • <span style="color: #64748b;">${escapeHtml(department)}</span>` : ''}
+    `;
+  }
+
+  // Show loading state
+  bodyEl.innerHTML = `
+    <div style="padding: 42px 20px; text-align: center; color: var(--text-muted);">
+      <div style="font-size: 2.2rem; margin-bottom: 10px; display: inline-block; animation: osa-spin 1.2s linear infinite;">⏳</div>
+      <div style="font-weight: 700; font-size: 0.95rem; color: #1e293b;">Loading Registered Gadgets...</div>
+      <div style="font-size: 0.8rem; color: #64748b; margin-top: 4px;">Querying official gadget vault records</div>
+    </div>
+  `;
+
+  modal.classList.add('active');
+
+  try {
+    const res = await api.getAllGadgets();
+
+    // Check if this asynchronous response is still for the current selection
+    if (currentRequestId !== activeUserGadgetsRequestId) return;
+
+    if (!res || !res.success) {
+      throw new Error(res?.error || 'Unable to retrieve gadget records.');
+    }
+
+    const allGadgets = res.gadgets || [];
+    // Strict exact ownership filter
+    const studentGadgets = allGadgets.filter(g => String(g.userId) === String(userId));
+
+    // Handle students with zero registered gadgets gracefully
+    if (studentGadgets.length === 0) {
+      bodyEl.innerHTML = `
+        <div style="padding: 42px 20px; text-align: center; color: var(--text-muted);">
+          <div style="font-size: 2.6rem; margin-bottom: 10px;">📦</div>
+          <div style="font-weight: 700; font-size: 1.05rem; color: #1e293b;">No Registered Gadgets</div>
+          <div style="font-size: 0.825rem; color: #64748b; margin-top: 6px; max-width: 380px; margin-left: auto; margin-right: auto; line-height: 1.5;">
+            This user does not currently have any registered equipment recorded in the NCST GadgetGuard system.
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    // Render registered gadget cards (strictly read-only)
+    bodyEl.innerHTML = `
+      <div class="user-gadgets-count-bar" style="margin-bottom: 12px; font-size: 0.8rem; color: #475569; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+        <span>Registered Equipment: <strong>${studentGadgets.length}</strong></span>
+        <span style="font-size: 0.72rem; color: #94a3b8;">Official Vault Directory</span>
+      </div>
+      <div class="user-gadgets-list">
+        ${studentGadgets.map(g => renderUserGadgetItemCard(g, userName)).join('')}
+      </div>
+    `;
+  } catch (err) {
+    if (currentRequestId !== activeUserGadgetsRequestId) return;
+    console.error('Error loading student gadgets:', err);
+    bodyEl.innerHTML = `
+      <div style="padding: 36px 20px; text-align: center; color: #b91c1c;">
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">⚠️</div>
+        <div style="font-weight: 700; font-size: 0.95rem;">Unable to Retrieve Gadgets</div>
+        <div style="font-size: 0.8rem; color: #7f1d1d; margin-top: 4px; margin-bottom: 14px;">
+          ${escapeHtml(err.message || 'An error occurred while communicating with the central vault.')}
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="openUserGadgetsModal('${escapeHtml(userId)}')">
+          ↺ Retry
+        </button>
+      </div>
+    `;
+  }
+}
+
+function renderUserGadgetItemCard(g, ownerName = 'Student') {
+  const effectivePhoto = typeof getEffectiveGadgetPhoto === 'function' 
+    ? getEffectiveGadgetPhoto(g.photoUrl) 
+    : (typeof window !== 'undefined' && window.getEffectiveGadgetPhoto ? window.getEffectiveGadgetPhoto(g.photoUrl) : (g.photoUrl && g.photoUrl.trim() ? g.photoUrl.trim() : null));
+
+  const deviceTitle = `${g.brand || ''} ${g.model || ''}`.trim() || 'Unspecified Device';
+  const statusBadgeHtml = typeof renderStatusBadge === 'function' ? renderStatusBadge(g.status) : `<span class="status-badge">${escapeHtml(g.status || 'UNKNOWN')}</span>`;
+  const regDateFormatted = formatDate(g.registrationDate || g.createdAt);
+
+  return `
+    <div class="user-gadget-card" data-gadget-id="${escapeHtml(g.id)}">
+      <div class="user-gadget-photo-box">
+        ${effectivePhoto ? `
+          <img src="${effectivePhoto}" alt="${escapeHtml(deviceTitle)}" class="user-gadget-photo-img" onclick="previewOsaDevicePhoto('${effectivePhoto}', '${escapeHtml(deviceTitle)}', '${escapeHtml(ownerName)}')" title="Click to enlarge photo">
+        ` : `
+          <div class="user-gadget-photo-placeholder" title="No photo uploaded (Physical inspection required)">
+            <span style="font-size: 1.25rem; line-height: 1;">📷</span>
+            <span style="font-size: 0.62rem; font-weight: 700; margin-top: 3px; color: #94a3b8;">No Photo</span>
+          </div>
+        `}
+      </div>
+      <div class="user-gadget-details">
+        <div class="user-gadget-header-row">
+          <div class="user-gadget-title" title="${escapeHtml(deviceTitle)}">${escapeHtml(deviceTitle)}</div>
+          <div class="user-gadget-status-wrap">${statusBadgeHtml}</div>
+        </div>
+        <div class="user-gadget-meta">
+          <span class="user-gadget-pill category">📁 ${escapeHtml(g.category || 'Device')}</span>
+          ${g.color ? `<span class="user-gadget-pill color">🎨 ${escapeHtml(g.color)}</span>` : '<span class="user-gadget-pill color">🎨 Color: N/A</span>'}
+          <span class="user-gadget-id-chip">ID: <code>${escapeHtml(g.id)}</code></span>
+        </div>
+        <div class="user-gadget-footer">
+          <div class="user-gadget-date">
+            <span style="color: #94a3b8;">Registered:</span> <strong>${escapeHtml(regDateFormatted)}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+if (typeof window !== 'undefined') {
+  window.openUserGadgetsModal = openUserGadgetsModal;
+  window.renderUserGadgetItemCard = renderUserGadgetItemCard;
+}
+
 
 async function resendApprovalEmail(userId, email) {
   if (typeof Swal !== 'undefined') {
@@ -3473,6 +3615,23 @@ function closeModal(modalId) {
   if (modalId === 'print-sticker-modal') {
     document.body.classList.remove('printing-qr-sticker');
   }
+  if (modalId === 'osa-user-gadgets-modal') {
+    activeUserGadgetsRequestId++;
+    const bodyEl = document.getElementById('user-gadgets-modal-body');
+    if (bodyEl) bodyEl.innerHTML = '';
+  }
+}
+
+// Global keyboard accessibility: Escape closes active modals
+if (typeof window !== 'undefined') {
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const userGadgetsModal = document.getElementById('osa-user-gadgets-modal');
+      if (userGadgetsModal && userGadgetsModal.classList.contains('active')) {
+        closeModal('osa-user-gadgets-modal');
+      }
+    }
+  });
 }
 
 function printExecutiveReport() {
