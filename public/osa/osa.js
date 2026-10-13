@@ -651,11 +651,12 @@ function renderApprovalsTable(gadgets, hasActiveFilter = false) {
           const prevG = idx > 0 ? gadgets[idx - 1] : null;
           const isSameStudent = prevG && prevG.owner?.idNumber && prevG.owner?.idNumber === g.owner?.idNumber;
           const rowClass = isSameStudent ? 'student-group-accent' : '';
+          const effectivePhoto = typeof getEffectiveGadgetPhoto === 'function' ? getEffectiveGadgetPhoto(g.photoUrl) : (window.getEffectiveGadgetPhoto ? window.getEffectiveGadgetPhoto(g.photoUrl) : (g.photoUrl && g.photoUrl.trim() ? g.photoUrl.trim() : null));
           return `
           <tr class="${rowClass}">
             <td>
-              ${g.photoUrl ? `
-                <img src="${g.photoUrl}" alt="Proof" style="width: 52px; height: 52px; object-fit: cover; border-radius: 8px; border: 1.5px solid #cbd5e1; cursor: pointer;" onclick="previewOsaDevicePhoto('${g.photoUrl}', '${escapeHtml(g.brand + ' ' + g.model)}', '${escapeHtml(g.owner?.name || 'Student')}')" title="Click to enlarge photo proof">
+              ${effectivePhoto ? `
+                <img src="${effectivePhoto}" alt="Proof" style="width: 52px; height: 52px; object-fit: cover; border-radius: 8px; border: 1.5px solid #cbd5e1; cursor: pointer;" onclick="previewOsaDevicePhoto('${effectivePhoto}', '${escapeHtml(g.brand + ' ' + g.model)}', '${escapeHtml(g.owner?.name || 'Student')}')" title="Click to enlarge photo proof">
               ` : `
                 <div style="width: 52px; height: 52px; border-radius: 8px; background: #f8fafc; border: 1.5px dashed #cbd5e1; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.65rem; color: #94a3b8; text-align: center; vertical-align: middle;" title="No photo uploaded (Physical inspection required)">
                   <span style="font-size: 1.1rem; line-height: 1;">📷</span>
@@ -1800,7 +1801,7 @@ function renderClaimsTable(claims, hasFilter = false) {
           const serialNo = c.gadget?.serialNumber || '-';
           const color = c.gadget?.color || 'Standard';
           const category = c.gadget?.category || '';
-          const gadgetPhoto = c.gadget?.photoUrl || '/assets/default-gadget.png';
+          const effectiveGadgetPhoto = typeof getEffectiveGadgetPhoto === 'function' ? getEffectiveGadgetPhoto(c.gadget?.photoUrl) : (window.getEffectiveGadgetPhoto ? window.getEffectiveGadgetPhoto(c.gadget?.photoUrl) : null);
           const vaultLocation = c.custodyLocation || c.gadget?.custodyLocation || 'OSA Vault Locker (Room 1109)';
           const dateReceived = c.dateReceivedByOsa || c.createdAt;
           const receivedBy = c.receivedByName || c.processedByName || 'OSA Front Desk Staff';
@@ -1820,10 +1821,16 @@ function renderClaimsTable(claims, hasFilter = false) {
               <!-- 2. GADGET -->
               <td>
                 <div style="display: flex; align-items: center; gap: 10px;">
-                  <div style="position: relative; flex-shrink: 0; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(gadgetPhoto)}', '${escapeHtml(brandModel)} Photo')" title="Click to enlarge">
-                    <img src="${escapeHtml(gadgetPhoto)}" alt="${escapeHtml(brandModel)}" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
-                    <span style="position: absolute; bottom: -3px; right: -3px; background: #ffffff; border-radius: 50%; font-size: 9px; padding: 1px 3px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">🔍</span>
-                  </div>
+                  ${effectiveGadgetPhoto ? `
+                    <div style="position: relative; flex-shrink: 0; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(effectiveGadgetPhoto)}', '${escapeHtml(brandModel)} Photo')" title="Click to enlarge">
+                      <img src="${escapeHtml(effectiveGadgetPhoto)}" alt="${escapeHtml(brandModel)}" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
+                      <span style="position: absolute; bottom: -3px; right: -3px; background: #ffffff; border-radius: 50%; font-size: 9px; padding: 1px 3px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">🔍</span>
+                    </div>
+                  ` : `
+                    <div style="width: 44px; height: 44px; border-radius: 8px; background: #f8fafc; border: 1.5px dashed #cbd5e1; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.65rem; color: #94a3b8; text-align: center; flex-shrink: 0;" title="No photo uploaded">
+                      <span style="font-size: 1rem; line-height: 1;">📷</span>
+                    </div>
+                  `}
                   <div>
                     <div class="table-primary-title" style="font-weight: 700; font-size: 0.88rem;">${escapeHtml(brandModel)}</div>
                     <div style="display: flex; gap: 4px; align-items: center; margin-top: 3px; flex-wrap: wrap;">
@@ -2076,7 +2083,7 @@ function renderReturnedHistoryTable(records, hasFilter = false) {
           const serialNo = c.gadget?.serialNumber || '-';
           const color = c.gadget?.color || 'Standard';
           const category = c.gadget?.category || '';
-          const gadgetPhoto = c.gadget?.photoUrl || '/assets/default-gadget.png';
+          const effectiveGadgetPhoto = typeof getEffectiveGadgetPhoto === 'function' ? getEffectiveGadgetPhoto(c.gadget?.photoUrl) : (window.getEffectiveGadgetPhoto ? window.getEffectiveGadgetPhoto(c.gadget?.photoUrl) : null);
           const prevVaultLocation = c.previousVaultLocation || c.custodyLocation || c.gadget?.custodyLocation || 'OSA Vault Locker (Room 1109)';
           const handoverPhoto = c.handoverPhotoUrl || c.returnRecord?.handoverPhotoUrl || null;
           const returnDate = c.returnDate || c.returnedAt || c.processedAt || c.createdAt;
@@ -2097,10 +2104,16 @@ function renderReturnedHistoryTable(records, hasFilter = false) {
               <!-- 2. GADGET -->
               <td>
                 <div style="display: flex; align-items: center; gap: 10px;">
-                  <div style="position: relative; flex-shrink: 0; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(gadgetPhoto)}', '${escapeHtml(brandModel)} Photo')" title="Click to enlarge">
-                    <img src="${escapeHtml(gadgetPhoto)}" alt="${escapeHtml(brandModel)}" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
-                    <span style="position: absolute; bottom: -3px; right: -3px; background: #ffffff; border-radius: 50%; font-size: 9px; padding: 1px 3px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">🔍</span>
-                  </div>
+                  ${effectiveGadgetPhoto ? `
+                    <div style="position: relative; flex-shrink: 0; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(effectiveGadgetPhoto)}', '${escapeHtml(brandModel)} Photo')" title="Click to enlarge">
+                      <img src="${escapeHtml(effectiveGadgetPhoto)}" alt="${escapeHtml(brandModel)}" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
+                      <span style="position: absolute; bottom: -3px; right: -3px; background: #ffffff; border-radius: 50%; font-size: 9px; padding: 1px 3px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">🔍</span>
+                    </div>
+                  ` : `
+                    <div style="width: 44px; height: 44px; border-radius: 8px; background: #f8fafc; border: 1.5px dashed #cbd5e1; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.65rem; color: #94a3b8; text-align: center; flex-shrink: 0;" title="No photo uploaded">
+                      <span style="font-size: 1rem; line-height: 1;">📷</span>
+                    </div>
+                  `}
                   <div>
                     <div class="table-primary-title" style="font-weight: 700; font-size: 0.88rem;">${escapeHtml(brandModel)}</div>
                     <div style="display: flex; gap: 4px; align-items: center; margin-top: 3px; flex-wrap: wrap;">
@@ -2227,7 +2240,7 @@ function openClaimDetailsModal(claimId) {
   const serialNo = c.gadget?.serialNumber || '-';
   const color = c.gadget?.color || 'Standard';
   const category = c.gadget?.category || 'General';
-  const gadgetPhoto = c.gadget?.photoUrl || '/assets/default-gadget.png';
+  const effectiveGadgetPhoto = typeof getEffectiveGadgetPhoto === 'function' ? getEffectiveGadgetPhoto(c.gadget?.photoUrl) : (window.getEffectiveGadgetPhoto ? window.getEffectiveGadgetPhoto(c.gadget?.photoUrl) : null);
   const handoverPhoto = c.handoverPhotoUrl || c.returnRecord?.handoverPhotoUrl || null;
   const returnDate = c.returnDate || c.returnedAt || c.processedAt || c.createdAt;
   const processedStaff = c.processedByName || c.returnRecord?.returnedByOsaAdminName || 'OSA Staff';
@@ -2260,8 +2273,16 @@ function openClaimDetailsModal(claimId) {
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 18px;">
       <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center;">
         <div style="font-weight: 700; color: #334155; font-size: 0.8rem; margin-bottom: 8px;">📱 Registered Gadget Photo</div>
-        <img src="${escapeHtml(gadgetPhoto)}" alt="${escapeHtml(brandModel)}" style="width: 100%; height: 160px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(gadgetPhoto)}', '${escapeHtml(brandModel)}')">
-        <div style="font-size: 0.72rem; color: #64748b; margin-top: 6px;">Click image to enlarge</div>
+        ${effectiveGadgetPhoto ? `
+          <img src="${escapeHtml(effectiveGadgetPhoto)}" alt="${escapeHtml(brandModel)}" style="width: 100%; height: 160px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(effectiveGadgetPhoto)}', '${escapeHtml(brandModel)}')">
+          <div style="font-size: 0.72rem; color: #64748b; margin-top: 6px;">Click image to enlarge</div>
+        ` : `
+          <div style="height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ffffff; border-radius: 8px; border: 1.5px dashed #cbd5e1; color: #64748b; font-size: 0.82rem; padding: 12px; text-align: center;">
+            <span style="font-size: 1.5rem; margin-bottom: 4px;">📷</span>
+            <strong style="color: #334155;">No Photo Uploaded</strong>
+            <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 4px;">Physical inspection required during verification</div>
+          </div>
+        `}
       </div>
 
       <div style="background: ${handoverPhoto ? '#f0fdf4' : '#f8fafc'}; border: 1px solid ${handoverPhoto ? '#86efac' : '#e2e8f0'}; border-radius: 10px; padding: 12px; text-align: center;">

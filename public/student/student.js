@@ -325,8 +325,9 @@ function getCategoryIconSvg(category) {
 }
 
 function renderDevicePhotoThumbnail(photoUrl, category, altText) {
-  if (photoUrl && photoUrl.trim()) {
-    return `<img src="${escapeHtml(photoUrl.trim())}" alt="${escapeHtml(altText || 'Device')}" class="gadget-item-img">`;
+  const effectivePhoto = typeof getEffectiveGadgetPhoto === 'function' ? getEffectiveGadgetPhoto(photoUrl) : (window.getEffectiveGadgetPhoto ? window.getEffectiveGadgetPhoto(photoUrl) : (photoUrl && photoUrl.trim() ? photoUrl.trim() : null));
+  if (effectivePhoto) {
+    return `<img src="${escapeHtml(effectivePhoto)}" alt="${escapeHtml(altText || 'Device')}" class="gadget-item-img">`;
   }
   return `
     <div class="gadget-item-no-photo">
@@ -433,15 +434,19 @@ function openGadgetDetailsModal(gadgetId) {
   const imgEl = document.getElementById('gmodal-img');
   const noPhotoEl = document.getElementById('gmodal-no-photo');
   const noPhotoIcon = document.getElementById('gmodal-no-photo-icon');
+  const effectivePhoto = typeof getEffectiveGadgetPhoto === 'function' ? getEffectiveGadgetPhoto(gadget.photoUrl) : (window.getEffectiveGadgetPhoto ? window.getEffectiveGadgetPhoto(gadget.photoUrl) : (gadget.photoUrl && gadget.photoUrl.trim() ? gadget.photoUrl.trim() : null));
 
-  if (gadget.photoUrl && gadget.photoUrl.trim()) {
+  if (effectivePhoto) {
     if (imgEl) {
-      imgEl.src = gadget.photoUrl.trim();
+      imgEl.src = effectivePhoto;
       imgEl.style.display = 'block';
     }
     if (noPhotoEl) noPhotoEl.style.display = 'none';
   } else {
-    if (imgEl) imgEl.style.display = 'none';
+    if (imgEl) {
+      imgEl.src = '';
+      imgEl.style.display = 'none';
+    }
     if (noPhotoEl) {
       noPhotoEl.style.display = 'block';
       if (noPhotoIcon) noPhotoIcon.innerHTML = getCategoryIconSvg(gadget.category);
@@ -610,15 +615,16 @@ function openUpdatePhotoModal(gadgetId) {
   const gadget = myGadgetsData.find(g => g.id === gadgetId);
   if (!gadget) return;
 
+  const effectivePhoto = typeof getEffectiveGadgetPhoto === 'function' ? getEffectiveGadgetPhoto(gadget.photoUrl) : (window.getEffectiveGadgetPhoto ? window.getEffectiveGadgetPhoto(gadget.photoUrl) : (gadget.photoUrl && gadget.photoUrl.trim() ? gadget.photoUrl.trim() : null));
   document.getElementById('update-photo-gadget-id').value = gadget.id;
-  document.getElementById('update-photo-url').value = gadget.photoUrl || '';
+  document.getElementById('update-photo-url').value = effectivePhoto || '';
   const fileInput = document.getElementById('update-photo-file');
   if (fileInput) fileInput.value = '';
 
   const preview = document.getElementById('update-photo-preview');
   if (preview) {
-    if (gadget.photoUrl && gadget.photoUrl.trim()) {
-      preview.src = gadget.photoUrl.trim();
+    if (effectivePhoto) {
+      preview.src = effectivePhoto;
       preview.style.display = 'inline-block';
     } else {
       preview.src = '';
@@ -813,13 +819,14 @@ async function openEditResubmitGadgetModal(gadgetId) {
   const photoUrlInput = document.getElementById('edit-resubmit-photo-url');
 
   if (photoFileInput) photoFileInput.value = '';
-  window.selectedResubmitPhoto = gadget.photoUrl || null;
+  const effectivePhoto = typeof getEffectiveGadgetPhoto === 'function' ? getEffectiveGadgetPhoto(gadget.photoUrl) : (window.getEffectiveGadgetPhoto ? window.getEffectiveGadgetPhoto(gadget.photoUrl) : (gadget.photoUrl && gadget.photoUrl.trim() ? gadget.photoUrl.trim() : null));
+  window.selectedResubmitPhoto = effectivePhoto;
 
-  if (gadget.photoUrl && gadget.photoUrl.trim()) {
-    if (photoPreview) photoPreview.src = gadget.photoUrl.trim();
+  if (effectivePhoto) {
+    if (photoPreview) photoPreview.src = effectivePhoto;
     if (photoWrap) photoWrap.style.display = 'block';
     if (photoPlaceholder) photoPlaceholder.style.display = 'none';
-    if (photoUrlInput) photoUrlInput.value = gadget.photoUrl.trim();
+    if (photoUrlInput) photoUrlInput.value = effectivePhoto;
   } else {
     if (photoWrap) photoWrap.style.display = 'none';
     if (photoPlaceholder) photoPlaceholder.style.display = 'flex';

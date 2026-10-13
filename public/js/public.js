@@ -109,9 +109,21 @@ async function loadMissingBoard() {
       return;
     }
 
-    container.innerHTML = res.reports.map(report => `
+    container.innerHTML = res.reports.map(report => {
+      const effectivePhoto = typeof getEffectiveGadgetPhoto === 'function' 
+        ? getEffectiveGadgetPhoto(report.gadget?.photoUrl) 
+        : (window.getEffectiveGadgetPhoto ? window.getEffectiveGadgetPhoto(report.gadget?.photoUrl) : (report.gadget?.photoUrl && report.gadget?.photoUrl.trim() ? report.gadget?.photoUrl.trim() : null));
+
+      return `
       <div class="missing-card">
-        <img src="${report.gadget?.photoUrl || 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500'}" alt="${escapeHtml(report.gadget?.model)}" class="missing-img">
+        ${effectivePhoto ? `
+          <img src="${escapeHtml(effectivePhoto)}" alt="${escapeHtml(report.gadget?.model || 'Device')}" class="missing-img">
+        ` : `
+          <div class="missing-img" style="background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #64748b; border-bottom: 1px solid #e2e8f0;">
+            <span style="font-size: 1.5rem; line-height: 1;">📷</span>
+            <span style="font-size: 0.72rem; font-weight: 700; color: #475569;">No Photo Uploaded</span>
+          </div>
+        `}
         <div class="missing-body">
           <div class="missing-meta">
             <span class="status-badge MISSING">MISSING</span>
@@ -133,7 +145,8 @@ async function loadMissingBoard() {
           </div>
         </div>
       </div>
-    `).join('');
+    `;
+  }).join('');
   } catch (err) {
     container.innerHTML = `<div style="grid-column:1/-1; color:#f87171; text-align:center;">Failed to load missing board.</div>`;
   }

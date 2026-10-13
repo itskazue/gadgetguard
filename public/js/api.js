@@ -759,3 +759,46 @@ async function logoutCurrentSession() {
     await SwalHelper.error('Sign Out Error', err.message || 'Error occurred while signing out.');
   }
 }
+
+// Documented, historically confirmed system-generated default image URLs & broken fallbacks
+const LEGACY_DEFAULT_GADGET_PHOTO_PATTERNS = [
+  'photo-1511707171634-5f897ff02aa9', // Smartphone default & seed
+  'photo-1496181133206-80ce9b88a853', // Laptop default
+  'photo-1517336714731-489689fd1ca8', // Laptop default & seed
+  'photo-1544244015-0df4b3ffc6b0', // Tablet default, seed & table fallback
+  'photo-1590658268037-6bf12165a8df', // Earbuds backend default
+  'photo-1505740420928-5e560c06d30e', // Earbuds frontend default
+  'photo-1587145820266-a5951ee6f620', // Calculator default
+  'photo-1523275335684-37898b6baf30', // Smartwatch default
+  'photo-1516035069371-29a1b244cc32', // Camera default
+  'photo-1526738549149-8e07eca6c147', // Other category default
+  'photo-1603302576837-37561b2e2302', // Asus ROG Zephyrus G14 seed
+  '/assets/default-gadget.png'         // Confirmed broken static asset fallback
+];
+
+function isLegacyDefaultGadgetPhoto(url) {
+  if (!url || typeof url !== 'string') return true;
+  const trimmed = url.trim();
+  if (!trimmed) return true;
+  if (trimmed.startsWith('data:image/')) return false; // Genuine uploaded base64 image
+  return LEGACY_DEFAULT_GADGET_PHOTO_PATTERNS.some(pattern => trimmed.includes(pattern));
+}
+
+function getEffectiveGadgetPhoto(url) {
+  if (isLegacyDefaultGadgetPhoto(url)) return null;
+  return url.trim();
+}
+
+if (typeof window !== 'undefined') {
+  window.LEGACY_DEFAULT_GADGET_PHOTO_PATTERNS = LEGACY_DEFAULT_GADGET_PHOTO_PATTERNS;
+  window.isLegacyDefaultGadgetPhoto = isLegacyDefaultGadgetPhoto;
+  window.getEffectiveGadgetPhoto = getEffectiveGadgetPhoto;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = api;
+  module.exports.api = api;
+  module.exports.LEGACY_DEFAULT_GADGET_PHOTO_PATTERNS = LEGACY_DEFAULT_GADGET_PHOTO_PATTERNS;
+  module.exports.isLegacyDefaultGadgetPhoto = isLegacyDefaultGadgetPhoto;
+  module.exports.getEffectiveGadgetPhoto = getEffectiveGadgetPhoto;
+}
