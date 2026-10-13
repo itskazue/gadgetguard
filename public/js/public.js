@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadPublicStats();
   loadMissingBoard();
   loadOsaSettings();
+  initPublicNavScrollSpy();
 
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('requireLogin') === 'true' || urlParams.get('login') === '1') {
@@ -224,3 +225,149 @@ async function logoutCurrentSession() {
   updateAuthUI();
   await SwalHelper.success('Signed Out', 'You have been safely signed out.', 1200);
 }
+
+/**
+ * Public Website Navigation Scroll Spy & Active Indicator Controller
+ */
+function initPublicNavScrollSpy() {
+  const navMenu = document.querySelector('.nav-menu');
+  if (!navMenu) return;
+
+  const navLinks = Array.from(navMenu.querySelectorAll('.nav-link'));
+  if (navLinks.length === 0) return;
+
+  // Collect target sections
+  const sections = [];
+  navLinks.forEach(link => {
+    const href = link.getAttribute('href');
+    if (href && href.startsWith('#')) {
+      const targetId = href.substring(1);
+      const targetEl = document.getElementById(targetId);
+      if (targetEl) {
+        sections.push({ id: targetId, el: targetEl, link: link });
+      }
+    }
+  });
+
+  if (sections.length === 0) return;
+
+  let isManualClickScrolling = false;
+  let clickScrollTimer = null;
+
+  function setActive(activeId) {
+    sections.forEach(({ id, link }) => {
+      if (id === activeId) {
+        if (!link.classList.contains('active')) {
+          link.classList.add('active');
+        }
+      } else {
+        link.classList.remove('active');
+      }
+    });
+  }
+
+  // Smooth click navigation
+  navLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      const href = link.getAttribute('href');
+      if (!href || !href.startsWith('#')) return;
+
+      const targetId = href.substring(1);
+      const targetSection = document.getElementById(targetId);
+      if (!targetSection) return;
+
+      e.preventDefault();
+      setActive(targetId);
+
+      isManualClickScrolling = true;
+      if (clickScrollTimer) clearTimeout(clickScrollTimer);
+
+      if (window.history && window.history.pushState) {
+        window.history.pushState(null, null, href);
+      } else {
+        window.location.hash = href;
+      }
+
+      const navHeader = document.querySelector('.public-nav');
+      const navHeight = navHeader ? navHeader.offsetHeight : 70;
+      const targetTop = targetSection.getBoundingClientRect().top + window.pageYOffset - navHeight;
+
+      window.scrollTo({
+        top: Math.max(0, targetTop),
+        behavior: 'smooth'
+      });
+
+      clickScrollTimer = setTimeout(() => {
+        isManualClickScrolling = false;
+      }, 750);
+    });
+  });
+
+  // Scroll spy with requestAnimationFrame throttling
+  let ticking = false;
+
+  function onWindowScroll() {
+    if (isManualClickScrolling) return;
+    if (!ticking) {
+      window.requestAnimationFrame(() => {
+        updateActiveFromScroll();
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }
+
+  function updateActiveFromScroll() {
+    if (isManualClickScrolling) return;
+
+    const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+    const windowHeight = window.innerHeight;
+    const docHeight = document.documentElement.scrollHeight;
+
+    // Bottom of the page check -> activate last section
+    if (scrollY + windowHeight >= docHeight - 40) {
+      const last = sections[sections.length - 1];
+      if (last) {
+        setActive(last.id);
+        return;
+      }
+    }
+
+    const navHeader = document.querySelector('.public-nav');
+    const navHeight = navHeader ? navHeader.offsetHeight : 70;
+    // Section trigger threshold: nav height + 80px offset
+    const triggerOffset = navHeight + 80;
+
+    let currentId = sections[0].id;
+    for (let i = 0; i < sections.length; i++) {
+      const { id, el } = sections[i];
+      const rect = el.getBoundingClientRect();
+      if (rect.top <= triggerOffset) {
+        currentId = id;
+      }
+    }
+
+    setActive(currentId);
+  }
+
+  window.addEventListener('scroll', onWindowScroll, { passive: true });
+
+  // Handle browser back/forward and hash changes
+  window.addEventListener('popstate', () => {
+    const hash = window.location.hash.replace('#', '');
+    if (hash && sections.some(s => s.id === hash)) {
+      setActive(hash);
+    } else {
+      updateActiveFromScroll();
+    }
+  });
+
+  // Initial active resolution on page load
+  const initialHash = window.location.hash.replace('#', '');
+  if (initialHash && sections.some(s => s.id === initialHash)) {
+    setActive(initialHash);
+  } else {
+    updateActiveFromScroll();
+  }
+}
+

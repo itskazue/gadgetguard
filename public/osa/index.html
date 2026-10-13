@@ -34,76 +34,173 @@
       <ul class="osa-menu-list">
         <li>
           <div class="osa-nav-link active" onclick="navigateOsa('dashboard')" id="nav-osa-dashboard">
-            <div class="osa-nav-link-content">📊 Dashboard</div>
+            <div class="osa-nav-link-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              <span>Dashboard</span>
+            </div>
           </div>
         </li>
         <li>
           <div class="osa-nav-link" onclick="navigateOsa('approvals')" id="nav-osa-approvals">
-            <div class="osa-nav-link-content">⏳ Gadget Registrations</div>
+            <div class="osa-nav-link-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>Gadget Registrations</span>
+            </div>
             <span class="osa-badge-counter" id="badge-pending-count" style="background:#d97706; display:none;">0</span>
           </div>
         </li>
         <li>
           <div class="osa-nav-link" onclick="navigateOsa('registered')" id="nav-osa-registered">
-            <div class="osa-nav-link-content">💻 Registered Gadgets</div>
+            <div class="osa-nav-link-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+              <span>Registered Gadgets</span>
+            </div>
           </div>
         </li>
         <li>
           <div class="osa-nav-link" onclick="navigateOsa('missing')" id="nav-osa-missing">
-            <div class="osa-nav-link-content">🚨 Missing Gadgets</div>
+            <div class="osa-nav-link-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <span>Missing Gadgets</span>
+            </div>
             <span class="osa-badge-counter" id="badge-missing-count" style="background:#dc2626; display:none;">0</span>
           </div>
         </li>
         <li>
           <div class="osa-nav-link" onclick="navigateOsa('found')" id="nav-osa-found">
-            <div class="osa-nav-link-content">📦 Found Gadgets</div>
+            <div class="osa-nav-link-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+              <span>Found Gadgets</span>
+            </div>
           </div>
         </li>
         <li>
           <div class="osa-nav-link" onclick="navigateOsa('claims')" id="nav-osa-claims">
-            <div class="osa-nav-link-content">📋 Claims</div>
+            <div class="osa-nav-link-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              <span>Claims</span>
+            </div>
             <span class="osa-badge-counter" id="badge-claims-count" style="background:#2563eb; display:none;">0</span>
           </div>
         </li>
         <li>
           <div class="osa-nav-link" onclick="navigateOsa('history')" id="nav-osa-history">
-            <div class="osa-nav-link-content">📜 Returned History</div>
+            <div class="osa-nav-link-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <polyline points="9 15 11 17 15 13"></polyline>
+              </svg>
+              <span>Returned History</span>
+            </div>
             <span class="osa-badge-counter" id="badge-history-count" style="background:#059669; display:none;">0</span>
           </div>
         </li>
         <li>
           <div class="osa-nav-link" onclick="navigateOsa('scanner')" id="nav-osa-scanner">
-            <div class="osa-nav-link-content">📷 QR Scanner</div>
+            <div class="osa-nav-link-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
+                <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
+                <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
+                <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
+                <rect x="7" y="7" width="10" height="10" rx="1"></rect>
+              </svg>
+              <span>QR Scanner</span>
+            </div>
           </div>
         </li>
         <li>
           <div class="osa-nav-link" onclick="navigateOsa('users')" id="nav-osa-users">
-            <div class="osa-nav-link-content">👥 Users</div>
+            <div class="osa-nav-link-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              <span>Users</span>
+            </div>
           </div>
         </li>
         <li>
           <div class="osa-nav-link" onclick="navigateOsa('notifications')" id="nav-osa-notifications">
-            <div class="osa-nav-link-content">🔔 Notifications</div>
+            <div class="osa-nav-link-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span>Notifications</span>
+            </div>
           </div>
         </li>
         <li>
           <div class="osa-nav-link" onclick="navigateOsa('scans')" id="nav-osa-scans">
-            <div class="osa-nav-link-content">📍 QR Scan Logs</div>
+            <div class="osa-nav-link-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              <span>QR Scan Logs</span>
+            </div>
           </div>
         </li>
         <li>
           <div class="osa-nav-link" onclick="navigateOsa('reports')" id="nav-osa-reports">
-            <div class="osa-nav-link-content">📈 Reports</div>
+            <div class="osa-nav-link-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+              <span>Reports</span>
+            </div>
           </div>
         </li>
         <li>
           <div class="osa-nav-link" onclick="navigateOsa('audit')" id="nav-osa-audit">
-            <div class="osa-nav-link-content">🛡️ Audit Logs</div>
+            <div class="osa-nav-link-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+              <span>Audit Logs</span>
+            </div>
           </div>
         </li>
         <li>
           <div class="osa-nav-link" onclick="navigateOsa('settings')" id="nav-osa-settings">
-            <div class="osa-nav-link-content">⚙️ Settings</div>
+            <div class="osa-nav-link-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+              <span>Settings</span>
+            </div>
           </div>
         </li>
       </ul>
@@ -142,14 +239,21 @@
         
         <!-- ================= SCREEN 1: DASHBOARD ================= -->
         <section id="osa-screen-dashboard" class="osa-screen active">
-          <!-- Real Database Statistics KPI Cards (Matching Reference Row 3 Screen 2) -->
+          <!-- Real Database Statistics KPI Cards (6 Approved Cards in 3x2 Grid) -->
           <div class="osa-kpi-grid">
             <div class="osa-kpi-card" onclick="navigateOsa('users')" style="cursor: pointer;">
               <div>
                 <div class="osa-kpi-label">Total Users</div>
                 <div class="osa-kpi-num" id="kpi-total-users">0</div>
               </div>
-              <div class="osa-kpi-icon-pill" style="background:#eff6ff; color:#142a6d;">👥</div>
+              <div class="osa-kpi-icon-pill" style="background:#eff6ff; color:#142a6d;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </div>
             </div>
 
             <div class="osa-kpi-card" onclick="navigateOsa('registered')" style="cursor: pointer;">
@@ -157,7 +261,13 @@
                 <div class="osa-kpi-label">Registered Gadgets</div>
                 <div class="osa-kpi-num" id="kpi-registered" style="color: #047857;">0</div>
               </div>
-              <div class="osa-kpi-icon-pill" style="background:#ecfdf5; color:#047857;">💻</div>
+              <div class="osa-kpi-icon-pill" style="background:#ecfdf5; color:#047857;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+              </div>
             </div>
 
             <div class="osa-kpi-card" onclick="navigateOsa('approvals')" style="cursor: pointer;">
@@ -165,7 +275,12 @@
                 <div class="osa-kpi-label">Pending Registrations</div>
                 <div class="osa-kpi-num" id="kpi-pending-reg" style="color: #b45309;">0</div>
               </div>
-              <div class="osa-kpi-icon-pill" style="background:#fffbeb; color:#b45309;">⏳</div>
+              <div class="osa-kpi-icon-pill" style="background:#fffbeb; color:#b45309;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+              </div>
             </div>
 
             <div class="osa-kpi-card" onclick="navigateOsa('missing')" style="cursor: pointer;">
@@ -173,15 +288,27 @@
                 <div class="osa-kpi-label">Missing Gadgets</div>
                 <div class="osa-kpi-num" id="kpi-missing" style="color: #b91c1c;">0</div>
               </div>
-              <div class="osa-kpi-icon-pill" style="background:#fef2f2; color:#b91c1c;">🚨</div>
+              <div class="osa-kpi-icon-pill" style="background:#fef2f2; color:#b91c1c;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+              </div>
             </div>
 
             <div class="osa-kpi-card" onclick="navigateOsa('found')" style="cursor: pointer;">
               <div>
                 <div class="osa-kpi-label">Found In Custody</div>
-                <div class="osa-kpi-num" id="kpi-found" style="color: #d97706;">0</div>
+                <div class="osa-kpi-num" id="kpi-found" style="color: #c2410c;">0</div>
               </div>
-              <div class="osa-kpi-icon-pill" style="background:#fffbeb; color:#d97706;">📦</div>
+              <div class="osa-kpi-icon-pill" style="background:#fff7ed; color:#c2410c;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                  <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+              </div>
             </div>
 
             <div class="osa-kpi-card" onclick="navigateOsa('claims')" style="cursor: pointer;">
@@ -189,23 +316,14 @@
                 <div class="osa-kpi-label">Pending Claims</div>
                 <div class="osa-kpi-num" id="kpi-pending-claims" style="color: #7c3aed;">0</div>
               </div>
-              <div class="osa-kpi-icon-pill" style="background:#f5f3ff; color:#7c3aed;">📋</div>
-            </div>
-
-            <div class="osa-kpi-card" onclick="navigateOsa('reports')" style="cursor: pointer;">
-              <div>
-                <div class="osa-kpi-label">Returned Gadgets</div>
-                <div class="osa-kpi-num" id="kpi-returned" style="color: #16a34a;">0</div>
+              <div class="osa-kpi-icon-pill" style="background:#f5f3ff; color:#7c3aed;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
               </div>
-              <div class="osa-kpi-icon-pill" style="background:#ecfdf5; color:#16a34a;">🎉</div>
-            </div>
-
-            <div class="osa-kpi-card" onclick="navigateOsa('scans')" style="cursor: pointer;">
-              <div>
-                <div class="osa-kpi-label">Recent QR Scans</div>
-                <div class="osa-kpi-num" id="kpi-scans" style="color: #0284c7;">0</div>
-              </div>
-              <div class="osa-kpi-icon-pill" style="background:#f0f9ff; color:#0284c7;">📍</div>
             </div>
           </div>
 
@@ -213,7 +331,13 @@
           <div class="table-container-card">
             <div class="table-title-bar">
               <div>
-                <h3 style="font-weight: 800; font-size: 1.05rem;">⏳ Pending Gadget Approvals Queue</h3>
+                <h3 style="font-weight: 800; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  <span>Pending Gadget Approvals Queue</span>
+                </h3>
                 <div style="font-size: 0.775rem; color: var(--text-muted);">Verify serial numbers, review photos, and issue secure QR tokens</div>
               </div>
               <button class="btn btn-secondary btn-sm" onclick="navigateOsa('approvals')">View Full Queue →</button>
@@ -227,7 +351,12 @@
           <div class="table-container-card">
             <div class="table-title-bar">
               <div>
-                <h3 style="font-weight: 800; font-size: 1.05rem;">🛡️ Recent Audit Log Events</h3>
+                <h3 style="font-weight: 800; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#142a6d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  </svg>
+                  <span>Recent Audit Log Events</span>
+                </h3>
                 <div style="font-size: 0.775rem; color: var(--text-muted);">Real-time immutable security stream</div>
               </div>
               <button class="btn btn-secondary btn-sm" onclick="navigateOsa('audit')">View All Logs →</button>

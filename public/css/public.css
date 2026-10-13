@@ -2,6 +2,14 @@
    GadgetGuard Public Website Stylesheet (Exact Match to Reference UI/UX)
    ========================================================================== */
 
+html {
+  scroll-behavior: smooth;
+}
+
+section[id] {
+  scroll-margin-top: 76px;
+}
+
 /* Clean White Navigation Header */
 .public-nav {
   display: flex;
@@ -57,21 +65,17 @@
   font-weight: 600;
   font-size: 0.9rem;
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease;
   padding: 6px 2px;
   position: relative;
+  display: inline-block;
 }
 
 .nav-link:hover {
   color: #142a6d;
 }
 
-.nav-link.active {
-  color: #2563eb;
-  font-weight: 700;
-}
-
-.nav-link.active::after {
+.nav-link::after {
   content: '';
   position: absolute;
   bottom: -4px;
@@ -80,6 +84,24 @@
   height: 3px;
   background: #2563eb;
   border-radius: 999px;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-link:hover::after {
+  transform: scaleX(0.4);
+  background: #93c5fd;
+}
+
+.nav-link.active {
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.nav-link.active::after {
+  transform: scaleX(1);
+  background: #2563eb;
 }
 
 .nav-actions {
