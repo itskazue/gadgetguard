@@ -252,6 +252,11 @@ app.get(['/osa/login', '/osa/login.html'], (req, res) => {
   res.sendFile('osa/login.html', { root: PUBLIC_DIR });
 });
 
+// Quick Public Surrender Section Redirect
+app.get(['/drop', '/drop/'], (req, res) => {
+  res.redirect(302, '/#osa-surrender');
+});
+
 app.get(/^\/student/, (req, res) => {
   res.sendFile('student/index.html', { root: PUBLIC_DIR });
 });

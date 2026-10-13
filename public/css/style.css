@@ -565,11 +565,11 @@ textarea.form-control {
 .official-qr-sticker {
   background: #ffffff;
   color: #0f172a;
-  border: 2px dashed #2563eb;
-  border-radius: 14px;
-  padding: 16px 16px 14px;
+  border: 1.5px dashed #2563eb;
+  border-radius: 10px;
+  padding: 10px 10px 8px;
   text-align: center;
-  width: 250px;
+  width: 190px;
   max-width: 100%;
   margin: 0 auto;
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08);
@@ -580,37 +580,37 @@ textarea.form-control {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  font-size: 0.76rem;
+  gap: 5px;
+  font-size: 0.68rem;
   font-weight: 800;
   color: #142a6d;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 6px;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
 }
 
 .sticker-scan-me {
   display: inline-block;
-  font-size: 0.72rem;
+  font-size: 0.62rem;
   font-weight: 900;
   color: #1d4ed8;
   background: #eff6ff;
-  border: 1.5px solid #bfdbfe;
-  padding: 2px 14px;
+  border: 1px solid #bfdbfe;
+  padding: 1px 10px;
   border-radius: 9999px;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  margin-bottom: 8px;
+  margin-bottom: 5px;
 }
 
 .sticker-qr-img {
-  width: 170px;
-  height: 170px;
-  border-radius: 8px;
+  width: 120px;
+  height: 120px;
+  border-radius: 6px;
   border: 1px solid #cbd5e1;
-  padding: 4px;
+  padding: 3px;
   background: #ffffff;
-  margin: 0 auto 8px;
+  margin: 0 auto 5px;
   display: block;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
@@ -620,60 +620,60 @@ textarea.form-control {
 }
 
 .sticker-token-wrap {
-  margin: 0 0 8px;
+  margin: 0 0 5px;
 }
 
 .sticker-token {
   font-family: var(--font-mono, 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace);
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 800;
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
-  padding: 3px 10px;
-  border-radius: 6px;
+  padding: 2px 8px;
+  border-radius: 4px;
   display: inline-block;
   color: #0f172a;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
 }
 
 .sticker-fallback {
   border-top: 1px dashed #cbd5e1;
-  padding-top: 8px;
-  margin-top: 4px;
+  padding-top: 5px;
+  margin-top: 2px;
   text-align: center;
 }
 
 .sticker-fallback-label {
-  font-size: 0.67rem;
+  font-size: 0.6rem;
   font-weight: 800;
   color: #142a6d;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
 }
 
 .sticker-fallback-sub {
-  font-size: 0.64rem;
+  font-size: 0.58rem;
   color: #64748b;
-  line-height: 1.3;
-  margin: 2px 0 4px;
+  line-height: 1.25;
+  margin: 1px 0 2px;
 }
 
 .sticker-fallback-link {
   display: inline-block;
   font-family: var(--font-mono, 'SFMono-Regular', Consolas, monospace);
-  font-size: 0.61rem;
+  font-size: 0.58rem;
   font-weight: 700;
   color: #2563eb;
   text-decoration: underline;
   word-break: break-all;
-  line-height: 1.25;
+  line-height: 1.2;
 }
 
-/* Printable Official QR Sticker Sheet */
+/* Printable Official QR Sticker Sheet (Strict 45 x 55 mm Physical Sizing) */
 @media print {
   @page {
     size: portrait;
-    margin: 10mm;
+    margin: 5mm;
   }
 
   html,
@@ -708,7 +708,7 @@ textarea.form-control {
     width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
-    padding: 6mm 0 0 0 !important;
+    padding: 4mm 0 0 0 !important;
     margin: 0 !important;
     background: transparent !important;
     box-shadow: none !important;
@@ -754,22 +754,99 @@ textarea.form-control {
 
   body.printing-qr-sticker #admin-print-sticker-box,
   body:has(#print-sticker-modal.active) #admin-print-sticker-box {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: space-between !important;
     margin: 0 auto !important;
     box-shadow: none !important;
-    border: 2px dashed #2563eb !important;
-    border-radius: 14px !important;
+    border: 1.5px dashed #2563eb !important;
+    border-radius: 3mm !important;
     background: #ffffff !important;
-    padding: 16px 16px 14px !important;
-    width: 250px !important;
-    max-width: 250px !important;
+    padding: 2mm 2.5mm 2mm !important;
+    width: 45mm !important;
+    max-width: 45mm !important;
+    height: 55mm !important;
+    max-height: 55mm !important;
     box-sizing: border-box !important;
+    overflow: hidden !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     page-break-after: avoid !important;
     break-after: avoid !important;
     page-break-before: avoid !important;
     break-before: avoid !important;
+  }
+
+  body.printing-qr-sticker #admin-print-sticker-box .sticker-header,
+  body:has(#print-sticker-modal.active) #admin-print-sticker-box .sticker-header {
+    margin-bottom: 1mm !important;
+    font-size: 6.5pt !important;
+    gap: 1mm !important;
+  }
+
+  body.printing-qr-sticker #admin-print-sticker-box .sticker-header svg,
+  body:has(#print-sticker-modal.active) #admin-print-sticker-box .sticker-header svg {
+    width: 3mm !important;
+    height: 3mm !important;
+  }
+
+  body.printing-qr-sticker #admin-print-sticker-box .sticker-scan-me,
+  body:has(#print-sticker-modal.active) #admin-print-sticker-box .sticker-scan-me {
+    font-size: 5.5pt !important;
+    padding: 0.5mm 3mm !important;
+    margin-bottom: 1mm !important;
+    border-width: 0.75px !important;
+  }
+
+  body.printing-qr-sticker #admin-print-sticker-box .sticker-qr-img,
+  body:has(#print-sticker-modal.active) #admin-print-sticker-box .sticker-qr-img {
+    width: 30mm !important;
+    height: 30mm !important;
+    padding: 0.75mm !important;
+    margin: 0 auto 1mm !important;
+    border-width: 0.75px !important;
+    border-radius: 1.5mm !important;
+    box-sizing: border-box !important;
+  }
+
+  body.printing-qr-sticker #admin-print-sticker-box .sticker-token-wrap,
+  body:has(#print-sticker-modal.active) #admin-print-sticker-box .sticker-token-wrap {
+    margin: 0 0 1mm !important;
+  }
+
+  body.printing-qr-sticker #admin-print-sticker-box .sticker-token,
+  body:has(#print-sticker-modal.active) #admin-print-sticker-box .sticker-token {
+    font-size: 6.5pt !important;
+    padding: 0.5mm 2.5mm !important;
+    border-radius: 1mm !important;
+    border-width: 0.75px !important;
+  }
+
+  body.printing-qr-sticker #admin-print-sticker-box .sticker-fallback,
+  body:has(#print-sticker-modal.active) #admin-print-sticker-box .sticker-fallback {
+    border-top: 0.5px dashed #cbd5e1 !important;
+    padding-top: 1mm !important;
+    margin-top: 0.5mm !important;
+    width: 100% !important;
+  }
+
+  body.printing-qr-sticker #admin-print-sticker-box .sticker-fallback-label,
+  body:has(#print-sticker-modal.active) #admin-print-sticker-box .sticker-fallback-label {
+    font-size: 5.5pt !important;
+  }
+
+  body.printing-qr-sticker #admin-print-sticker-box .sticker-fallback-sub,
+  body:has(#print-sticker-modal.active) #admin-print-sticker-box .sticker-fallback-sub {
+    font-size: 5pt !important;
+    margin: 0.5mm 0 !important;
+    line-height: 1.1 !important;
+  }
+
+  body.printing-qr-sticker #admin-print-sticker-box .sticker-fallback-link,
+  body:has(#print-sticker-modal.active) #admin-print-sticker-box .sticker-fallback-link {
+    font-size: 5.2pt !important;
+    line-height: 1.1 !important;
   }
 
   body.printing-qr-sticker #admin-print-sticker-box *,

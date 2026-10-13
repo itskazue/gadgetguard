@@ -157,6 +157,7 @@
               </svg>
               <span>Notifications</span>
             </div>
+            <span class="osa-badge-counter" id="osa-notif-badge" style="display:none;">0</span>
           </div>
         </li>
         <li>
@@ -819,8 +820,29 @@
 
         <!-- ================= SCREEN 9: NOTIFICATIONS ================= -->
         <section id="osa-screen-notifications" class="osa-screen">
-          <div class="app-card" style="max-width: 800px; margin: 0 auto;">
-            <h3 style="font-weight: 800; font-size: 1.15rem; margin-bottom: 16px;">🔔 OSA Incident Notifications Feed</h3>
+          <div class="app-card" style="max-width: 850px; margin: 0 auto;">
+            <div class="osa-notif-header-toolbar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid var(--card-border);">
+              <div>
+                <h3 style="font-weight: 800; font-size: 1.2rem; margin: 0; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                  <span>🔔</span> OSA Incident Notifications Feed
+                </h3>
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
+                  Official administrative incident alerts, registration verification notices, and drop-off logs
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div class="notif-filter-group" style="display: inline-flex; background: #f1f5f9; border-radius: 8px; padding: 3px; border: 1px solid #e2e8f0;">
+                  <button id="osa-notif-filter-all" class="btn btn-sm notif-filter-btn active" onclick="setOsaNotificationFilter('all')" style="padding: 4px 12px; font-size: 0.78rem; font-weight: 700; border-radius: 6px; border: none; background: #ffffff; color: #142a6d; box-shadow: 0 1px 3px rgba(0,0,0,0.08); cursor: pointer;">All (<span id="osa-notif-count-all">0</span>)</button>
+                  <button id="osa-notif-filter-unread" class="btn btn-sm notif-filter-btn" onclick="setOsaNotificationFilter('unread')" style="padding: 4px 12px; font-size: 0.78rem; font-weight: 700; border-radius: 6px; border: none; background: transparent; color: #64748b; cursor: pointer;">Unread (<span id="osa-notif-count-unread">0</span>)</button>
+                </div>
+                <button id="osa-mark-all-read-btn" class="btn btn-secondary btn-sm" onclick="markAllOsaNotificationsRead()" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.8rem; padding: 6px 14px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <span>Mark All as Read</span>
+                </button>
+              </div>
+            </div>
             <div id="osa-notifications-feed">
               <!-- Injected by JS -->
             </div>
@@ -1642,7 +1664,7 @@
       <div class="modal-body text-center" style="padding: 20px 24px;">
         <div class="official-qr-sticker" id="admin-print-sticker-box">
           <div class="sticker-header">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
             <span>NCST GADGETGUARD</span>
@@ -1654,8 +1676,8 @@
           </div>
           <div class="sticker-fallback">
             <div class="sticker-fallback-label">FOUND THIS DEVICE?</div>
-            <div class="sticker-fallback-sub">Scan QR to notify owner or surrender to OSA</div>
-            <a class="sticker-fallback-link" href="https://ncstgadgetguard.onrender.com/#osa-surrender" target="_blank" rel="noopener">ncstgadgetguard.onrender.com/#osa-surrender</a>
+            <div class="sticker-fallback-sub">Scan QR or surrender to OSA:</div>
+            <a class="sticker-fallback-link" href="https://ncstgadgetguard.onrender.com/drop" target="_blank" rel="noopener">ncstgadgetguard.onrender.com/drop</a>
           </div>
         </div>
       </div>

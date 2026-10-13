@@ -66,7 +66,7 @@ assert(stickerBoxHtml.includes('SCAN ME'), 'Sticker must contain "SCAN ME"');
 assert(stickerBoxHtml.includes('id="admin-sticker-qr-img"'), 'Sticker must contain dynamic QR image tag');
 assert(stickerBoxHtml.includes('id="admin-sticker-token"'), 'Sticker must contain token element');
 assert(stickerBoxHtml.includes('class="sticker-fallback"'), 'Sticker must contain fallback container');
-assert(stickerBoxHtml.includes('ncstgadgetguard.onrender.com/#osa-surrender'), 'Sticker must contain direct OSA surrender anchor link');
+assert(stickerBoxHtml.includes('ncstgadgetguard.onrender.com/drop') || stickerBoxHtml.includes('ncstgadgetguard.onrender.com/#osa-surrender'), 'Sticker must contain direct OSA surrender link (/drop)');
 assert(!stickerBoxHtml.includes('phone') && !stickerBoxHtml.includes('@'), 'Sticker must not expose phone or private emails');
 assert(osaHtml.includes('href="/campus-poster.html"'), 'osa/index.html must include Campus Poster link in sidebar');
 console.log('✅ PASS: public/osa/index.html sticker layout and sidebar verified');

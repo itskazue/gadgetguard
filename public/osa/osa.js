@@ -10,6 +10,7 @@ let currentActiveOsaScreen = 'dashboard';
 document.addEventListener('DOMContentLoaded', async () => {
   await ensureAdminAuthenticated();
   initOsaNavigation();
+  loadOsaNotificationsBadge();
   await loadCurrentOsaScreenData();
 
   // Register PWA Service Worker
@@ -20,6 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Real-time EventSource listener
   onLiveEvent((evt) => {
     loadOsaDashboardStats();
+    loadOsaNotificationsBadge();
     loadCurrentOsaScreenData();
   });
 });
@@ -3782,69 +3784,432 @@ function renderAuditLogsTable(logs, hasFilter = false) {
   `;
 }
 
-// 13. Notifications Feed
+// 13. Notifications Feed & Incident Management
+let osaNotifsCache = [];
+let expandedOsaNotifIds = new Set();
+let currentOsaNotifFilter = 'all';
+let isMarkingAllOsaNotifsRead = false;
+
+function updateOsaNotifBadge(forcedUnreadCount) {
+  const badge = document.getElementById('osa-notif-badge');
+  const countAllEl = document.getElementById('osa-notif-count-all');
+  const countUnreadEl = document.getElementById('osa-notif-count-unread');
+
+  const total = osaNotifsCache.length;
+  const unread = typeof forcedUnreadCount === 'number'
+    ? forcedUnreadCount
+    : osaNotifsCache.filter(n => !n.read).length;
+
+  if (badge) {
+    badge.textContent = unread;
+    if (unread > 0) {
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  if (countAllEl) countAllEl.textContent = total;
+  if (countUnreadEl) countUnreadEl.textContent = unread;
+}
+
+async function loadOsaNotificationsBadge() {
+  try {
+    const res = await api.getNotifications();
+    if (res && res.success) {
+      osaNotifsCache = res.notifications || [];
+      updateOsaNotifBadge(res.unreadCount);
+    }
+  } catch (_) {}
+}
+
+function setOsaNotificationFilter(filter) {
+  currentOsaNotifFilter = filter;
+  const btnAll = document.getElementById('osa-notif-filter-all');
+  const btnUnread = document.getElementById('osa-notif-filter-unread');
+
+  if (btnAll && btnUnread) {
+    if (filter === 'unread') {
+      btnUnread.classList.add('active');
+      btnUnread.style.background = '#ffffff';
+      btnUnread.style.color = '#142a6d';
+      btnUnread.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+
+      btnAll.classList.remove('active');
+      btnAll.style.background = 'transparent';
+      btnAll.style.color = '#64748b';
+      btnAll.style.boxShadow = 'none';
+    } else {
+      btnAll.classList.add('active');
+      btnAll.style.background = '#ffffff';
+      btnAll.style.color = '#142a6d';
+      btnAll.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+
+      btnUnread.classList.remove('active');
+      btnUnread.style.background = 'transparent';
+      btnUnread.style.color = '#64748b';
+      btnUnread.style.boxShadow = 'none';
+    }
+  }
+
+  renderOsaNotificationsFeed();
+}
+
 async function loadOsaNotifications() {
   const container = document.getElementById('osa-notifications-feed');
   if (!container) return;
 
   try {
     const res = await api.getNotifications();
-    const notifs = res.notifications || [];
+    if (res && res.success) {
+      osaNotifsCache = res.notifications || [];
+      updateOsaNotifBadge(res.unreadCount);
+    }
+    renderOsaNotificationsFeed();
+  } catch (err) {
+    console.error('Error loading OSA notifications:', err);
+    if (container) {
+      container.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted);">Error loading notifications. Please refresh.</div>`;
+    }
+  }
+}
 
-    if (notifs.length === 0) {
-      container.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--text-muted);">No notifications.</div>`;
+function resolveOsaDestination(n) {
+  if (!n) return null;
+  const link = (n.linkUrl || '').trim();
+  const type = (n.type || '').trim().toLowerCase();
+  const title = (n.title || '').toLowerCase();
+
+  // Guard: NEVER navigate OSA admins to Student Portal routes
+  if (link.startsWith('/student') || link.includes('student/')) {
+    if (type.includes('missing') || title.includes('missing')) return { screen: 'missing', label: 'View Missing Board' };
+    if (type.includes('reg') || title.includes('reg') || title.includes('approv')) return { screen: 'approvals', label: 'View Approvals Desk' };
+    if (type.includes('custody') || title.includes('custody') || title.includes('drop')) return { screen: 'custody', label: 'View Custody Vault' };
+    if (type.includes('claim') || title.includes('claim')) return { screen: 'claims', label: 'View Claims Desk' };
+    return null;
+  }
+
+  let target = '';
+  if (link.includes('#')) {
+    target = link.split('#')[1].trim();
+  } else if (link.startsWith('/osa/')) {
+    target = link.replace('/osa/', '').replace(/\/$/, '').trim();
+  } else if (link && !link.startsWith('http') && !link.startsWith('/')) {
+    target = link;
+  }
+
+  if (target === 'returns' || target === 'return-history') target = 'history';
+  if (target === 'verification' || target === 'verify') target = 'approvals';
+
+  const validScreens = {
+    approvals: 'View Approvals Desk',
+    missing: 'View Missing Board',
+    custody: 'View Custody Vault',
+    claims: 'View Claims Desk',
+    history: 'View Returned History',
+    scans: 'View QR Scan Logs',
+    users: 'View User Accounts',
+    reports: 'View Reports',
+    audit: 'View Audit Logs',
+    settings: 'View Settings',
+    dashboard: 'View Dashboard'
+  };
+
+  if (target && validScreens[target]) {
+    return { screen: target, label: validScreens[target] };
+  }
+
+  if (type.includes('missing') || title.includes('missing')) return { screen: 'missing', label: 'View Missing Board' };
+  if (type.includes('approval') || type.includes('registration') || title.includes('registration') || title.includes('approv')) return { screen: 'approvals', label: 'View Approvals Desk' };
+  if (type.includes('custody') || type.includes('surrender') || title.includes('custody') || title.includes('surrender')) return { screen: 'custody', label: 'View Custody Vault' };
+  if (type.includes('claim') || title.includes('claim')) return { screen: 'claims', label: 'View Claims Desk' };
+  if (type.includes('returned') || title.includes('returned')) return { screen: 'history', label: 'View Returned History' };
+  if (type.includes('scan') || title.includes('scan')) return { screen: 'scans', label: 'View QR Scan Logs' };
+
+  return null;
+}
+
+function getOsaNotifIcon(type = '', title = '') {
+  const t = (type + ' ' + title).toLowerCase();
+  if (t.includes('missing') || t.includes('stolen') || t.includes('alert')) {
+    return '🚨';
+  }
+  if (t.includes('approv') || t.includes('regist')) {
+    return '📋';
+  }
+  if (t.includes('custody') || t.includes('drop') || t.includes('vault') || t.includes('surrender')) {
+    return '📦';
+  }
+  if (t.includes('claim')) {
+    return '🏷️';
+  }
+  if (t.includes('return')) {
+    return '✅';
+  }
+  if (t.includes('scan') || t.includes('telemetry')) {
+    return '📍';
+  }
+  return '🔔';
+}
+
+function formatOsaNotificationMessage(msg) {
+  if (!msg) return '';
+  const lines = msg.split('\n').map(l => l.trim());
+
+  let html = '';
+  let metaRows = [];
+  let currentParagraph = [];
+
+  function flushParagraph() {
+    if (currentParagraph.length > 0) {
+      html += `<p style="margin: 0 0 8px 0; line-height: 1.55; color: var(--text-main); font-size: 0.875rem;">${currentParagraph.join(' ')}</p>`;
+      currentParagraph = [];
+    }
+  }
+
+  function flushMeta() {
+    if (metaRows.length > 0) {
+      html += `<div class="notif-meta-block" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; margin:10px 0;">${metaRows.join('')}</div>`;
+      metaRows = [];
+    }
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line) {
+      flushParagraph();
+      flushMeta();
+      continue;
+    }
+
+    if (line.includes('Safety Notice') || line.includes('Security Notice') || line.includes('Notice:')) {
+      flushParagraph();
+      flushMeta();
+      html += `<div style="background:#fef3c7; border:1px solid #fde68a; border-left:4px solid #d97706; padding:8px 12px; border-radius:6px; font-size:0.825rem; color:#92400e; margin:8px 0;">⚠️ ${escapeHtml(line)}</div>`;
+      continue;
+    }
+
+    const matchMeta = line.match(/^(Device|Serial|Model|Student|Student ID|Finder|Custody Location|Found Location|Status|Reference No|Audit IP|Date|Category):\s*(.+)$/i);
+    if (matchMeta) {
+      flushParagraph();
+      metaRows.push(`
+        <div style="display:flex; justify-content:space-between; padding:3px 0; font-size:0.82rem; border-bottom:1px solid #f1f5f9;">
+          <span style="font-weight:700; color:#64748b;">${escapeHtml(matchMeta[1])}:</span>
+          <span style="font-weight:600; color:#0f172a; text-align:right;">${escapeHtml(matchMeta[2])}</span>
+        </div>
+      `);
+      continue;
+    }
+
+    currentParagraph.push(escapeHtml(line));
+  }
+
+  flushParagraph();
+  flushMeta();
+
+  return html;
+}
+
+function renderOsaNotificationCard(n) {
+  const isExpanded = expandedOsaNotifIds.has(n.id);
+  const isUnread = !n.read;
+  const icon = getOsaNotifIcon(n.type, n.title);
+  const destination = resolveOsaDestination(n);
+
+  return `
+    <div class="notif-accordion-card ${isUnread ? 'unread' : 'read'} ${isExpanded ? 'expanded' : ''}" id="osa-notif-card-${n.id}">
+      <div class="notif-header-row" onclick="toggleOsaNotification('${n.id}', event)" role="button" aria-expanded="${isExpanded}">
+        <div class="notif-header-left">
+          <div class="notif-icon-badge">${icon}</div>
+          <div class="notif-title-area">
+            <span class="notif-title-text" title="${escapeHtml(n.title)}">${escapeHtml(n.title)}</span>
+            ${isUnread ? `<span class="notif-unread-dot" id="osa-notif-dot-${n.id}" title="Unread notification"></span>` : ''}
+          </div>
+        </div>
+        <div class="notif-header-right">
+          <span class="notif-timestamp-text">${formatDate(n.createdAt)}</span>
+          <span class="notif-chevron-wrap" aria-hidden="true" style="transition: transform 0.2s ease; ${isExpanded ? 'transform: rotate(180deg);' : ''}">
+            <svg class="notif-chevron-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </span>
+        </div>
+      </div>
+      <div class="notif-collapse-body" id="osa-notif-body-${n.id}" style="${isExpanded ? 'display: block;' : 'display: none;'}">
+        <div class="notif-collapse-inner" style="padding: 14px 18px 16px 18px; border-top: 1px solid var(--card-border); background: #ffffff;">
+          <div class="notif-details-content">
+            <div class="notif-message-text" style="line-height: 1.5; color: var(--text-main);">
+              ${formatOsaNotificationMessage(n.message)}
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 1px solid #f1f5f9;">
+              <div style="display: flex; gap: 8px;">
+                ${destination ? `
+                  <button class="btn btn-primary btn-sm" onclick="navigateOsaFromNotification('${destination.screen}', event)" style="font-weight: 700; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px;">
+                    <span>${escapeHtml(destination.label)}</span>
+                    <span>&rarr;</span>
+                  </button>
+                ` : ''}
+                ${isUnread ? `
+                  <button class="btn btn-secondary btn-sm" onclick="markSingleOsaNotificationRead('${n.id}', event)" style="font-size: 0.8rem;">
+                    ✓ Mark as Read
+                  </button>
+                ` : ''}
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="toggleOsaNotification('${n.id}', event)" style="font-size: 0.8rem; color: #64748b;">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderOsaNotificationsFeed() {
+  const container = document.getElementById('osa-notifications-feed');
+  if (!container) return;
+
+  const items = currentOsaNotifFilter === 'unread'
+    ? osaNotifsCache.filter(n => !n.read)
+    : osaNotifsCache;
+
+  if (items.length === 0) {
+    if (currentOsaNotifFilter === 'unread') {
+      container.innerHTML = `
+        <div style="padding: 44px 20px; text-align: center; color: var(--text-muted);">
+          <div style="font-size: 2.2rem; margin-bottom: 8px;">🎉</div>
+          <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 4px;">No unread notifications</h4>
+          <p style="font-size: 0.85rem;">All administrative notices have been reviewed.</p>
+        </div>
+      `;
+    } else {
+      container.innerHTML = `
+        <div style="padding: 44px 20px; text-align: center; color: var(--text-muted);">
+          <div style="font-size: 2.2rem; margin-bottom: 8px;">📭</div>
+          <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 4px;">No notifications yet</h4>
+          <p style="font-size: 0.85rem;">No incident notifications recorded.</p>
+        </div>
+      `;
+    }
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="notif-accordion-container">
+      ${items.map(n => renderOsaNotificationCard(n)).join('')}
+    </div>
+  `;
+}
+
+async function toggleOsaNotification(id, event) {
+  if (event) event.stopPropagation();
+
+  const notif = osaNotifsCache.find(n => n.id === id);
+  if (!notif) return;
+
+  const isExpanded = expandedOsaNotifIds.has(id);
+  if (isExpanded) {
+    expandedOsaNotifIds.delete(id);
+  } else {
+    expandedOsaNotifIds.add(id);
+
+    // Auto mark read upon viewing
+    if (!notif.read) {
+      notif.read = true;
+      api.markNotificationRead(id).catch(e => console.warn('Could not mark read:', e));
+      updateOsaNotifBadge();
+    }
+  }
+
+  renderOsaNotificationsFeed();
+}
+
+async function markSingleOsaNotificationRead(id, event) {
+  if (event) event.stopPropagation();
+
+  const notif = osaNotifsCache.find(n => n.id === id);
+  if (!notif || notif.read) return;
+
+  try {
+    notif.read = true;
+    await api.markNotificationRead(id);
+    updateOsaNotifBadge();
+    renderOsaNotificationsFeed();
+    if (typeof SwalHelper !== 'undefined') {
+      SwalHelper.toast('info', 'Updated', 'Notification marked as read.');
+    }
+  } catch (err) {
+    console.error('Error marking notification read:', err);
+  }
+}
+
+async function markAllOsaNotificationsRead() {
+  if (isMarkingAllOsaNotifsRead) return;
+
+  const unreadCount = osaNotifsCache.filter(n => !n.read).length;
+  if (unreadCount === 0) {
+    if (typeof SwalHelper !== 'undefined') {
+      SwalHelper.toast('info', 'Already Up to Date', 'All notifications are already marked as read.');
+    }
+    return;
+  }
+
+  const btn = document.getElementById('osa-mark-all-read-btn');
+  const originalHtml = btn ? btn.innerHTML : '';
+
+  try {
+    isMarkingAllOsaNotifsRead = true;
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `<span style="display:inline-block; animation:spin 1s linear infinite;">⏳</span> Marking...`;
+    }
+
+    const res = await api.markAllNotificationsRead();
+    if (!res || !res.success) {
+      if (typeof SwalHelper !== 'undefined') {
+        SwalHelper.toast('error', 'Update Failed', (res && res.error) || 'Could not mark notifications as read.');
+      }
       return;
     }
 
-    container.innerHTML = notifs.map(n => `
-      <div style="padding: 16px; border-bottom: 1px solid var(--card-border); display: flex; gap: 14px; cursor: pointer; transition: background 0.2s ease; background: ${n.read ? '#ffffff' : '#eff6ff'};" onclick="handleOsaNotificationClick('${n.id}', '${n.linkUrl || ''}')">
-        <div style="font-size: 1.4rem;">🔔</div>
-        <div style="flex: 1;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main);">${escapeHtml(n.title)}</span>
-            <span style="font-size: 0.75rem; color: var(--text-muted);">${formatDate(n.createdAt)}</span>
-          </div>
-          <div style="font-size: 0.825rem; color: var(--text-secondary); margin-top: 2px; white-space: pre-line;">${escapeHtml(n.message)}</div>
-        </div>
-      </div>
-    `).join('');
-  } catch (e) {}
+    // Update in-memory cache and UI state
+    osaNotifsCache.forEach(n => { n.read = true; });
+    updateOsaNotifBadge(0);
+    renderOsaNotificationsFeed();
+
+    if (typeof SwalHelper !== 'undefined') {
+      SwalHelper.toast('success', 'Marked as Read', 'All notifications marked as read.');
+    }
+  } catch (err) {
+    console.error('Error marking all notifications read:', err);
+    if (typeof SwalHelper !== 'undefined') {
+      SwalHelper.toast('error', 'Update Failed', err.message || 'Error marking all notifications as read.');
+    }
+  } finally {
+    isMarkingAllOsaNotifsRead = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  }
 }
 
-async function handleOsaNotificationClick(id, linkUrl) {
-  try {
-    const res = await api.getNotifications();
-    const notif = (res.notifications || []).find(n => n.id === id);
-    await api.markNotificationRead(id);
-    await loadOsaNotifications();
+function navigateOsaFromNotification(screen, event) {
+  if (event) event.stopPropagation();
+  if (screen && typeof navigateOsa === 'function') {
+    navigateOsa(screen);
+  }
+}
 
-    if (notif) {
-      await Swal.fire({
-        title: `🔔 ${escapeHtml(notif.title)}`,
-        html: `
-          <div style="text-align: left; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 12px 0; font-size: 0.88rem; line-height: 1.6; color: #1e293b; white-space: pre-line;">
-            ${escapeHtml(notif.message)}
-          </div>
-          <div style="font-size: 0.75rem; color: #64748b; text-align: right;">
-            Received: ${formatDate(notif.createdAt)}
-          </div>
-        `,
-        confirmButtonText: linkUrl ? 'View Related Screen' : 'Close',
-        confirmButtonColor: '#142a6d',
-        showCancelButton: !!linkUrl,
-        cancelButtonText: 'Close',
-        cancelButtonColor: '#64748b'
-      }).then((result) => {
-        if (result.isConfirmed && linkUrl) {
-          const target = linkUrl.split('#')[1] || '';
-          if (target) navigateOsa(target);
-        }
-      });
-    } else if (linkUrl) {
-      const target = linkUrl.split('#')[1] || '';
-      if (target) navigateOsa(target);
-    }
-  } catch (e) {}
+if (typeof window !== 'undefined') {
+  window.loadOsaNotificationsBadge = loadOsaNotificationsBadge;
+  window.loadOsaNotifications = loadOsaNotifications;
+  window.setOsaNotificationFilter = setOsaNotificationFilter;
+  window.toggleOsaNotification = toggleOsaNotification;
+  window.markSingleOsaNotificationRead = markSingleOsaNotificationRead;
+  window.markAllOsaNotificationsRead = markAllOsaNotificationsRead;
+  window.navigateOsaFromNotification = navigateOsaFromNotification;
 }
 
 // 14. Settings Form & Demo Reset
