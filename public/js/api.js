@@ -171,36 +171,70 @@ const SwalHelper = {
  * GadgetGuard Unified API Client & Real-time State Hub
  */
 
+// Purge legacy on-disk authenticated credentials from localStorage so old sessions are not silently restored
+try {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem('gg_token');
+    localStorage.removeItem('gg_user');
+  }
+} catch (_) {}
+
 const API_BASE = '/api';
 
 const api = {
   getToken() {
-    return localStorage.getItem('gg_token');
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        return sessionStorage.getItem('gg_token');
+      }
+    } catch (_) {}
+    return this._inMemoryToken || null;
   },
 
   setToken(token) {
-    if (token) {
-      localStorage.setItem('gg_token', token);
-    } else {
-      localStorage.removeItem('gg_token');
-    }
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        if (token) {
+          sessionStorage.setItem('gg_token', token);
+        } else {
+          sessionStorage.removeItem('gg_token');
+        }
+      }
+    } catch (_) {}
+    this._inMemoryToken = token || null;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('gg_token');
+      }
+    } catch (_) {}
   },
 
   getCurrentUser() {
-    const raw = localStorage.getItem('gg_user');
     try {
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) {
-      return null;
-    }
+      if (typeof sessionStorage !== 'undefined') {
+        const raw = sessionStorage.getItem('gg_user');
+        return raw ? JSON.parse(raw) : null;
+      }
+    } catch (_) {}
+    return this._inMemoryUser || null;
   },
 
   setCurrentUser(user) {
-    if (user) {
-      localStorage.setItem('gg_user', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('gg_user');
-    }
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        if (user) {
+          sessionStorage.setItem('gg_user', JSON.stringify(user));
+        } else {
+          sessionStorage.removeItem('gg_user');
+        }
+      }
+    } catch (_) {}
+    this._inMemoryUser = user || null;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('gg_user');
+      }
+    } catch (_) {}
   },
 
   async request(endpoint, options = {}) {
@@ -278,6 +312,18 @@ const api = {
   logout() {
     this.setToken(null);
     this.setCurrentUser(null);
+    this._inMemoryToken = null;
+    this._inMemoryUser = null;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('gg_token');
+        localStorage.removeItem('gg_user');
+      }
+    } catch (_) {}
+  },
+
+  clearAuth() {
+    this.logout();
   },
 
   async changePassword(currentPassword, newPassword, confirmNewPassword) {
