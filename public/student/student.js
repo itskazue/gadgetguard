@@ -108,14 +108,14 @@ function initStudentNavigation() {
   }
 }
 
-function navigateStudent(screenName) {
-  let targetReturnId = null;
+function navigateStudent(screenName, targetParamId = null) {
+  let targetReturnId = targetParamId;
   if (screenName && screenName.includes('?')) {
     const parts = screenName.split('?');
     screenName = parts[0];
     try {
       const params = new URLSearchParams(parts[1]);
-      targetReturnId = params.get('id');
+      targetReturnId = params.get('id') || params.get('gadgetId') || targetReturnId;
     } catch (e) {}
   }
 
@@ -159,7 +159,7 @@ function navigateStudent(screenName) {
   if (screenName === 'lost-status') loadLostStatusScreen(targetReturnId);
   if (screenName === 'claims') loadClaimsScreen(targetReturnId);
   if (screenName === 'notifications') loadNotificationsFeed();
-  if (screenName === 'missing-form') populateMissingFormDropdown();
+  if (screenName === 'missing-form') populateMissingFormDropdown(targetReturnId);
 }
 
 function toggleMobileSidebar() {
@@ -1154,109 +1154,51 @@ async function executeFinalGadgetSubmit() {
 }
 
 // Report Missing Step Form & Confirmation Dialog
-function populateMissingFormDropdown() {
+function populateMissingFormDropdown(preselectedGadgetId = null) {
   const select = document.getElementById('missing-form-gadget-select');
   if (!select) return;
 
-  const eligible = myGadgetsData.filter(g => g.status === 'REGISTERED' || g.status === 'RETURNED');
+  const eligible = myGadgetsData.filter(g => g && (g.status === 'REGISTERED' || g.status === 'RETURNED'));
   if (eligible.length === 0) {
     select.innerHTML = `<option value="">No eligible registered gadgets to report missing</option>`;
     return;
   }
 
+  const prevValue = select.value;
+
   select.innerHTML = eligible.map(g => `
-    <option value="${g.id}">${g.brand} ${g.model} (S/N: ${g.serialNumber})</option>
+    <option value="${escapeHtml(g.id)}">${escapeHtml(g.brand)} ${escapeHtml(g.model)} (S/N: ${escapeHtml(g.serialNumber)})</option>
   `).join('');
+
+  if (preselectedGadgetId && eligible.some(g => g.id === preselectedGadgetId)) {
+    select.value = preselectedGadgetId;
+  } else if (prevValue && eligible.some(g => g.id === prevValue)) {
+    select.value = prevValue;
+  }
 }
 
 // Seamless Direct Missing Report Trigger from Gadget Details Modal
-async function initiateMissingReportFor(gadgetId) {
+function initiateMissingReportFor(gadgetId) {
   closeModal('gadget-details-modal');
-  const gadget = myGadgetsData.find(g => g.id === gadgetId);
+  const gadget = myGadgetsData.find(g => g && g.id === gadgetId);
   if (!gadget) return;
 
-  if (gadget.status !== 'REGISTERED') {
-    await SwalHelper.warning('Unable to Report', `This gadget is currently marked as ${gadget.status}.`);
+  if (gadget.status !== 'REGISTERED' && gadget.status !== 'RETURNED') {
+    SwalHelper.warning('Unable to Report', `This gadget is currently marked as ${gadget.status}.`);
     return;
   }
 
-  const nowLocal = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  // Navigate to existing Report Missing screen and preselect the exact gadget ID
+  navigateStudent('missing-form', gadget.id);
 
-  const { value: formValues } = await Swal.fire({
-    title: `🚨 Report ${escapeHtml(gadget.brand)} ${escapeHtml(gadget.model)} as Missing`,
-    html: `
-      <div style="text-align: left; font-size: 0.85rem; color: #334155; margin-top: 10px;">
-        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 0.8rem; color: #991b1b; line-height: 1.4;">
-          <strong>Security Notice:</strong> Broadcasting this alert changes your gadget's QR code to <strong>RECOVERY MODE</strong> and alerts campus security and the Office of Student Affairs (Room 1109).
-        </div>
-        <div style="margin-bottom: 12px;">
-          <label style="font-weight: 700; color: #1e293b; display: block; margin-bottom: 4px;">Last Known Campus Location *</label>
-          <input id="swal-missing-loc" class="swal2-input" style="width: 100%; margin: 0; font-size: 0.875rem; box-sizing: border-box;" placeholder="e.g. Library 3rd Floor, Cafeteria, Room 302" required autofocus>
-        </div>
-        <div style="margin-bottom: 12px;">
-          <label style="font-weight: 700; color: #1e293b; display: block; margin-bottom: 4px;">Approximate Date & Time Lost *</label>
-          <input type="datetime-local" id="swal-missing-datetime" class="swal2-input" style="width: 100%; margin: 0; font-size: 0.875rem; box-sizing: border-box;" value="${nowLocal}" required>
-        </div>
-        <div style="margin-bottom: 6px;">
-          <label style="font-weight: 700; color: #1e293b; display: block; margin-bottom: 4px;">Additional Circumstances / Identifying Marks</label>
-          <textarea id="swal-missing-notes" class="swal2-textarea" style="width: 100%; margin: 0; font-size: 0.85rem; height: 60px; box-sizing: border-box;" placeholder="e.g. Left in black casing, sticker on back..."></textarea>
-        </div>
-      </div>
-    `,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#dc2626',
-    cancelButtonColor: '#64748b',
-    confirmButtonText: '🚨 Broadcast Missing Alert',
-    cancelButtonText: 'Cancel',
-    reverseButtons: true,
-    focusConfirm: false,
-    preConfirm: () => {
-      const loc = document.getElementById('swal-missing-loc').value.trim();
-      const dt = document.getElementById('swal-missing-datetime').value;
-      const notes = document.getElementById('swal-missing-notes').value.trim();
-      if (!loc) {
-        Swal.showValidationMessage('Please specify the last known location.');
-        return false;
-      }
-      return { lastSeenLocation: loc, lastSeenDate: dt, details: notes };
-    }
-  });
-
-  if (!formValues) return;
-
-  try {
-    const res = await api.reportMissing({
-      gadgetId: gadget.id,
-      lastSeenLocation: formValues.lastSeenLocation,
-      lastSeenDate: formValues.lastSeenDate,
-      details: formValues.details
-    });
-
-    if (res.success) {
-      await Swal.fire({
-        icon: 'success',
-        title: 'Missing Alert Broadcasted! 🚨',
-        html: `
-          <p>Your <strong>${escapeHtml(gadget.brand)} ${escapeHtml(gadget.model)}</strong> is now marked as <strong>MISSING</strong>.</p>
-          <p style="font-size:0.85rem; color:#64748b; margin-top:8px;">
-            Anyone who scans its QR sticker will be instructed to surrender it to the Office of Student Affairs (OSA Room 1109).
-          </p>
-        `,
-        confirmButtonColor: '#142a6d'
-      });
-      await loadMyGadgetsData();
-      navigateStudent('lost-status');
-    } else {
-      await SwalHelper.error('Report Failed', res.error || 'Could not report gadget as missing.');
-    }
-  } catch (err) {
-    await SwalHelper.error('Report Failed', err.message || 'Error reporting device missing.');
+  // Focus location input for convenient student entry
+  const locInput = document.getElementById('missing-form-location');
+  if (locInput) {
+    locInput.focus();
   }
 }
 
 function triggerReportMissingFor(gadgetId) {
-  closeModal('gadget-details-modal');
   initiateMissingReportFor(gadgetId);
 }
 
