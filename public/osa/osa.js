@@ -4018,11 +4018,21 @@ function formatOsaNotificationMessage(msg) {
   return html;
 }
 
+function formatOsaNotificationDisplayTitle(title) {
+  if (!title || typeof title !== 'string') return '';
+  return title
+    .replace(/[\uFE0F\uFE0E]/g, '')
+    .replace(/\p{Extended_Pictographic}/gu, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 function renderOsaNotificationCard(n) {
   const isExpanded = expandedOsaNotifIds.has(n.id);
   const isUnread = !n.read;
   const icon = getOsaNotifIcon(n.type, n.title);
   const destination = resolveOsaDestination(n);
+  const displayTitle = formatOsaNotificationDisplayTitle(n.title);
 
   return `
     <div class="notif-accordion-card ${isUnread ? 'unread' : 'read'} ${isExpanded ? 'expanded' : ''}" id="osa-notif-card-${n.id}">
@@ -4030,7 +4040,7 @@ function renderOsaNotificationCard(n) {
         <div class="notif-header-left">
           <div class="notif-icon-badge">${icon}</div>
           <div class="notif-title-area">
-            <span class="notif-title-text" title="${escapeHtml(n.title)}">${escapeHtml(n.title)}</span>
+            <span class="notif-title-text" title="${escapeHtml(displayTitle)}">${escapeHtml(displayTitle)}</span>
             ${isUnread ? `<span class="notif-unread-dot" id="osa-notif-dot-${n.id}" title="Unread notification"></span>` : ''}
           </div>
         </div>

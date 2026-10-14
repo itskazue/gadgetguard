@@ -2077,10 +2077,20 @@ async function loadNotificationsFeed() {
   }
 }
 
+function formatNotificationDisplayTitle(title) {
+  if (!title || typeof title !== 'string') return '';
+  return title
+    .replace(/[\uFE0F\uFE0E]/g, '')
+    .replace(/\p{Extended_Pictographic}/gu, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 function renderNotificationCard(n) {
   const isExpanded = expandedNotificationIds.has(n.id);
   const isUnread = !n.read;
   const icon = getNotifIcon(n.type, n.title);
+  const displayTitle = formatNotificationDisplayTitle(n.title);
 
   return `
     <div class="notif-accordion-card ${isUnread ? 'unread' : 'read'} ${isExpanded ? 'expanded' : ''}" id="notif-card-${n.id}">
@@ -2088,7 +2098,7 @@ function renderNotificationCard(n) {
         <div class="notif-header-left">
           <div class="notif-icon-badge">${icon}</div>
           <div class="notif-title-area">
-            <span class="notif-title-text" title="${escapeHtml(n.title)}">${escapeHtml(n.title)}</span>
+            <span class="notif-title-text" title="${escapeHtml(displayTitle)}">${escapeHtml(displayTitle)}</span>
             ${isUnread ? `<span class="notif-unread-dot" id="notif-dot-${n.id}" title="Unread notification"></span>` : ''}
           </div>
         </div>

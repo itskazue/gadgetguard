@@ -320,6 +320,16 @@
   flex-shrink: 0;
 }
 
+/* Scoped Student Dashboard Metric & Highlight Icon Sizing */
+.metrics-grid-4 .metric-icon-box svg.student-dash-icon,
+.highlight-icon-circle svg.student-dash-icon {
+  width: 20px;
+  height: 20px;
+  max-width: 20px;
+  max-height: 20px;
+  display: block;
+}
+
 /* Gadget Card Grid */
 .gadgets-card-grid {
   display: grid;
