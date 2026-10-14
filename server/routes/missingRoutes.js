@@ -7,7 +7,7 @@ const db = require('../db');
 // POST /api/missing/report (Student or OSA Admin reports gadget missing)
 router.post('/report', authMiddleware, (req, res) => {
   try {
-    const { gadgetId, lastSeenLocation, lastSeenDate, details, contactRewardOffer } = req.body;
+    const { gadgetId, lastSeenLocation, lastSeenDate, details } = req.body;
 
     if (!gadgetId || !lastSeenLocation) {
       return res.status(400).json({ success: false, error: 'Gadget and last seen location are required.' });
@@ -42,7 +42,6 @@ router.post('/report', authMiddleware, (req, res) => {
       reportedAt: nowIso,
       createdAt: nowIso,
       details: details ? details.trim() : '',
-      contactRewardOffer: contactRewardOffer ? contactRewardOffer.trim() : '',
       status: 'ACTIVE'
     });
 

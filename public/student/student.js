@@ -1208,7 +1208,6 @@ function handleMissingFormSubmit(e) {
   const lastSeenLocation = document.getElementById('missing-form-location').value.trim();
   const lastSeenDate = document.getElementById('missing-form-datetime').value;
   const details = document.getElementById('missing-form-details').value.trim();
-  const contactRewardOffer = document.getElementById('missing-form-reward').value.trim();
 
   if (!gadgetId) {
     SwalHelper.warning('Please Select Gadget', 'Choose a registered gadget to report missing.');
@@ -1216,7 +1215,7 @@ function handleMissingFormSubmit(e) {
   }
 
   const gadget = myGadgetsData.find(g => g.id === gadgetId);
-  pendingMissingReportData = { gadgetId, lastSeenLocation, lastSeenDate, details, contactRewardOffer };
+  pendingMissingReportData = { gadgetId, lastSeenLocation, lastSeenDate, details };
 
   // Populate confirmation dialog
   const nameEl = document.getElementById('confirm-missing-device-name');

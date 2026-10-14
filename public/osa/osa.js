@@ -1062,7 +1062,6 @@ function openOsaMarkMissingModal(gadgetId) {
   const locInput = document.getElementById('osa-missing-location');
   const dtInput = document.getElementById('osa-missing-date');
   const detInput = document.getElementById('osa-missing-details');
-  const rewInput = document.getElementById('osa-missing-reward');
 
   if (gidInput) gidInput.value = gadget.id;
   if (dNameEl) dNameEl.textContent = `${gadget.brand} ${gadget.model} (${gadget.category})`;
@@ -1077,7 +1076,6 @@ function openOsaMarkMissingModal(gadgetId) {
   }
   
   if (detInput) detInput.value = 'Student reported misplaced equipment in person at the Office of Student Affairs (OSA Room 1109).';
-  if (rewInput) rewInput.value = 'Please surrender immediately to OSA Room 1109 or Main Gate Security.';
 
   const modal = document.getElementById('osa-mark-missing-modal');
   if (modal) modal.classList.add('active');
@@ -1089,7 +1087,6 @@ async function handleOsaMarkMissingSubmit(event) {
   const lastSeenLocation = document.getElementById('osa-missing-location')?.value;
   const lastSeenDate = document.getElementById('osa-missing-date')?.value;
   const details = document.getElementById('osa-missing-details')?.value;
-  const contactRewardOffer = document.getElementById('osa-missing-reward')?.value;
 
   if (!gadgetId || !lastSeenLocation) {
     SwalHelper.error('Missing Information', 'Please provide the gadget and last seen location.');
@@ -1101,8 +1098,7 @@ async function handleOsaMarkMissingSubmit(event) {
       gadgetId,
       lastSeenLocation,
       lastSeenDate: lastSeenDate ? new Date(lastSeenDate).toISOString() : new Date().toISOString(),
-      details,
-      contactRewardOffer
+      details
     });
 
     closeModal('osa-mark-missing-modal');

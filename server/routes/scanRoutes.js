@@ -301,7 +301,6 @@ router.get('/device/:token', async (req, res) => {
           lastSeenLocation: missingReport.lastSeenLocation,
           lastSeenDate: missingReport.lastSeenDate,
           details: missingReport.details,
-          contactRewardOffer: missingReport.contactRewardOffer,
           reportedAt: missingReport.reportedAt
         } : null,
         scanHistory: allScansForGadget,
