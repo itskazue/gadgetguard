@@ -117,8 +117,16 @@ router.get('/active', (req, res) => {
       const gadget = db.findById('gadgets', report.gadgetId);
       const owner = gadget ? db.findById('users', gadget.userId) : null;
 
+      // Only an explicit link to this incident can hide it from the active list.
+      const activeFoundReport = db.findOne('found_reports', f =>
+        f.missingReportId === report.id && f.gadgetId === report.gadgetId &&
+        !f.returnId && ['REPORTED', 'PENDING_OSA_TURNOVER', 'IN_OSA_CUSTODY'].includes(f.status)
+      );
+
       return {
         ...report,
+        hasActiveFoundReport: Boolean(activeFoundReport),
+        linkedFoundReportId: activeFoundReport ? activeFoundReport.id : null,
         gadget: gadget ? {
           id: gadget.id,
           category: gadget.category,

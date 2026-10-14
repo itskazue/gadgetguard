@@ -1193,7 +1193,7 @@ function filterMissingTable() {
 
   // 1. Missing Status Filter (ACTIVE, ALL, FOUND_IN_CUSTODY, RESOLVED)
   if (statusFilter === 'ACTIVE') {
-    filtered = filtered.filter(r => r.status === 'ACTIVE' && (r.gadget?.status === 'MISSING' || !r.gadget?.status));
+    filtered = filtered.filter(r => r.status === 'ACTIVE' && (r.gadget?.status === 'MISSING' || !r.gadget?.status) && !r.hasActiveFoundReport);
   } else if (statusFilter === 'FOUND_IN_CUSTODY') {
     filtered = filtered.filter(r => r.gadget?.status === 'FOUND_IN_CUSTODY');
   } else if (statusFilter === 'RESOLVED') {
@@ -2189,6 +2189,13 @@ function renderReturnedHistoryTable(records, hasFilter = false) {
                     Ref: ${escapeHtml(returnRef)}
                   </div>
                 ` : ''}
+                ${c.recoverySource ? `
+                  <div style="margin-top: 4px;">
+                    <span style="background: ${c.recoverySource === 'Not recorded' ? '#f8fafc' : '#eff6ff'}; color: #334155; font-size: 0.7rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; border: 1px solid #cbd5e1; display: inline-block; white-space: nowrap;">
+                      ${escapeHtml(c.recoverySource)}
+                    </span>
+                  </div>
+                ` : ''}
               </td>
 
               <!-- 6. STATUS -->
@@ -2202,7 +2209,7 @@ function renderReturnedHistoryTable(records, hasFilter = false) {
               <!-- 7. ACTIONS -->
               <td class="text-right">
                 <div class="table-action-btns" style="justify-content: flex-end;">
-                  <button class="btn btn-secondary btn-sm" onclick="openClaimDetailsModal('${c.id}')" title="View Full Details" style="font-size: 0.78rem; padding: 5px 10px;">
+                  <button class="btn btn-secondary btn-sm" onclick="openClaimDetailsModal('${c.id}', 'history')" title="View Full Details" style="font-size: 0.78rem; padding: 5px 10px;">
                     👁️ View Details
                   </button>
                 </div>
@@ -2233,15 +2240,16 @@ function viewLargePhoto(photoUrl, caption = 'Photo Preview') {
 }
 
 // View Full Claim & Return Details Modal
-function openClaimDetailsModal(claimId) {
-  const allList = window._allClaimsData || [...(window._claimsList || []), ...(window._historyList || [])];
+function openClaimDetailsModal(claimId, source = 'claims') {
+  const allList = source === 'history' ? (window._historyList || []) :
+    [...(window._allClaimsData || []), ...(window._claimsList || []), ...(window._historyList || [])];
   const c = allList.find(item => item.id === claimId);
   if (!c) return;
 
   const content = document.getElementById('claim-details-content');
   if (!content) return;
 
-  const isReturned = (c.status === 'RETURNED' || c.status === 'CLAIMED' || Boolean(c.returnRecord) || c.gadget?.status === 'RETURNED');
+  const isReturned = (source === 'history' || c.status === 'RETURNED' || c.status === 'CLAIMED' || Boolean(c.returnRecord) || c.gadget?.status === 'RETURNED');
   const isInCustody = !isReturned && (c.status === 'IN_CUSTODY' || c.isInCustody || c.gadget?.status === 'FOUND_IN_CUSTODY');
   const isApproved = !isReturned && !isInCustody && (c.status === 'APPROVED');
 
@@ -2358,6 +2366,19 @@ function openClaimDetailsModal(claimId) {
             <div><span style="color:#64748b;">Date &amp; Time Returned:</span> <strong>${formatDate(returnDate)}</strong></div>
             <div><span style="color:#64748b;">Processed By OSA Staff:</span> <strong style="color:#142a6d;">${escapeHtml(processedStaff)}</strong></div>
             ${returnRef ? `<div><span style="color:#64748b;">Official Receipt ID:</span> <code class="font-mono" style="color:#6d28d9; font-weight:700;">${escapeHtml(returnRef)}</code></div>` : ''}
+            ${c.recoverySource ? `<div><span style="color:#64748b;">Recovery Source:</span> <strong>${escapeHtml(c.recoverySource)}</strong></div>` : ''}
+            ${c.foundReport ? `
+              <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #e2e8f0;">
+                <div style="font-weight: 700; color: #0369a1; font-size: 0.82rem; margin-bottom: 4px;">📲 Linked Finder Report</div>
+                ${c.foundReport.finderName ? `<div><span style="color:#64748b;">Finder:</span> <strong>${escapeHtml(c.foundReport.finderName)}</strong></div>` : ''}
+                ${c.foundReport.finderContact ? `<div><span style="color:#64748b;">Contact:</span> ${escapeHtml(c.foundReport.finderContact)}</div>` : ''}
+                ${c.foundReport.foundLocation ? `<div><span style="color:#64748b;">Found Location:</span> ${escapeHtml(c.foundReport.foundLocation)}</div>` : ''}
+                ${c.foundReport.foundDate ? `<div><span style="color:#64748b;">Report Date:</span> ${formatDate(c.foundReport.foundDate)}</div>` : ''}
+                ${c.foundReport.receivedAtOsaDate ? `<div><span style="color:#64748b;">OSA Receipt:</span> ${formatDate(c.foundReport.receivedAtOsaDate)}</div>` : ''}
+                ${c.foundReport.custodyLocation ? `<div><span style="color:#64748b;">Custody Location:</span> ${escapeHtml(c.foundReport.custodyLocation)}</div>` : ''}
+                ${c.foundReport.surrenderReference ? `<div><span style="color:#64748b;">Surrender Ref:</span> <code class="font-mono" style="color:#6d28d9;">${escapeHtml(c.foundReport.surrenderReference)}</code></div>` : ''}
+              </div>
+            ` : source === 'history' ? '<div><span style="color:#64748b;">Linked Finder Report:</span> Not recorded</div>' : ''}
             ${c.returnRecord?.notes ? `<div><span style="color:#64748b;">Handover Notes:</span> "${escapeHtml(c.returnRecord.notes)}"</div>` : ''}
           ` : `
             <div><span style="color:#64748b;">Date Received by OSA:</span> <strong>${formatDate(dateReceived)}</strong></div>

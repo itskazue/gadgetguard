@@ -295,8 +295,34 @@ router.get('/returns', authMiddleware, (req, res) => {
       const owner = db.findById('users', r.userId);
       const admin = db.findById('users', r.returnedByOsaAdminId);
 
+      // Return processing records this exact transaction on its found reports.
+      // Multiple finders may share a return: never choose one arbitrarily.
+      const linkedFoundReports = db.find('found_reports', f =>
+        r.id && f.returnId === r.id && f.gadgetId === r.gadgetId &&
+        f.status !== 'CANCELLED' && f.status !== 'INVALID'
+      );
+      const foundReport = linkedFoundReports.length === 1 ? linkedFoundReports[0] : null;
+
+      // Names and turnover methods do not establish how recovery originated.
+      const recoverySource = foundReport &&
+        ['QR Finder Report', 'Direct OSA Surrender'].includes(r.recoverySource)
+        ? r.recoverySource : 'Not recorded';
+
       return {
         ...r,
+        recoverySource,
+        foundReport: foundReport ? {
+          id: foundReport.id,
+          surrenderReference: foundReport.surrenderReference,
+          finderName: foundReport.finderName,
+          finderContact: foundReport.finderContact,
+          foundLocation: foundReport.foundLocation,
+          foundDate: foundReport.foundDate,
+          receivedAtOsaDate: foundReport.receivedAtOsaDate,
+          custodyLocation: foundReport.custodyLocation,
+          turnInMethod: foundReport.turnInMethod,
+          message: foundReport.message
+        } : null,
         gadget: gadget ? {
           id: gadget.id,
           brand: gadget.brand,
