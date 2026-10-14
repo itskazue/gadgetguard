@@ -25,8 +25,10 @@ const db = {
   find(key, fn) { return this.get(key).filter(fn); },
   findOne(key, fn) { return this.get(key).find(fn); },
   findById(key, id) { return this.findOne(key, r => r.id === id); },
-  update(key, id, patch) { Object.assign(this.findById(key, id), patch); },
-  addAuditLog() {}
+  update(key, id, patch) { return Object.assign(this.findById(key, id), patch); },
+  insert(key, record) { data[key].push(record); return record; },
+  addAuditLog(record) { data.audit_logs.push(record); },
+  addNotification(record) { (data.notifications ||= []).push(record); }
 };
 const jwt = { verify(token) {
   if (!['u1', 'u2', 'osa'].includes(token)) throw Error('Invalid mock token');
@@ -49,8 +51,8 @@ function routes(file) {
   }
   evaluate(file, { express: { Router: () => router }, '../db': db, '../auth': auth,
     '../seed': { seedDatabase() { throw Error('Seeding prohibited'); } }, jsonwebtoken: jwt });
-  return (method, url, token = 'osa', params = {}) => {
-    const req = { headers: token ? { authorization: `Bearer ${token}` } : {}, query: {}, params };
+  return (method, url, token = 'osa', params = {}, body = {}) => {
+    const req = { headers: token ? { authorization: `Bearer ${token}` } : {}, query: {}, params, body };
     const res = { code: 200, status(code) { this.code = code; return this; }, json(body) { this.body = body; return this; } };
     const chain = handlers[`${method} ${url}`];
     assert.ok(chain, `${method} ${url} exists`);
@@ -180,5 +182,127 @@ check('Owner recovery keeps existing behavior without creating return', () => {
   assert.equal(data.returns.length, count);
   assert.equal(db.findById('gadgets', 'g1').status, 'REGISTERED');
   assert.equal(data.found_reports[0].status, 'RESOLVED');
+});
+// Exercise official return writes against mock data, rather than fabricated history alone.
+const proof = '/mock-handover-proof.jpg';
+const receiptTime = '2026-10-14T10:00:00.000Z';
+function returnFixture() {
+  data.gadgets = [{ id: 'g1', userId: 'u1', status: 'FOUND_IN_CUSTODY', receivedAtOsaDate: receiptTime }];
+  data.missing_reports = [
+    { id: 'old', gadgetId: 'g1', userId: 'u1', status: 'RESOLVED', returnId: 'previous-return' },
+    { id: 'current', gadgetId: 'g1', userId: 'u1', status: 'IN_OSA_CUSTODY', custodyReceivedAt: receiptTime }
+  ];
+  data.found_reports = [
+    { id: 'cancelled', gadgetId: 'g1', missingReportId: 'old', status: 'CANCELLED', finderName: 'Cancelled finder' },
+    { id: 'invalid', gadgetId: 'g1', missingReportId: 'old', status: 'INVALID' },
+    { id: 'previous', gadgetId: 'g1', missingReportId: 'old', status: 'RETURNED', returnId: 'previous-return', finderName: 'Previous finder' },
+    { id: 'current-finder', gadgetId: 'g1', missingReportId: 'current', status: 'IN_OSA_CUSTODY', finderName: 'Current finder', finderContact: 'current-contact' },
+    { id: 'other-finder', gadgetId: 'g1', missingReportId: 'current', status: 'REPORTED' }
+  ];
+  data.returns = [{ id: 'previous-return', gadgetId: 'g1', userId: 'u1' }];
+  data.claims = [{ id: 'verified', gadgetId: 'g1', userId: 'u1', status: 'APPROVED', verificationIdNumber: 'verified-id', claimProofDetails: 'Existing proof' }];
+  data.audit_logs = [];
+  data.notifications = [];
+  data.recovery_chats = [];
+}
+function officialReturn(overrides = {}) {
+  return osa('post', '/return', 'osa', {}, {
+    gadgetId: 'g1', claimId: 'verified', receivedByPersonName: 'One Student',
+    receivedByPersonId: 'verified-id', handoverPhotoUrl: proof, ...overrides
+  });
+}
+check('Official return resolves custody incident and preserves historical reports, proof, claim and audit', () => {
+  returnFixture();
+  const history = JSON.stringify(data.found_reports.slice(0, 3));
+  const oldMissing = JSON.stringify(data.missing_reports[0]);
+  const result = officialReturn();
+  assert.equal(result.code, 200);
+  const returnId = result.body.returnRecord.id;
+  assert.equal(data.missing_reports[1].status, 'RESOLVED');
+  assert.equal(data.missing_reports[1].returnId, returnId);
+  assert.equal(data.missing_reports[1].handoverPhotoUrl, proof);
+  assert.equal(data.found_reports[3].status, 'RETURNED');
+  assert.equal(data.found_reports[3].returnId, returnId);
+  assert.equal(JSON.stringify(data.found_reports.slice(0, 3)), history);
+  assert.equal(JSON.stringify(data.missing_reports[0]), oldMissing);
+  assert.equal(data.found_reports[4].status, 'REPORTED');
+  assert.equal(data.found_reports[4].returnId, undefined);
+  assert.equal(data.claims[0].status, 'RETURNED');
+  assert.equal(data.claims[0].verificationIdNumber, 'verified-id');
+  assert.equal(data.claims[0].claimProofDetails, 'Existing proof');
+  assert.equal(data.audit_logs[0].action, 'RETURN_GADGET');
+  assert.equal(data.notifications.length, 1);
+  assert.equal(returned(returnId).foundReport.finderContact, 'current-contact');
+  assert.equal(returned('previous-return').foundReport.finderName, 'Previous finder');
+});
+check('Repeated recovery cycles retain earlier return and finder linkage', () => {
+  const firstReturn = data.found_reports[3].returnId;
+  const firstFinder = JSON.stringify(data.found_reports[3]);
+  data.gadgets[0].status = 'FOUND_IN_CUSTODY';
+  data.missing_reports.push({ id: 'next-cycle', gadgetId: 'g1', userId: 'u1', status: 'IN_OSA_CUSTODY' });
+  data.found_reports.push({ id: 'next-finder', gadgetId: 'g1', missingReportId: 'next-cycle', status: 'IN_OSA_CUSTODY', finderName: 'Next finder' });
+  data.claims.push({ id: 'next-claim', gadgetId: 'g1', userId: 'u1', status: 'APPROVED' });
+  const result = officialReturn({ claimId: 'next-claim' });
+  assert.equal(result.code, 200);
+  assert.equal(data.missing_reports[2].status, 'RESOLVED');
+  assert.equal(JSON.stringify(data.found_reports[3]), firstFinder);
+  assert.equal(returned(firstReturn).foundReport.finderName, 'Current finder');
+  assert.equal(returned(result.body.returnRecord.id).foundReport.finderName, 'Next finder');
+});
+check('Multiple custody finders reject before any mutation', () => {
+  returnFixture();
+  data.found_reports.push({ id: 'ambiguous', gadgetId: 'g1', missingReportId: 'current', status: 'IN_OSA_CUSTODY' });
+  const before = JSON.stringify(data);
+  assert.equal(officialReturn().code, 409);
+  assert.equal(JSON.stringify(data), before);
+});
+check('Multiple open incidents reject before any mutation', () => {
+  returnFixture();
+  data.missing_reports.push({ id: 'ambiguous-missing', gadgetId: 'g1', status: 'ACTIVE' });
+  const before = JSON.stringify(data);
+  assert.equal(officialReturn().code, 409);
+  assert.equal(JSON.stringify(data), before);
+});
+check('Unlinked legacy custody without exact receipt evidence rejects safely', () => {
+  returnFixture();
+  delete data.found_reports[3].missingReportId;
+  const before = JSON.stringify(data);
+  assert.equal(officialReturn().code, 409);
+  assert.equal(JSON.stringify(data), before);
+});
+check('Direct surrender uses exact recorded custody receipt to resolve incident', () => {
+  returnFixture();
+  delete data.found_reports[3].missingReportId;
+  data.found_reports[3].receivedAtOsaDate = receiptTime;
+  assert.equal(officialReturn().code, 200);
+  assert.equal(data.missing_reports[1].status, 'RESOLVED');
+});
+check('Direct surrender without a missing incident still returns with exact receipt evidence', () => {
+  returnFixture();
+  data.missing_reports = [];
+  delete data.found_reports[3].missingReportId;
+  data.found_reports[3].receivedAtOsaDate = receiptTime;
+  assert.equal(officialReturn().code, 200);
+  assert.equal(data.missing_reports.length, 0);
+});
+check('Wrong cycle, cancelled, invalid and completed custody candidates reject without writes', () => {
+  for (const patch of [{ missingReportId: 'old' }, { status: 'CANCELLED' },
+    { status: 'INVALID' }, { status: 'RETURNED' }, { returnId: 'previous-return' }]) {
+    returnFixture();
+    Object.assign(data.found_reports[3], patch);
+    const before = JSON.stringify(data);
+    assert.equal(officialReturn().code, 409);
+    assert.equal(JSON.stringify(data), before);
+  }
+});
+check('Proof remains mandatory and duplicate return remains rejected', () => {
+  returnFixture();
+  const before = JSON.stringify(data);
+  assert.equal(officialReturn({ handoverPhotoUrl: '' }).code, 400);
+  assert.equal(JSON.stringify(data), before);
+  assert.equal(officialReturn().code, 200);
+  const after = JSON.stringify(data);
+  assert.equal(officialReturn().code, 400);
+  assert.equal(JSON.stringify(data), after);
 });
 console.log(`${checks} focused checks passed; application imports mocked, no DB or server loaded.`);

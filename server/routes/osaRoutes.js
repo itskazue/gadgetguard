@@ -126,6 +126,25 @@ router.post('/return', authMiddleware, requireRole('osa_admin'), (req, res) => {
       });
     }
 
+    // Validate the recovery cycle before creating a receipt or changing any records.
+    const openMissing = db.find('missing_reports', m => m.gadgetId === gadgetId &&
+      !m.returnId && ['ACTIVE', 'IN_OSA_CUSTODY'].includes(m.status));
+    const currentFound = db.find('found_reports', f => f.gadgetId === gadgetId &&
+      f.status === 'IN_OSA_CUSTODY' && !f.returnId &&
+      (f.missingReportId
+        ? openMissing.some(m => m.id === f.missingReportId)
+        : Boolean(gadget.receivedAtOsaDate && f.receivedAtOsaDate === gadget.receivedAtOsaDate)));
+    const foundReport = currentFound.length === 1 ? currentFound[0] : null;
+    const missingReport = foundReport && (foundReport.missingReportId
+      ? openMissing.find(m => m.id === foundReport.missingReportId)
+      : openMissing.find(m => m.custodyReceivedAt === foundReport.receivedAtOsaDate));
+    if (!foundReport || openMissing.length > 1 || (openMissing.length && !missingReport)) {
+      return res.status(409).json({
+        success: false,
+        error: 'Cannot establish a unique current recovery cycle. Return was not processed.'
+      });
+    }
+
     const owner = db.findById('users', gadget.userId);
     const returnDateIso = new Date().toISOString();
     const cleanPhotoUrl = handoverPhotoUrl.trim();
@@ -163,26 +182,20 @@ router.post('/return', authMiddleware, requireRole('osa_admin'), (req, res) => {
       lastReturnedByAdminName: req.user.name
     });
 
-    // Close any active missing report and link photo proof
-    const activeMissing = db.find('missing_reports', m => m.gadgetId === gadgetId && m.status === 'ACTIVE');
-    activeMissing.forEach(m => db.update('missing_reports', m.id, { 
+    // Resolve only the validated incident, including incidents already in custody.
+    if (missingReport) db.update('missing_reports', missingReport.id, {
       status: 'RESOLVED',
       resolvedAt: returnDateIso,
       resolvedBy: req.user.id,
       handoverPhotoUrl: cleanPhotoUrl,
       returnId: returnRecord.id
-    }));
+    });
 
-    // Also close and resolve any found reports for this gadget
-    const foundReports = db.find('found_reports', f => f.gadgetId === gadgetId);
-    foundReports.forEach(f => {
-      if (f.status !== 'RESOLVED' && f.status !== 'RETURNED') {
-        db.update('found_reports', f.id, { 
-          status: 'RETURNED', 
-          handoverPhotoUrl: cleanPhotoUrl,
-          returnId: returnRecord.id 
-        });
-      }
+    // Historical, cancelled, invalid, and other finder reports remain untouched.
+    db.update('found_reports', foundReport.id, {
+      status: 'RETURNED',
+      handoverPhotoUrl: cleanPhotoUrl,
+      returnId: returnRecord.id
     });
 
     // Close any recovery chats
