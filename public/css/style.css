@@ -1865,3 +1865,51 @@ div:where(.swal2-container) .swal2-textarea:focus {
   }
 }
 
+/* ==========================================================================
+   Standardized Sidebar Sign Out Button (Student & OSA Portals)
+   ========================================================================== */
+.sidebar-signout-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-md, 10px);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1.25;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.sidebar-signout-btn:hover {
+  background: rgba(239, 68, 68, 0.16);
+  color: #fecaca;
+  border-color: rgba(239, 68, 68, 0.38);
+}
+
+.sidebar-signout-btn:active {
+  transform: scale(0.98);
+}
+
+.sidebar-signout-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.sidebar-signout-btn:hover svg {
+  transform: translateX(2px);
+}
+
+
