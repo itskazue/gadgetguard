@@ -585,8 +585,8 @@
       <div id="qr-content-box" style="display: none;">
         
         <!-- Status Icon -->
-        <div id="qr-status-icon" class="qr-status-icon-circle icon-safe" style="display:flex; align-items:center; justify-content:center;">
-          <svg class="ui-icon" style="width:28px;height:28px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <div id="qr-status-icon" class="qr-status-icon-circle icon-safe">
+          ✓
         </div>
 
         <!-- Status Title & Explanation -->
@@ -615,9 +615,8 @@
 
         <!-- Official Surrender / Return Location Card -->
         <div id="qr-location-card-box" class="qr-location-card">
-          <div class="qr-location-header" id="qr-location-header-title" style="display:flex; align-items:center; gap:5px;">
-            <svg class="ui-icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            <span>Surrender Location</span>
+          <div class="qr-location-header" id="qr-location-header-title">
+            📍 Surrender Location
           </div>
           <div id="qr-location-name" class="qr-location-name">
             Office of Student Affairs (OSA)
@@ -628,15 +627,14 @@
             Emilio Aguinaldo Hwy, Dasmariñas, Cavite
           </div>
           <div id="qr-location-contact" class="qr-location-contact">
-            Official Tel: (046) 416-0166 &nbsp;|&nbsp; osa@ncst.edu.ph
+            📞 Official Tel: (046) 416-0166 &nbsp;|&nbsp; ✉️ osa@ncst.edu.ph
           </div>
         </div>
 
         <!-- Action Buttons Wrap -->
         <div id="qr-action-wrap">
-          <button type="button" class="btn-qr-action btn-qr-blue" onclick="openFinderModal()" style="display:flex; align-items:center; justify-content:center; gap:6px;">
-            <svg class="ui-icon" style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg>
-            <span>Surrender to OSA</span>
+          <button type="button" class="btn-qr-action btn-qr-blue" onclick="openFinderModal()">
+            🤝 Surrender to OSA
           </button>
         </div>
 
@@ -650,8 +648,8 @@
 
       <!-- Invalid / Not Found State Container -->
       <div id="qr-error-box" style="display: none;">
-        <div class="qr-status-icon-circle icon-missing" style="animation: none; display:flex; align-items:center; justify-content:center;">
-          <svg class="ui-icon" style="width:28px;height:28px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <div class="qr-status-icon-circle icon-missing" style="animation: none;">
+          ✕
         </div>
         <h2 class="qr-scan-title title-missing" style="font-size: 1.15rem;">
           Unrecognized QR Code
@@ -660,10 +658,7 @@
           This QR code is not registered in the GadgetGuard campus system. If you found this item on campus, please bring it to the <strong>Office of Student Affairs (Room 1109)</strong>.
         </p>
         <div class="qr-location-card">
-          <div class="qr-location-header" style="display:flex; align-items:center; gap:5px;">
-            <svg class="ui-icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            <span>Surrender Location</span>
-          </div>
+          <div class="qr-location-header">📍 Surrender Location</div>
           <div class="qr-location-name">Office of Student Affairs (OSA)</div>
           <div class="qr-location-sub">Room 1109, NCST Main Campus</div>
         </div>
@@ -678,8 +673,7 @@
     <div class="modal-box">
       <div class="modal-header">
         <h3 class="modal-title" style="color: #047857; display: flex; align-items: center; gap: 8px;">
-          <svg class="ui-icon" style="width:18px;height:18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          <span>I Will Keep the Gadget Safe</span>
+          🛡️ I Will Keep the Gadget Safe
         </h3>
         <button type="button" class="btn btn-secondary btn-icon" onclick="closeModal('keep-safe-modal')">&times;</button>
       </div>
@@ -701,15 +695,13 @@
               Found Location <span style="color: #dc2626;">*</span>
             </label>
             <input type="text" id="keepsafe-found-location" class="form-control" placeholder="Where did you find this? (e.g. Library 2nd Floor, Room 1109 hallway)" required>
-            <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px; display:flex; align-items:center; gap:4px;">
-              <svg class="ui-icon" style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              <span>Manually entered location where you found the item.</span>
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
+              📍 Manually entered location where you found the item.
             </div>
           </div>
 
-          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px 12px; font-size: 0.8rem; color: #1e40af; line-height: 1.45; display:flex; align-items:flex-start; gap:6px;">
-            <svg class="ui-icon" style="width:14px;height:14px;flex-shrink:0;margin-top:2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <div><strong>Private & Secure:</strong> No phone number, email, or student login required. You can communicate safely with the owner using our built-in GadgetGuard chat.</div>
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px 12px; font-size: 0.8rem; color: #1e40af; line-height: 1.45;">
+            🔒 <strong>Private & Secure:</strong> No phone number, email, or student login required. You can communicate safely with the owner using our built-in GadgetGuard chat.
           </div>
         </div>
 
@@ -728,8 +720,7 @@
     <div class="modal-box">
       <div class="modal-header">
         <h3 class="modal-title" style="color: #142a6d; display: flex; align-items: center; gap: 8px;">
-          <svg class="ui-icon" style="width:18px;height:18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg>
-          <span>Surrender Found Gadget</span>
+          🏢 Surrender Found Gadget
         </h3>
         <button type="button" class="btn btn-secondary btn-icon" onclick="closeModal('surrender-osa-modal')">&times;</button>
       </div>
@@ -737,8 +728,7 @@
         <div class="modal-body">
           <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; color: #1e3a8a; line-height: 1.5; font-size: 0.88rem;">
             <div style="font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-              <svg class="ui-icon" style="width:16px;height:16px;color:#2563eb;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              <span>Thank you for helping our school community.</span>
+              <span>🙏</span> Thank you for helping our school community.
             </div>
             <p style="margin: 0; font-size: 0.84rem; color: #334155;">
               Please bring the gadget to the designated <strong>Campus Security Guard</strong> for Lost-and-Found logbook recording. The gadget will then be formally turned over to the <strong>Office of Student Affairs (OSA – Room 1109)</strong>.
@@ -747,10 +737,7 @@
 
           <!-- Official Destination Box (Section B) -->
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 0.82rem; color: #334155; line-height: 1.45;">
-            <div style="font-weight: 700; color: #142a6d; font-size: 0.84rem; margin-bottom: 2px; display:flex; align-items:center; gap:4px;">
-              <svg class="ui-icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg>
-              <span>Official Destination:</span>
-            </div>
+            <div style="font-weight: 700; color: #142a6d; font-size: 0.84rem; margin-bottom: 2px;">🏢 Official Destination:</div>
             <div>Office of Student Affairs (OSA)</div>
             <div>Room 1109</div>
             <div>NCST Main Campus</div>
@@ -768,9 +755,8 @@
               Contact Number <span style="font-size: 0.78rem; color: #64748b; font-weight: normal;">(Optional)</span>
             </label>
             <input type="tel" id="osa-finder-contact" class="form-control" placeholder="e.g. 09123456789 (or leave blank)">
-            <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px; line-height: 1.4; display:flex; align-items:flex-start; gap:4px;">
-              <svg class="ui-icon" style="width:13px;height:13px;flex-shrink:0;margin-top:2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <span><strong>Privacy:</strong> Only authorized OSA staff can access this if needed regarding surrender/recovery. It is never shown to the gadget owner or displayed on the public QR page.</span>
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px; line-height: 1.4;">
+              🔒 <strong>Privacy:</strong> Only authorized OSA staff can access this if needed regarding surrender/recovery. It is never shown to the gadget owner or displayed on the public QR page.
             </div>
           </div>
 
@@ -805,8 +791,7 @@
       <div class="modal-header">
         <div>
           <h3 class="modal-title" style="color: #142a6d; display: flex; align-items: center; gap: 8px; font-size: 1.05rem;">
-            <svg class="ui-icon" style="width:18px;height:18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            <span>Private Recovery Chat</span>
+            💬 Private Recovery Chat
           </h3>
           <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">
             Communicating with: <strong style="color: #047857;">Gadget Owner</strong>
@@ -819,21 +804,18 @@
           <div>
             <strong>Device:</strong> <span id="finder-chat-device-name">Missing Gadget</span>
           </div>
-          <div style="display:flex; align-items:center; gap:4px;">
-            <svg class="ui-icon" style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            <span id="finder-chat-location-name">Campus</span>
+          <div>
+            📍 <span id="finder-chat-location-name">Campus</span>
           </div>
         </div>
 
-        <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 8px 12px; font-size: 0.75rem; color: #92400e; margin-top: 8px; line-height: 1.45; display:flex; align-items:flex-start; gap:6px;">
-          <svg class="ui-icon" style="width:14px;height:14px;flex-shrink:0;margin-top:2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-          <div><strong>Safety Recommendation:</strong> For everyone's security, arrange device returns through the <strong>Office of Student Affairs (OSA – Room 1109)</strong> whenever possible.</div>
+        <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 8px 12px; font-size: 0.75rem; color: #92400e; margin-top: 8px; line-height: 1.45;">
+          💡 <strong>Safety Recommendation:</strong> For everyone's security, arrange device returns through the <strong>Office of Student Affairs (OSA – Room 1109)</strong> whenever possible.
         </div>
 
         <div id="finder-chat-surrender-option" style="margin-top: 8px;">
-          <button type="button" class="btn btn-sm" style="width: 100%; border: 1.5px solid #93c5fd; background: #eff6ff; color: #1e40af; border-radius: 8px; padding: 6px 10px; font-weight: 700; cursor: pointer; text-align: center; font-size: 0.78rem; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="handleKeepSafeToSurrenderTransition()">
-            <svg class="ui-icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg>
-            <span>I Will Surrender It to OSA Instead</span>
+          <button type="button" class="btn btn-sm" style="width: 100%; border: 1.5px solid #93c5fd; background: #eff6ff; color: #1e40af; border-radius: 8px; padding: 6px 10px; font-weight: 700; cursor: pointer; text-align: center; font-size: 0.78rem;" onclick="handleKeepSafeToSurrenderTransition()">
+            🏢 I Will Surrender It to OSA Instead
           </button>
         </div>
 
@@ -843,14 +825,13 @@
           </div>
 
           <div id="finder-chat-closed-banner" style="display: none; background: #f1f5f9; border-top: 1px solid #cbd5e1; padding: 10px; font-size: 0.8rem; color: #475569; text-align: center; font-weight: 600;">
-            <svg class="ui-icon" style="width:14px;height:14px;margin-right:4px;vertical-align:-2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>This recovery conversation is closed because the gadget has been marked recovered or returned.
+            🔒 This recovery conversation is closed because the gadget has been marked recovered or returned.
           </div>
 
           <form id="finder-chat-form" class="finder-chat-form" onsubmit="handleSendFinderMessage(event)">
             <input type="text" id="finder-chat-input" class="finder-chat-input" placeholder="Type a message to the gadget owner..." maxlength="1000" autocomplete="off" required>
-            <button type="submit" class="finder-chat-send-btn" style="display:flex; align-items:center; gap:4px;">
-              <span>Send</span>
-              <svg class="ui-icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            <button type="submit" class="finder-chat-send-btn">
+              Send 📤
             </button>
           </form>
         </div>
@@ -1072,9 +1053,8 @@
                 <p style="margin-bottom: 8px;">
                   Saved session credentials have been <strong>cleared from this device</strong>.
                 </p>
-                <div style="color: #b45309; background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; padding: 8px 10px; font-size: 0.8rem; margin-bottom: 8px; display:flex; align-items:center; gap:6px;">
-                  <svg class="ui-icon" style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                  <span>Server revocation could not be confirmed because this device appears to be offline.</span>
+                <div style="color: #b45309; background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; padding: 8px 10px; font-size: 0.8rem; margin-bottom: 8px;">
+                  ⚠️ Server revocation could not be confirmed because this device appears to be offline.
                 </div>
                 <p style="margin: 0; font-size: 0.8rem; color: #64748b;">
                   Server-side security: Any remaining token is strictly constrained by server-enforced inactivity and expiration timeouts.
@@ -1268,7 +1248,7 @@
         // ==========================================
         if (res.isAuthorizedOsa) {
           iconEl.className = 'qr-status-icon-circle icon-osa';
-          iconEl.innerHTML = '<svg class="ui-icon" style="width:28px;height:28px;color:#1e40af;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
+          iconEl.innerHTML = '🛡️';
           titleEl.className = 'qr-scan-title title-osa';
           titleEl.textContent = 'Authorized OSA Verification';
           descEl.innerHTML = `Full official administrative access verified for <strong>${escapeHtml(res.gadget.brand)} ${escapeHtml(res.gadget.model)}</strong>.`;
@@ -1279,9 +1259,8 @@
           osaBox.style.display = 'block';
           osaBox.innerHTML = `
             <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 14px; text-align: left; font-size: 0.84rem;">
-              <div style="font-weight: 800; color: #1e40af; margin-bottom: 8px; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.04em; display:flex; align-items:center; gap:6px;">
-                <svg class="ui-icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                <span>Verified Owner Information (OSA View)</span>
+              <div style="font-weight: 800; color: #1e40af; margin-bottom: 8px; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.04em;">
+                👤 Verified Owner Information (OSA View)
               </div>
               <div style="margin-bottom: 3px;"><strong>Name:</strong> ${escapeHtml(res.owner?.name || 'N/A')}</div>
               <div style="margin-bottom: 3px;"><strong>Student / Employee ID:</strong> <code class="font-mono">${escapeHtml(res.owner?.idNumber || 'N/A')}</code></div>
@@ -1295,7 +1274,7 @@
           `;
 
           if (locCardBox) locCardBox.style.display = 'block';
-          if (locHeaderTitle) locHeaderTitle.textContent = (res.gadget.status === 'MISSING') ? 'Return Location' : 'Campus Office Reference';
+          if (locHeaderTitle) locHeaderTitle.textContent = (res.gadget.status === 'MISSING') ? '📍 Return Location' : '📍 Campus Office Reference';
 
           actionWrap.style.display = 'block';
           actionWrap.innerHTML = `
@@ -1307,7 +1286,7 @@
         // ==========================================
         else if (res.gadget.status !== 'MISSING') {
           iconEl.className = 'qr-status-icon-circle icon-safe';
-          iconEl.innerHTML = '<svg class="ui-icon" style="width:28px;height:28px;color:#059669;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+          iconEl.innerHTML = '✓';
           titleEl.className = 'qr-scan-title title-safe';
           titleEl.textContent = 'This gadget is registered with GadgetGuard.';
           descEl.innerHTML = 'This device is verified and actively registered in good standing.<br>It is not reported as missing.';
@@ -1327,8 +1306,8 @@
             actionWrap.innerHTML = `
               <div class="finder-active-session-card closed" style="margin-top: 14px;">
                 <div class="finder-session-header">
-                  <span class="badge-status badge-case-closed" style="display:inline-flex; align-items:center; gap:4px;">
-                    <svg class="ui-icon" style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>CASE COMPLETED / RECOVERED
+                  <span class="badge-status badge-case-closed">
+                    🔒 CASE COMPLETED / RECOVERED
                   </span>
                   <span style="font-size: 0.72rem; color: #64748b; font-weight: 600;">
                     Read-Only
@@ -1344,13 +1323,11 @@
                     <span class="finder-detail-val">${escapeHtml(pastSession.foundLocation || 'Campus')}</span>
                   </div>
                 </div>
-                <div class="finder-closed-notice" style="display:flex; align-items:center; gap:6px;">
-                  <svg class="ui-icon" style="width:14px;height:14px;color:#059669;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  <span>This gadget has been successfully recovered and returned. Your previous recovery conversation is closed and archived.</span>
+                <div class="finder-closed-notice">
+                  ✓ This gadget has been successfully recovered and returned. Your previous recovery conversation is closed and archived.
                 </div>
-                <button type="button" class="btn-qr-action btn-qr-outline" style="margin-top: 12px; margin-bottom: 0; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="resumeSavedFinderChat(true)">
-                  <svg class="ui-icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                  <span>View Closed Conversation (Read-Only)</span>
+                <button type="button" class="btn-qr-action btn-qr-outline" style="margin-top: 12px; margin-bottom: 0;" onclick="resumeSavedFinderChat(true)">
+                  💬 View Closed Conversation (Read-Only)
                 </button>
               </div>
             `;
@@ -1364,7 +1341,7 @@
         // ==========================================
         else {
           iconEl.className = 'qr-status-icon-circle icon-missing';
-          iconEl.innerHTML = '<svg class="ui-icon" style="width:28px;height:28px;color:#dc2626;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+          iconEl.innerHTML = '⚠️';
           titleEl.className = 'qr-scan-title title-missing';
           titleEl.textContent = 'This gadget has been reported as missing.';
 
@@ -1373,7 +1350,7 @@
 
           osaBox.style.display = 'none'; // Strictly protected: Zero private owner information exposed
           if (locCardBox) locCardBox.style.display = 'block';
-          if (locHeaderTitle) locHeaderTitle.textContent = 'Campus Office Reference';
+          if (locHeaderTitle) locHeaderTitle.textContent = '📍 Campus Office Reference';
 
           renderMissingGadgetActions();
         }
@@ -1394,7 +1371,7 @@
           if (locContactEl) {
             const phone = res.osaContact.phone || '(046) 416-0166';
             const email = res.osaContact.email || 'osa@ncst.edu.ph';
-            locContactEl.innerHTML = `Official Tel: ${escapeHtml(phone)} &nbsp;|&nbsp; ${escapeHtml(email)}`;
+            locContactEl.innerHTML = `📞 Official Tel: ${escapeHtml(phone)} &nbsp;|&nbsp; ✉️ ${escapeHtml(email)}`;
           }
         }
       } catch (err) {
@@ -1421,9 +1398,7 @@
         }
         actionWrap.innerHTML = `
           <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 12px; padding: 18px; text-align: center; color: #065f46;">
-            <div style="display:flex; justify-content:center; margin-bottom: 6px;">
-              <svg class="ui-icon" style="width:36px;height:36px;color:#047857;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg>
-            </div>
+            <div style="font-size: 1.6rem; margin-bottom: 6px;">🏢 ✓</div>
             <div style="font-weight: 800; font-size: 1.1rem; margin-bottom: 4px; color: #047857;">IN OSA CUSTODY</div>
             <p style="font-size: 0.86rem; margin: 0; color: #065f46; line-height: 1.5;">
               This gadget has been physically received by the <strong>Office of Student Affairs (OSA – Room 1109, NCST Main Campus)</strong> and is currently in secure custody ready for owner verification and claim.
@@ -1478,8 +1453,8 @@
         actionWrap.innerHTML = `
           <div class="finder-active-session-card ${isClosed ? 'closed' : ''}">
             <div class="finder-session-header">
-              <span class="badge-status ${isClosed ? 'badge-case-closed' : 'badge-keeping-safe'}" style="display:inline-flex; align-items:center; gap:4px;">
-                ${isClosed ? '<svg class="ui-icon" style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>CASE CLOSED / RECOVERED' : '<svg class="ui-icon" style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>KEEPING GADGET SAFE'}
+              <span class="badge-status ${isClosed ? 'badge-case-closed' : 'badge-keeping-safe'}">
+                ${isClosed ? '🔒 CASE CLOSED / RECOVERED' : '🛡️ KEEPING GADGET SAFE'}
               </span>
               <span style="font-size: 0.72rem; color: #64748b; font-weight: 600;">
                 Active Session
@@ -1498,25 +1473,21 @@
             </div>
 
             ${isClosed ? `
-              <div class="finder-closed-notice" style="display:flex; align-items:center; gap:6px;">
-                <svg class="ui-icon" style="width:14px;height:14px;color:#059669;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                <span>This gadget has been marked recovered or returned. Your conversation is closed and saved as read-only.</span>
+              <div class="finder-closed-notice">
+                ✓ This gadget has been marked recovered or returned. Your conversation is closed and saved as read-only.
               </div>
-              <button type="button" class="btn-qr-action btn-qr-outline" style="margin-top: 12px; margin-bottom: 0; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="resumeSavedFinderChat(true)">
-                <svg class="ui-icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                <span>View Closed Conversation (Read-Only)</span>
+              <button type="button" class="btn-qr-action btn-qr-outline" style="margin-top: 12px; margin-bottom: 0;" onclick="resumeSavedFinderChat(true)">
+                💬 View Closed Conversation (Read-Only)
               </button>
             ` : `
               <div class="finder-active-notice">
                 Your private chat session is securely connected with the owner.
               </div>
-              <button type="button" class="btn-qr-action btn-qr-emerald" style="margin-top: 12px; margin-bottom: 8px; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="resumeSavedFinderChat(false)">
-                <svg class="ui-icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                <span>Continue Conversation</span>
+              <button type="button" class="btn-qr-action btn-qr-emerald" style="margin-top: 12px; margin-bottom: 8px;" onclick="resumeSavedFinderChat(false)">
+                💬 Continue Conversation
               </button>
-              <button type="button" class="btn-qr-action btn-qr-subtle" style="margin-bottom: 0; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="handleKeepSafeToSurrenderTransition()">
-                <svg class="ui-icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg>
-                <span>I Will Surrender It to OSA Instead</span>
+              <button type="button" class="btn-qr-action btn-qr-subtle" style="margin-bottom: 0;" onclick="handleKeepSafeToSurrenderTransition()">
+                🏢 I Will Surrender It to OSA Instead
               </button>
             `}
           </div>
@@ -1529,13 +1500,11 @@
         // New Finder View: Show 2 Options
         actionWrap.innerHTML = `
           <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
-            <button type="button" class="btn-qr-action btn-qr-emerald" onclick="openKeepSafeModal()" style="display:flex; align-items:center; justify-content:center; gap:6px;">
-              <svg class="ui-icon" style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              <span>I Will Keep the Gadget Safe</span>
+            <button type="button" class="btn-qr-action btn-qr-emerald" onclick="openKeepSafeModal()">
+              🛡️ I Will Keep the Gadget Safe
             </button>
-            <button type="button" class="btn-qr-action btn-qr-blue" onclick="openSurrenderOsaModal()" style="display:flex; align-items:center; justify-content:center; gap:6px;">
-              <svg class="ui-icon" style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg>
-              <span>I Will Surrender It to OSA</span>
+            <button type="button" class="btn-qr-action btn-qr-blue" onclick="openSurrenderOsaModal()">
+              🏢 I Will Surrender It to OSA
             </button>
           </div>
         `;
@@ -1579,7 +1548,7 @@
               You previously chose to keep this gadget safe and communicate directly with the owner.
             </p>
             <div style="background: #fff1f2; border: 1.5px solid #fecdd3; border-radius: 8px; padding: 10px 12px; color: #9f1239; font-size: 0.82rem; margin-bottom: 10px; line-height: 1.45;">
-              <strong><svg class="ui-icon" style="width:14px;height:14px;color:#f59e0b;vertical-align:-2px;margin-right:4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Important Notice:</strong> Deciding to surrender this gadget to OSA will <strong>permanently close your conversation</strong> with the owner for this recovery case.
+              <strong>⚠️ Important Notice:</strong> Deciding to surrender this gadget to OSA will <strong>permanently close your conversation</strong> with the owner for this recovery case.
             </div>
             <p style="margin: 0; font-size: 0.82rem; color: #64748b;">
               If you confirm, the private recovery chat will close and the recovery status will be recorded as <strong>AWAITING OSA HANDOVER</strong>.
@@ -1685,7 +1654,7 @@
 
         await Swal.fire({
           icon: 'success',
-          title: 'Surrender Recorded!',
+          title: 'Surrender Recorded! 🏢',
           html: `
             <p style="font-size:0.92rem; color:#334155; margin-bottom:12px;">
               Thank you for helping our school community.
@@ -1698,8 +1667,8 @@
               </div>
             </div>
             <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; font-size:0.8rem; text-align:left; color:#475569;">
-              <div style="display:flex;align-items:center;gap:6px;"><svg class="ui-icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg><span><strong>Status:</strong> AWAITING OSA HANDOVER</span></div>
-              <div style="display:flex;align-items:center;gap:6px;margin-top:4px;"><svg class="ui-icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg><span><strong>Destination:</strong> Room 1109, NCST Main Campus</span></div>
+              🏢 <strong>Status:</strong> AWAITING OSA HANDOVER<br>
+              🏢 <strong>Destination:</strong> Room 1109, NCST Main Campus
             </div>
           `,
           confirmButtonText: 'View Surrender Reference',
@@ -1769,7 +1738,7 @@
           renderMissingGadgetActions(sessionObj);
 
           await SwalHelper.success(
-            'Connected to Safe Chat!',
+            'Connected to Safe Chat! 🛡️',
             'You are now connected with the gadget owner. You can coordinate the return safely.',
             2200
           );
@@ -1847,15 +1816,15 @@
         <div class="finder-active-session-card" style="border: 1.5px solid #93c5fd; background: #ffffff; box-shadow: 0 4px 16px rgba(30,58,138,0.08); padding: 18px; border-radius: 14px; text-align: left;">
           <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 14px;">
             <div>
-              <span style="background: #fef3c7; color: #92400e; font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.03em; display:inline-flex; align-items:center; gap:4px;">
-                <svg class="ui-icon" style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>Pending OSA Turnover
+              <span style="background: #fef3c7; color: #92400e; font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.03em;">
+                📋 Pending OSA Turnover
               </span>
               <h3 style="margin: 8px 0 0; color: #142a6d; font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 6px;">
-                <svg class="ui-icon" style="width:18px;height:18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg>Surrender Reference
+                🏢 Surrender Reference
               </h3>
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="copySurrenderRef('${sRef}')" title="Copy Reference ID" style="font-size: 0.8rem; padding: 4px 10px; display:inline-flex; align-items:center; gap:4px;">
-              <svg class="ui-icon" style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy ID
+            <button type="button" class="btn btn-secondary btn-sm" onclick="copySurrenderRef('${sRef}')" title="Copy Reference ID" style="font-size: 0.8rem; padding: 4px 10px;">
+              📋 Copy ID
             </button>
           </div>
 
@@ -1884,7 +1853,7 @@
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
               <span style="color: #64748b; font-size: 0.8rem; font-weight: 600;">Found Location:</span>
-              <span style="color: #0f172a; font-weight: 600; display:inline-flex; align-items:center; gap:4px;"><svg class="ui-icon" style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${fLoc}</span>
+              <span style="color: #0f172a; font-weight: 600;">📍 ${fLoc}</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
               <span style="color: #64748b; font-size: 0.8rem; font-weight: 600;">Finder Name:</span>
@@ -1902,14 +1871,14 @@
           </div>
 
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; font-size: 0.82rem; color: #334155; line-height: 1.45;">
-            <div style="font-weight: 700; color: #142a6d; margin-bottom: 3px; display:inline-flex; align-items:center; gap:4px;"><svg class="ui-icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg>Official Destination:</div>
+            <div style="font-weight: 700; color: #142a6d; margin-bottom: 3px;">🏢 Official Destination:</div>
             <div>Office of Student Affairs (OSA)</div>
             <div>Room 1109</div>
             <div>NCST Main Campus</div>
           </div>
 
-          <div style="margin-top: 14px; font-size: 0.76rem; color: #64748b; text-align: center; display:flex; align-items:center; justify-content:center; gap:4px;">
-            <svg class="ui-icon" style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Privacy Protected: Personal contact numbers and private account information are kept strictly confidential.
+          <div style="margin-top: 14px; font-size: 0.76rem; color: #64748b; text-align: center;">
+            🔒 Privacy Protected: Personal contact numbers and private account information are kept strictly confidential.
           </div>
         </div>
       `;
@@ -2009,9 +1978,9 @@
           if (closedBanner) {
             closedBanner.style.display = 'block';
             if (isSurrendered) {
-              closedBanner.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;"><svg class="ui-icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>This conversation is closed and read-only because the finder chose to surrender the gadget to OSA Room 1109.</span>';
+              closedBanner.innerHTML = '🔒 This conversation is closed and read-only because the finder chose to surrender the gadget to OSA Room 1109.';
             } else {
-              closedBanner.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;"><svg class="ui-icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>This recovery conversation is closed because the gadget has been marked recovered or returned.</span>';
+              closedBanner.innerHTML = '🔒 This recovery conversation is closed because the gadget has been marked recovered or returned.';
             }
           }
           if (chatForm) chatForm.style.display = 'none';
@@ -2039,9 +2008,7 @@
         if (!chat.messages || chat.messages.length === 0) {
           msgContainer.innerHTML = `
             <div style="margin: auto; text-align: center; color: #64748b; font-size: 0.84rem; padding: 20px;">
-              <div style="display:flex; justify-content:center; margin-bottom: 6px;">
-                <svg class="ui-icon" style="width:28px;height:28px;color:#94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              </div>
+              <div style="font-size: 1.8rem; margin-bottom: 6px;">💬</div>
               <div style="font-weight: 700;">Safe Recovery Chat Initialized</div>
               <p style="font-size: 0.78rem; margin-top: 4px;">Send a message to coordinate the return with the owner.</p>
             </div>
@@ -2076,15 +2043,13 @@
             banner.id = 'finder-inactivity-banner';
             banner.style.cssText = 'background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 10px; padding: 14px; margin: 12px auto; max-width: 90%; color: #92400e; font-size: 0.85rem; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.04);';
             banner.innerHTML = `
-              <div style="display:flex; justify-content:center; margin-bottom: 4px;">
-                <svg class="ui-icon" style="width:24px;height:24px;color:#94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              </div>
+              <div style="font-size: 1.4rem; margin-bottom: 4px;">⏱️</div>
               <div style="font-weight: 700; margin-bottom: 4px; color: #78350f;">Session Paused Due to Inactivity</div>
               <div style="font-size: 0.8rem; color: #92400e; margin-bottom: 10px; line-height: 1.4;">
                 No activity detected for over 2 hours. Your conversation history is safely preserved.
               </div>
-              <button type="button" class="btn btn-primary btn-sm" onclick="resumeInactiveFinderSession()" style="background: #142a6d; border: none; font-weight: 700; padding: 6px 14px; border-radius: 6px; display:inline-flex; align-items:center; gap:6px;">
-                <svg class="ui-icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>Resume Conversation
+              <button type="button" class="btn btn-primary btn-sm" onclick="resumeInactiveFinderSession()" style="background: #142a6d; border: none; font-weight: 700; padding: 6px 14px; border-radius: 6px;">
+                🔑 Resume Conversation
               </button>
             `;
             msgContainer.appendChild(banner);

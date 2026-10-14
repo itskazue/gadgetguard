@@ -193,7 +193,7 @@ async function loadDashboardTriage() {
     const pending = res.gadgets || [];
 
     if (pending.length === 0) {
-      container.innerHTML = `<div style="padding: 24px; text-align: center; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 6px;"><svg class="ui-icon" style="width:16px;height:16px;color:#10b981;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg> Queue clear. All student gadgets have been verified.</div>`;
+      container.innerHTML = `<div style="padding: 24px; text-align: center; color: var(--text-muted);">✓ Queue clear. All student gadgets have been verified.</div>`;
       return;
     }
 
@@ -223,8 +223,8 @@ async function loadDashboardTriage() {
               <td class="font-mono" style="font-size:0.8rem; font-weight:600;">${escapeHtml(g.serialNumber)}</td>
               <td style="font-size:0.8rem; color:var(--text-muted);">${formatDate(g.registrationDate)}</td>
               <td class="text-right">
-                <button class="btn btn-success btn-sm" onclick="handleApproveGadget('${g.id}')" style="display:inline-flex; align-items:center; gap:5px;"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg> Approve & Issue QR</button>
-                <button class="btn btn-danger btn-sm" onclick="openRejectGadgetModal('${g.id}')" style="display:inline-flex; align-items:center; gap:5px;"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Reject</button>
+                <button class="btn btn-success btn-sm" onclick="handleApproveGadget('${g.id}')">✓ Approve & Issue QR</button>
+                <button class="btn btn-danger btn-sm" onclick="openRejectGadgetModal('${g.id}')">✕ Reject</button>
               </td>
             </tr>
           `).join('')}
@@ -628,7 +628,7 @@ function renderApprovalsTable(gadgets, hasActiveFilter = false) {
     if (hasActiveFilter) {
       container.innerHTML = `
         <div style="padding: 40px; text-align: center; color: var(--text-muted);">
-          <div style="margin-bottom: 12px; display: flex; justify-content: center;"><svg class="ui-icon" style="width: 36px; height: 36px; color: #94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div>
+          <div style="font-size: 2rem; margin-bottom: 6px;">🔍</div>
           <h4 style="font-weight: 700; color: var(--text-main);">No Registration Submissions Found</h4>
           <p style="font-size: 0.85rem;">No gadget records match your search or filter selection.</p>
           <button class="btn btn-secondary btn-sm" onclick="clearApprovalsFilter()" style="margin-top: 10px;">Reset Filters</button>
@@ -637,7 +637,7 @@ function renderApprovalsTable(gadgets, hasActiveFilter = false) {
     } else {
       container.innerHTML = `
         <div style="padding: 40px; text-align: center; color: var(--text-muted);">
-          <div style="margin-bottom: 12px; display: flex; justify-content: center;"><svg class="ui-icon" style="width: 36px; height: 36px; color: #10b981;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+          <div style="font-size: 2rem; margin-bottom: 6px;">🎉</div>
           <h4 style="font-weight: 700; color: var(--text-main);">No Pending Submissions</h4>
           <p style="font-size: 0.85rem;">All submitted gadgets have been verified.</p>
         </div>
@@ -672,7 +672,7 @@ function renderApprovalsTable(gadgets, hasActiveFilter = false) {
                 <img src="${effectivePhoto}" alt="Proof" style="width: 52px; height: 52px; object-fit: cover; border-radius: 8px; border: 1.5px solid #cbd5e1; cursor: pointer;" onclick="previewOsaDevicePhoto('${effectivePhoto}', '${escapeHtml(g.brand + ' ' + g.model)}', '${escapeHtml(g.owner?.name || 'Student')}')" title="Click to enlarge photo proof">
               ` : `
                 <div style="width: 52px; height: 52px; border-radius: 8px; background: #f8fafc; border: 1.5px dashed #cbd5e1; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.65rem; color: #94a3b8; text-align: center; vertical-align: middle;" title="No photo uploaded (Physical inspection required)">
-                  <svg class="ui-icon" style="width: 18px; height: 18px; color: #94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  <span style="font-size: 1.1rem; line-height: 1;">📷</span>
                   <span style="font-size: 0.58rem; margin-top: 2px;">No Photo</span>
                 </div>
               `}
@@ -695,11 +695,11 @@ function renderApprovalsTable(gadgets, hasActiveFilter = false) {
             <td class="text-right">
               <div class="table-action-btns" style="display:inline-flex; align-items:center; gap:6px; justify-content:flex-end;">
                 ${g.status === 'PENDING_APPROVAL' ? `
-                  <button class="btn btn-success btn-sm" onclick="handleApproveGadget('${g.id}')" style="display:inline-flex; align-items:center; gap:5px;"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg> Approve & Generate QR</button>
-                  <button class="btn btn-danger btn-sm" onclick="openRejectGadgetModal('${g.id}')" style="display:inline-flex; align-items:center; gap:5px;"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Reject</button>
+                  <button class="btn btn-success btn-sm" onclick="handleApproveGadget('${g.id}')">✓ Approve & Generate QR</button>
+                  <button class="btn btn-danger btn-sm" onclick="openRejectGadgetModal('${g.id}')">✕ Reject</button>
                 ` : ''}
                 ${g.status === 'REGISTERED' && g.secureToken ? `
-                  <button class="btn btn-secondary btn-sm" onclick="openPrintStickerModal('${g.id}')" title="Print QR Security Sticker" style="display:inline-flex; align-items:center; gap:5px;"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Sticker</button>
+                  <button class="btn btn-secondary btn-sm" onclick="openPrintStickerModal('${g.id}')" title="Print QR Security Sticker">🏷️ Sticker</button>
                 ` : ''}
                 ${g.status === 'REJECTED' ? `
                   <span style="font-size:0.75rem; color:#b91c1c;" title="${escapeHtml(g.rejectionReason || 'Rejected')}">Reason: ${escapeHtml(g.rejectionReason || 'Unverified')}</span>
@@ -734,7 +734,7 @@ async function handleApproveGadget(gadgetId) {
     title: 'Approve Gadget Registration?',
     html: '<p>Confirm physical inspection for this device?</p><p style="font-size:0.85rem; color:#64748b;">This will register the gadget in the NCST database and issue an official tamper-proof QR code.</p>',
     icon: 'question',
-    confirmText: 'Approve & Issue QR',
+    confirmText: '✓ Approve & Issue QR',
     cancelText: 'Cancel',
     confirmColor: '#059669'
   });
@@ -754,7 +754,7 @@ async function handleApproveGadget(gadgetId) {
 
   try {
     const res = await api.approveGadget(gadgetId);
-    await SwalHelper.success('Gadget Approved!', `Device verified and approval email sent to student! Issued QR Token: ${res.gadget.secureToken}. Preparing sticker print preview.`, 1800);
+    await SwalHelper.success('Gadget Approved! 🎉', `Device verified and approval email sent to student! Issued QR Token: ${res.gadget.secureToken}. Preparing sticker print preview.`, 1800);
     await loadCurrentOsaScreenData();
     
     setTimeout(() => {
@@ -959,7 +959,7 @@ function renderVaultTable(gadgets, hasFilter = false) {
   if (gadgets.length === 0) {
     container.innerHTML = `
       <div style="padding: 35px; text-align: center; color: var(--text-muted);">
-        <div style="margin-bottom: 12px; display: flex; justify-content: center;"><svg class="ui-icon" style="width: 36px; height: 36px; color: #94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div>
+        <div style="font-size: 1.8rem; margin-bottom: 6px;">🔍</div>
         <h4 style="font-weight: 700; color: var(--text-main);">No Equipment Found</h4>
         <p style="font-size: 0.85rem;">No registered gadgets match the current search or filter criteria.</p>
         ${hasFilter ? `<button class="btn btn-secondary btn-sm" onclick="clearVaultFilter()" style="margin-top: 10px;">Reset Filters</button>` : ''}
@@ -1006,7 +1006,7 @@ function renderVaultTable(gadgets, hasFilter = false) {
             <td>
               ${g.secureToken ? `
                 <a href="/device/${g.secureToken}" target="_blank" class="font-mono" style="font-size:0.8rem; background:#eff6ff; color:#142a6d; padding:4px 10px; border-radius:6px; border:1px solid #bfdbfe; font-weight:700; display:inline-flex; align-items:center; gap:5px; text-decoration:none;">
-                  <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> ${escapeHtml(g.secureToken)} ↗
+                  <span>🔗</span> ${escapeHtml(g.secureToken)} ↗
                 </a>
               ` : '<span class="text-muted" style="font-size:0.775rem;">Not Issued</span>'}
             </td>
@@ -1015,30 +1015,30 @@ function renderVaultTable(gadgets, hasFilter = false) {
               <div class="table-action-btns" style="display:inline-flex; align-items:center; gap:6px; justify-content:flex-end;">
                 ${(g.status === 'REGISTERED' || g.status === 'RETURNED') ? `
                   <button class="btn btn-sm" onclick="openOsaMarkMissingModal('${g.id}')" style="background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; font-weight:700; display:inline-flex; align-items:center; gap:5px;" title="Report as missing on behalf of student">
-                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Report Missing
+                    🚨 Report Missing
                   </button>
                 ` : ''}
 
                 ${g.status === 'PENDING_APPROVAL' ? `
-                  <button class="btn btn-success btn-sm" onclick="handleApproveGadget('${g.id}')" style="display:inline-flex; align-items:center; gap:5px;"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg> Approve</button>
-                  <button class="btn btn-danger btn-sm" onclick="openRejectGadgetModal('${g.id}')" style="display:inline-flex; align-items:center; gap:5px;"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Reject</button>
+                  <button class="btn btn-success btn-sm" onclick="handleApproveGadget('${g.id}')">✓ Approve</button>
+                  <button class="btn btn-danger btn-sm" onclick="openRejectGadgetModal('${g.id}')">✕ Reject</button>
                 ` : ''}
 
                 ${g.status === 'MISSING' ? `
                   <button class="btn btn-primary btn-sm" onclick="navigateOsa('found')" style="display:inline-flex; align-items:center; gap:5px;" title="Receive into custody vault">
-                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg> Custody Intake
+                    📦 Custody Intake
                   </button>
                 ` : ''}
 
                 ${g.status === 'FOUND_IN_CUSTODY' ? `
                   <button class="btn btn-primary btn-sm" onclick="navigateToClaimsForGadget('${g.id}')" style="display:inline-flex; align-items:center; gap:5px;" title="Review and process claim for this gadget">
-                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg> Review Claims
+                    🤝 Review Claims
                   </button>
                 ` : ''}
 
                 ${g.secureToken ? `
                   <button class="btn btn-secondary btn-sm" onclick="openPrintStickerModal('${g.id}')" style="display:inline-flex; align-items:center; gap:6px;">
-                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Print Sticker
+                    🏷️ Print Sticker
                   </button>
                 ` : ''}
               </div>
@@ -1107,7 +1107,7 @@ async function handleOsaMarkMissingSubmit(event) {
 
     closeModal('osa-mark-missing-modal');
     await SwalHelper.success(
-      'Missing Alert Broadcasted!',
+      'Missing Alert Broadcasted! 🚨',
       'The equipment is now marked MISSING. The public missing board and QR telemetry safety guards have been activated.',
       2200
     );
@@ -1262,7 +1262,7 @@ function renderMissingTable(reports, hasFilter = false) {
     if (hasFilter) {
       container.innerHTML = `
         <div style="padding: 35px; text-align: center; color: var(--text-muted);">
-          <div style="margin-bottom: 12px; display: flex; justify-content: center;"><svg class="ui-icon" style="width: 36px; height: 36px; color: #94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div>
+          <div style="font-size: 1.8rem; margin-bottom: 6px;">🔍</div>
           <h4 style="font-weight: 700; color: var(--text-main);">No Missing Reports Found</h4>
           <p style="font-size: 0.85rem;">No missing incidents match your search or filter selection.</p>
           <button class="btn btn-secondary btn-sm" onclick="clearMissingFilter()" style="margin-top: 10px;">Reset Filters</button>
@@ -1309,7 +1309,7 @@ function renderMissingTable(reports, hasFilter = false) {
             <td>${renderStatusBadge(r.gadget?.status || r.status)}</td>
             <td>
               <div style="font-size: 0.875rem; color: #b91c1c; font-weight: 700; display:flex; align-items:center; gap:6px;">
-                <svg class="ui-icon" style="width:13px;height:13px;color:#b91c1c;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${escapeHtml(r.lastSeenLocation)}
+                📍 ${escapeHtml(r.lastSeenLocation)}
               </div>
             </td>
             <td style="font-size: 0.825rem; color: #64748b;">${formatDate(r.lastSeenDate || r.reportedAt)}</td>
@@ -1318,17 +1318,17 @@ function renderMissingTable(reports, hasFilter = false) {
               <div class="table-action-btns" style="display:inline-flex; align-items:center; gap:6px; justify-content:flex-end;">
                 ${(r.gadget?.status === 'MISSING' || r.status === 'ACTIVE') ? `
                   <button class="btn btn-primary btn-sm" onclick="openReceiveCustodyModal('${r.gadgetId || r.gadget?.id}', '${escapeHtml(r.gadget?.brand || '')} ${escapeHtml(r.gadget?.model || '')}', '${escapeHtml(r.owner?.name || 'Student')}', '${escapeHtml(r.owner?.idNumber || 'N/A')}', '', '${escapeHtml(r.gadgetId || r.gadget?.id || '')}')" style="display:inline-flex; align-items:center; gap:5px;" title="Confirm physical receipt into OSA custody">
-                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg> Confirm OSA Receipt
+                    🏢 Confirm OSA Receipt
                   </button>
                 ` : ''}
                 ${r.gadget?.status === 'FOUND_IN_CUSTODY' ? `
                   <button class="btn btn-primary btn-sm" onclick="navigateToClaimsForGadget('${r.gadgetId || r.gadget?.id}')" style="display:inline-flex; align-items:center; gap:5px;" title="Review and process claim for this gadget">
-                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg> Review Claims
+                    🤝 Review Claims
                   </button>
                 ` : ''}
                 ${r.gadget?.secureToken ? `
                   <a href="/device/${r.gadget?.secureToken}" target="_blank" class="btn btn-secondary btn-sm" style="display:inline-flex; align-items:center; gap:4px;" title="Open public QR recovery page">
-                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    🔗
                   </a>
                 ` : ''}
               </div>
@@ -1453,7 +1453,7 @@ function renderFoundCustodyTable(reports, hasFilter = false) {
   if (!reports || reports.length === 0) {
     container.innerHTML = `
       <div style="padding: 40px 24px; text-align: center; color: var(--text-muted);">
-        <div style="margin-bottom: 12px; display: flex; justify-content: center;"><svg class="ui-icon" style="width: 38px; height: 38px; color: #94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg></div>
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">📦</div>
         <div style="font-weight: 700; font-size: 1rem; color: #334155;">No found reports match criteria.</div>
         <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">Active surrendered or found device reports will appear here.</div>
         ${hasFilter ? `<button class="btn btn-secondary btn-sm" onclick="clearFoundFilters()" style="margin-top: 12px;">↺ Reset Filters</button>` : ''}
@@ -1493,7 +1493,7 @@ function renderFoundCustodyTable(reports, hasFilter = false) {
               <td>
                 <div class="table-primary-title">${escapeHtml(r.gadget?.brand)} ${escapeHtml(r.gadget?.model)}</div>
                 <div class="table-secondary-sub">
-                  <svg class="ui-icon" style="width:13px;height:13px;color:#64748b;display:inline-block;vertical-align:-2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${escapeHtml(r.owner?.name || 'Student Member')} 
+                  👤 ${escapeHtml(r.owner?.name || 'Student Member')} 
                   <span class="font-mono" style="font-weight: 700; color: #142a6d;">(${escapeHtml(r.owner?.idNumber || 'No ID')})</span>
                 </div>
                 <div class="font-mono" style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">
@@ -1502,14 +1502,14 @@ function renderFoundCustodyTable(reports, hasFilter = false) {
               </td>
               <td>
                 <div style="font-weight: 700; color: #0f172a; margin-bottom: 2px;">
-                  <svg class="ui-icon" style="width:13px;height:13px;color:#64748b;display:inline-block;vertical-align:-2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${escapeHtml(r.finderName || 'Finder')}
+                  👤 ${escapeHtml(r.finderName || 'Finder')}
                 </div>
                 <div class="font-mono" style="font-size: 0.775rem; color: #475569;">
-                  ${r.finderContact ? `<svg class="ui-icon" style="width:13px;height:13px;color:#64748b;display:inline-block;vertical-align:-2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg> ${escapeHtml(r.finderContact)}` : '<span style="color:#94a3b8; font-style:italic;">None provided</span>'}
+                  ${r.finderContact ? `📞 ${escapeHtml(r.finderContact)}` : '<span style="color:#94a3b8; font-style:italic;">None provided</span>'}
                 </div>
               </td>
               <td>
-                <div style="font-size: 0.85rem; font-weight: 600; color: #334155;"><svg class="ui-icon" style="width:13px;height:13px;color:#64748b;display:inline-block;vertical-align:-2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${escapeHtml(r.foundLocation)}</div>
+                <div style="font-size: 0.85rem; font-weight: 600; color: #334155;">📍 ${escapeHtml(r.foundLocation)}</div>
                 ${r.message ? `<div style="font-size: 0.75rem; color: #64748b; font-style: italic; margin-top: 2px; max-width: 220px;">"${escapeHtml(r.message)}"</div>` : ''}
               </td>
               <td>
@@ -1533,14 +1533,14 @@ function renderFoundCustodyTable(reports, hasFilter = false) {
                 <div class="table-action-btns" style="justify-content: flex-end;">
                   ${isInCustody ? `
                     <div style="display:flex; flex-direction:column; align-items:flex-end; gap:3px;">
-                      <span style="font-size:0.8rem; color:#047857; font-weight:700; display:inline-flex; align-items:center; gap:4px;"><svg class="ui-icon" style="width:13px;height:13px;color:#047857;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg> In Vault Locker</span>
+                      <span style="font-size:0.8rem; color:#047857; font-weight:700;">✓ In Vault Locker</span>
                       <button class="btn btn-secondary btn-sm" onclick="navigateToClaimsForGadget('${r.gadgetId || r.gadget?.id}')" style="font-size:0.75rem; padding:3px 8px;" title="Review and process claim for this gadget">
                         Review Claims
                       </button>
                     </div>
                   ` : `
                     <button class="btn btn-primary btn-sm" onclick="openReceiveCustodyModal('${r.id}', '${escapeHtml(r.gadget?.brand || '')} ${escapeHtml(r.gadget?.model || '')}', '${escapeHtml(r.owner?.name || 'Student')}', '${escapeHtml(r.owner?.idNumber || 'N/A')}', '${escapeHtml(surrenderRef)}', '${escapeHtml(r.gadgetId || r.gadget?.id || '')}')" style="display:inline-flex; align-items:center; gap:5px; font-weight:700;">
-                      <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg> Confirm OSA Receipt
+                      🏢 Confirm OSA Receipt
                     </button>
                   `}
                 </div>
@@ -1564,8 +1564,8 @@ function openReceiveCustodyModal(reportIdOrGadgetId, deviceName = '', ownerName 
 
   if (banner) {
     if (deviceName) {
-      if (dNameEl) dNameEl.textContent = deviceName;
-      if (oNameEl) oNameEl.textContent = `Owner: ${ownerName} ${studentIdNumber ? `(${studentIdNumber})` : ''}`;
+      if (dNameEl) dNameEl.textContent = `📱 ${deviceName}`;
+      if (oNameEl) oNameEl.textContent = `👤 Owner: ${ownerName} ${studentIdNumber ? `(${studentIdNumber})` : ''}`;
       if (sRefEl) sRefEl.textContent = `REF: ${surrenderRef || 'Direct Turnover'}`;
       if (gIdEl) gIdEl.textContent = `ID: ${gadgetId || reportIdOrGadgetId}`;
       banner.style.display = 'block';
@@ -1783,7 +1783,7 @@ function renderClaimsTable(claims, hasFilter = false) {
   if (!claims || claims.length === 0) {
     container.innerHTML = `
       <div style="padding: 48px 24px; text-align: center; color: var(--text-muted);">
-        <div style="margin-bottom: 12px; display: flex; justify-content: center;"><svg class="ui-icon" style="width: 38px; height: 38px; color: #94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">📦</div>
         <div style="font-weight: 700; font-size: 1rem; color: #334155;">No claims match criteria.</div>
         <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">Items physically received and confirmed by OSA will automatically appear here.</div>
         ${hasFilter ? `<button class="btn btn-secondary btn-sm" onclick="clearClaimsFilters()" style="margin-top: 12px;">↺ Reset Filters</button>` : ''}
@@ -1837,18 +1837,18 @@ function renderClaimsTable(claims, hasFilter = false) {
                   ${effectiveGadgetPhoto ? `
                     <div style="position: relative; flex-shrink: 0; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(effectiveGadgetPhoto)}', '${escapeHtml(brandModel)} Photo')" title="Click to enlarge">
                       <img src="${escapeHtml(effectiveGadgetPhoto)}" alt="${escapeHtml(brandModel)}" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
-                      <span style="position: absolute; bottom: -3px; right: -3px; background: #ffffff; border-radius: 50%; font-size: 9px; padding: 1px 3px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center;"><svg class="ui-icon" style="width:9px;height:9px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
+                      <span style="position: absolute; bottom: -3px; right: -3px; background: #ffffff; border-radius: 50%; font-size: 9px; padding: 1px 3px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">🔍</span>
                     </div>
                   ` : `
                     <div style="width: 44px; height: 44px; border-radius: 8px; background: #f8fafc; border: 1.5px dashed #cbd5e1; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.65rem; color: #94a3b8; text-align: center; flex-shrink: 0;" title="No photo uploaded">
-                      <svg class="ui-icon" style="width: 16px; height: 16px; color: #94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                      <span style="font-size: 1rem; line-height: 1;">📷</span>
                     </div>
                   `}
                   <div>
                     <div class="table-primary-title" style="font-weight: 700; font-size: 0.88rem;">${escapeHtml(brandModel)}</div>
                     <div style="display: flex; gap: 4px; align-items: center; margin-top: 3px; flex-wrap: wrap;">
-                      <span style="background: #f1f5f9; color: #334155; font-size: 0.72rem; padding: 1px 6px; border-radius: 4px; font-weight: 600; border: 1px solid #e2e8f0; display: inline-flex; align-items: center; gap: 4px;">
-                        <svg class="ui-icon" style="width:11px;height:11px;color:#64748b;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2Z"/></svg> ${escapeHtml(color)}
+                      <span style="background: #f1f5f9; color: #334155; font-size: 0.72rem; padding: 1px 6px; border-radius: 4px; font-weight: 600; border: 1px solid #e2e8f0;">
+                        🎨 ${escapeHtml(color)}
                       </span>
                       ${category ? `<span style="font-size: 0.72rem; color: #64748b; background: #f8fafc; padding: 1px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">${escapeHtml(category)}</span>` : ''}
                     </div>
@@ -1866,22 +1866,22 @@ function renderClaimsTable(claims, hasFilter = false) {
                 </div>
                 ${vaultLocation ? `
                   <div style="font-size: 0.73rem; color: #0284c7; font-weight: 700; margin-top: 3px; display: flex; align-items: center; gap: 4px;">
-                    <svg class="ui-icon" style="width:13px;height:13px;color:#0284c7;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg> <span>Vault: ${escapeHtml(vaultLocation)}</span>
+                    <span>📦</span> <span>Vault: ${escapeHtml(vaultLocation)}</span>
                   </div>
                 ` : ''}
               </td>
 
               <!-- 4. RECEIVED DETAILS -->
               <td>
-                <div style="font-size: 0.82rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 4px;">
-                  <svg class="ui-icon" style="width:13px;height:13px;color:#64748b;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> ${formatDate(dateReceived)}
+                <div style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">
+                  📅 ${formatDate(dateReceived)}
                 </div>
                 <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
                   Received By: <strong style="color: #142a6d;">${escapeHtml(receivedBy)}</strong>
                 </div>
                 ${foundLocation ? `
                   <div style="font-size: 0.73rem; color: #475569; margin-top: 2px; display: flex; align-items: center; gap: 3px;">
-                    <svg class="ui-icon" style="width:13px;height:13px;color:#64748b;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> <span>Found: ${escapeHtml(foundLocation)}</span>
+                    <span>📍</span> <span>Found: ${escapeHtml(foundLocation)}</span>
                   </div>
                 ` : ''}
               </td>
@@ -1889,7 +1889,7 @@ function renderClaimsTable(claims, hasFilter = false) {
               <!-- 5. STATUS -->
               <td>
                 <span class="status-badge" style="background: #e0f2fe; color: #0369a1; font-weight: 800; font-size: 0.74rem; padding: 4px 10px; border: 1.5px solid #7dd3fc; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
-                  <svg class="ui-icon" style="width:13px;height:13px;color:#0369a1;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg> IN OSA CUSTODY
+                  🏢 IN OSA CUSTODY
                 </span>
                 <div style="font-size: 0.71rem; color: #0284c7; font-weight: 800; margin-top: 3px; letter-spacing: 0.02em;">Ready for Claim</div>
               </td>
@@ -1898,10 +1898,10 @@ function renderClaimsTable(claims, hasFilter = false) {
               <td class="text-right">
                 <div class="table-action-btns" style="justify-content: flex-end; gap: 6px; flex-wrap: wrap;">
                   <button class="btn btn-primary btn-sm" onclick="openDispatchReturnForGadget('${c.gadgetId}', '${escapeHtml(c.user?.name || '')}', '${escapeHtml(c.user?.idNumber || '')}', '${c.id.startsWith('custody_') ? '' : c.id}')" style="background: #10b981; border-color: #059669; font-weight: 700; font-size: 0.78rem; padding: 5px 11px; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(16,185,129,0.25);" title="Process Handover & Return to Owner">
-                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M14 8H8"/><path d="M16 12H8"/><path d="M13 16H8"/></svg> Process Return
+                    🤝 Process Return
                   </button>
-                  <button class="btn btn-secondary btn-sm" onclick="openClaimDetailsModal('${c.id}')" title="View Full Details" style="font-size: 0.78rem; padding: 5px 9px; display: inline-flex; align-items: center; gap: 4px;">
-                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg> View Details
+                  <button class="btn btn-secondary btn-sm" onclick="openClaimDetailsModal('${c.id}')" title="View Full Details" style="font-size: 0.78rem; padding: 5px 9px;">
+                    👁️ View Details
                   </button>
                 </div>
               </td>
@@ -2064,10 +2064,10 @@ function renderReturnedHistoryTable(records, hasFilter = false) {
   if (!records || records.length === 0) {
     container.innerHTML = `
       <div style="padding: 48px 24px; text-align: center; color: var(--text-muted);">
-        <div style="margin-bottom: 12px; display: flex; justify-content: center;"><svg class="ui-icon" style="width: 38px; height: 38px; color: #94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></div>
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">📜</div>
         <div style="font-weight: 700; font-size: 1rem; color: #334155;">No returned gadget records match criteria.</div>
         <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">Completed handover transactions and signed turnover photo proofs will appear here.</div>
-        ${hasFilter ? `<button class="btn btn-secondary btn-sm" onclick="clearHistoryFilters()" style="margin-top: 12px;"><svg class="ui-icon" style="width: 13px; height: 13px; margin-right: 4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>Reset Filters</button>` : ''}
+        ${hasFilter ? `<button class="btn btn-secondary btn-sm" onclick="clearHistoryFilters()" style="margin-top: 12px;">↺ Reset Filters</button>` : ''}
       </div>
     `;
     return;
@@ -2120,18 +2120,18 @@ function renderReturnedHistoryTable(records, hasFilter = false) {
                   ${effectiveGadgetPhoto ? `
                     <div style="position: relative; flex-shrink: 0; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(effectiveGadgetPhoto)}', '${escapeHtml(brandModel)} Photo')" title="Click to enlarge">
                       <img src="${escapeHtml(effectiveGadgetPhoto)}" alt="${escapeHtml(brandModel)}" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
-                      <span style="position: absolute; bottom: -3px; right: -3px; background: #ffffff; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.1);"><svg class="ui-icon" style="width: 10px; height: 10px; color: #64748b;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
+                      <span style="position: absolute; bottom: -3px; right: -3px; background: #ffffff; border-radius: 50%; font-size: 9px; padding: 1px 3px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">🔍</span>
                     </div>
                   ` : `
                     <div style="width: 44px; height: 44px; border-radius: 8px; background: #f8fafc; border: 1.5px dashed #cbd5e1; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.65rem; color: #94a3b8; text-align: center; flex-shrink: 0;" title="No photo uploaded">
-                      <svg class="ui-icon" style="width: 20px; height: 20px; color: #94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+                      <span style="font-size: 1rem; line-height: 1;">📷</span>
                     </div>
                   `}
                   <div>
                     <div class="table-primary-title" style="font-weight: 700; font-size: 0.88rem;">${escapeHtml(brandModel)}</div>
                     <div style="display: flex; gap: 4px; align-items: center; margin-top: 3px; flex-wrap: wrap;">
-                      <span style="background: #f1f5f9; color: #334155; font-size: 0.72rem; padding: 1px 6px; border-radius: 4px; font-weight: 600; border: 1px solid #e2e8f0; display: inline-flex; align-items: center;">
-                        <span class="status-indicator-dot" style="display:inline-block; width:7px; height:7px; border-radius:50%; background-color:#64748b; margin-right:4px;"></span>${escapeHtml(color)}
+                      <span style="background: #f1f5f9; color: #334155; font-size: 0.72rem; padding: 1px 6px; border-radius: 4px; font-weight: 600; border: 1px solid #e2e8f0;">
+                        🎨 ${escapeHtml(color)}
                       </span>
                       ${category ? `<span style="font-size: 0.72rem; color: #64748b; background: #f8fafc; padding: 1px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">${escapeHtml(category)}</span>` : ''}
                     </div>
@@ -2149,7 +2149,7 @@ function renderReturnedHistoryTable(records, hasFilter = false) {
                 </div>
                 ${prevVaultLocation ? `
                   <div style="font-size: 0.73rem; color: #475569; margin-top: 3px; display: flex; align-items: center; gap: 4px;">
-                    <svg class="ui-icon" style="width: 13px; height: 13px; color: #64748b; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg> <span>Prev Locker: ${escapeHtml(prevVaultLocation)}</span>
+                    <span>📦</span> <span>Prev Locker: ${escapeHtml(prevVaultLocation)}</span>
                   </div>
                 ` : ''}
               </td>
@@ -2160,11 +2160,11 @@ function renderReturnedHistoryTable(records, hasFilter = false) {
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="position: relative; flex-shrink: 0; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(handoverPhoto)}', 'Handover Photo Proof — ${escapeHtml(brandModel)}')" title="Click to view larger handover photo">
                       <img src="${escapeHtml(handoverPhoto)}" alt="Handover Proof" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1.5px solid #10b981; box-shadow: 0 1px 4px rgba(16,185,129,0.2); transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
-                      <span style="position: absolute; bottom: -3px; right: -3px; background: #ecfdf5; color: #047857; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; border: 1px solid #10b981; box-shadow: 0 1px 2px rgba(0,0,0,0.1);"><svg class="ui-icon" style="width: 10px; height: 10px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
+                      <span style="position: absolute; bottom: -3px; right: -3px; background: #ecfdf5; color: #047857; border-radius: 50%; font-size: 9px; padding: 1px 3px; border: 1px solid #10b981; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">✓</span>
                     </div>
                     <div>
-                      <span style="background: #ecfdf5; color: #047857; font-size: 0.72rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; border: 1px solid #a7f3d0; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
-                        <svg class="ui-icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Handover Proof
+                      <span style="background: #ecfdf5; color: #047857; font-size: 0.72rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; border: 1px solid #a7f3d0; display: inline-block; white-space: nowrap;">
+                        📸 Handover Proof
                       </span>
                       <div style="font-size: 0.7rem; color: #059669; margin-top: 2px; font-weight: 600; white-space: nowrap;">Verified In-Person</div>
                     </div>
@@ -2178,8 +2178,8 @@ function renderReturnedHistoryTable(records, hasFilter = false) {
 
               <!-- 5. RETURN DETAILS -->
               <td>
-                <div style="font-size: 0.82rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 4px;">
-                  <svg class="ui-icon" style="width: 13px; height: 13px; color: #64748b; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>${formatDate(returnDate)}
+                <div style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">
+                  📅 ${formatDate(returnDate)}
                 </div>
                 <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
                   Staff: <strong style="color: #142a6d;">${escapeHtml(processedStaff)}</strong>
@@ -2194,7 +2194,7 @@ function renderReturnedHistoryTable(records, hasFilter = false) {
               <!-- 6. STATUS -->
               <td>
                 <span class="status-badge" style="background: #ecfdf5; color: #047857; font-weight: 800; font-size: 0.74rem; padding: 4px 10px; border: 1px solid #a7f3d0; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
-                  <svg class="ui-icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> RETURNED
+                  ✓ RETURNED
                 </span>
                 <div style="font-size: 0.7rem; color: #059669; font-weight: 600; margin-top: 2px;">Handover Complete</div>
               </td>
@@ -2202,8 +2202,8 @@ function renderReturnedHistoryTable(records, hasFilter = false) {
               <!-- 7. ACTIONS -->
               <td class="text-right">
                 <div class="table-action-btns" style="justify-content: flex-end;">
-                  <button class="btn btn-secondary btn-sm" onclick="openClaimDetailsModal('${c.id}')" title="View Full Details" style="font-size: 0.78rem; padding: 5px 10px; display: inline-flex; align-items: center; gap: 4px;">
-                    <svg class="ui-icon" style="width: 13px; height: 13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>View Details
+                  <button class="btn btn-secondary btn-sm" onclick="openClaimDetailsModal('${c.id}')" title="View Full Details" style="font-size: 0.78rem; padding: 5px 10px;">
+                    👁️ View Details
                   </button>
                 </div>
               </td>
@@ -2266,18 +2266,18 @@ function openClaimDetailsModal(claimId) {
   content.innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; flex-wrap: wrap; gap: 8px;">
       <div>
-        <span class="status-badge" style="${isReturned ? 'background:#ecfdf5; color:#047857; border:1px solid #a7f3d0;' : (isInCustody ? 'background:#e0f2fe; color:#0369a1; border:1px solid #7dd3fc;' : (isApproved ? 'background:#eff6ff; color:#1e40af;' : 'background:#fef3c7; color:#92400e;'))} font-size:0.8rem; font-weight:800; padding:4px 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px;">
-          ${isReturned ? '<svg class="ui-icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>RETURNED / HANDOVER COMPLETE' : (isInCustody ? '<svg class="ui-icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>IN OSA CUSTODY / READY FOR CLAIM' : (isApproved ? '<svg class="ui-icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>APPROVED' : c.status))}
+        <span class="status-badge" style="${isReturned ? 'background:#ecfdf5; color:#047857; border:1px solid #a7f3d0;' : (isInCustody ? 'background:#e0f2fe; color:#0369a1; border:1px solid #7dd3fc;' : (isApproved ? 'background:#eff6ff; color:#1e40af;' : 'background:#fef3c7; color:#92400e;'))} font-size:0.8rem; font-weight:800; padding:4px 12px; border-radius: 6px;">
+          ${isReturned ? '✓ RETURNED / HANDOVER COMPLETE' : (isInCustody ? '🏢 IN OSA CUSTODY / READY FOR CLAIM' : (isApproved ? '✓ APPROVED' : c.status))}
         </span>
         <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">Record Ref: <code class="font-mono">${escapeHtml(returnRef || c.id)}</code></div>
       </div>
       ${isInCustody ? `
-        <button class="btn btn-primary btn-sm" onclick="closeModal('claim-details-modal'); openDispatchReturnForGadget('${c.gadgetId}', '${escapeHtml(c.user?.name || '')}', '${escapeHtml(c.user?.idNumber || '')}', '${c.id.startsWith('custody_') ? '' : c.id}')" style="background: #10b981; border-color: #059669; font-weight:700; display: inline-flex; align-items: center; gap: 6px;">
-          <svg class="ui-icon" style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>Process Return
+        <button class="btn btn-primary btn-sm" onclick="closeModal('claim-details-modal'); openDispatchReturnForGadget('${c.gadgetId}', '${escapeHtml(c.user?.name || '')}', '${escapeHtml(c.user?.idNumber || '')}', '${c.id.startsWith('custody_') ? '' : c.id}')" style="background: #10b981; border-color: #059669; font-weight:700;">
+          🤝 Process Return
         </button>
       ` : isApproved ? `
-        <button class="btn btn-primary btn-sm" onclick="closeModal('claim-details-modal'); openDispatchReturnForGadget('${c.gadgetId}', '${escapeHtml(ownerName)}', '${escapeHtml(studentId)}', '${c.id}')" style="background: #6d28d9; border-color: #6d28d9; font-weight:700; display: inline-flex; align-items: center; gap: 6px;">
-          <svg class="ui-icon" style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>Proceed to Handover
+        <button class="btn btn-primary btn-sm" onclick="closeModal('claim-details-modal'); openDispatchReturnForGadget('${c.gadgetId}', '${escapeHtml(ownerName)}', '${escapeHtml(studentId)}', '${c.id}')" style="background: #6d28d9; border-color: #6d28d9; font-weight:700;">
+          🤝 Proceed to Handover
         </button>
       ` : ''}
     </div>
@@ -2285,15 +2285,13 @@ function openClaimDetailsModal(claimId) {
     <!-- Photos Grid: Gadget Photo + Handover Proof -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 18px;">
       <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center;">
-        <div style="font-weight: 700; color: #334155; font-size: 0.8rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 5px;">
-          <svg class="ui-icon" style="width: 13px; height: 13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><line x1="12" x2="12.01" y1="18" y2="18"/></svg>Registered Gadget Photo
-        </div>
+        <div style="font-weight: 700; color: #334155; font-size: 0.8rem; margin-bottom: 8px;">📱 Registered Gadget Photo</div>
         ${effectiveGadgetPhoto ? `
           <img src="${escapeHtml(effectiveGadgetPhoto)}" alt="${escapeHtml(brandModel)}" style="width: 100%; height: 160px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(effectiveGadgetPhoto)}', '${escapeHtml(brandModel)}')">
           <div style="font-size: 0.72rem; color: #64748b; margin-top: 6px;">Click image to enlarge</div>
         ` : `
           <div style="height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ffffff; border-radius: 8px; border: 1.5px dashed #cbd5e1; color: #64748b; font-size: 0.82rem; padding: 12px; text-align: center;">
-            <svg class="ui-icon" style="width: 24px; height: 24px; color: #94a3b8; margin-bottom: 6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            <span style="font-size: 1.5rem; margin-bottom: 4px;">📷</span>
             <strong style="color: #334155;">No Photo Uploaded</strong>
             <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 4px;">Physical inspection required during verification</div>
           </div>
@@ -2301,24 +2299,21 @@ function openClaimDetailsModal(claimId) {
       </div>
 
       <div style="background: ${handoverPhoto ? '#f0fdf4' : '#f8fafc'}; border: 1px solid ${handoverPhoto ? '#86efac' : '#e2e8f0'}; border-radius: 10px; padding: 12px; text-align: center;">
-        <div style="font-weight: 700; color: ${handoverPhoto ? '#166534' : '#334155'}; font-size: 0.8rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 5px;">
-          <svg class="ui-icon" style="width: 13px; height: 13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-          <span>${handoverPhoto ? 'Photo Proof of Gadget Handover' : 'Handover Photo Proof'}</span>
+        <div style="font-weight: 700; color: ${handoverPhoto ? '#166534' : '#334155'}; font-size: 0.8rem; margin-bottom: 8px;">
+          ${handoverPhoto ? '📸 Photo Proof of Gadget Handover' : '📸 Handover Photo Proof'}
         </div>
         ${handoverPhoto ? `
           <img src="${escapeHtml(handoverPhoto)}" alt="Handover Proof" style="width: 100%; height: 160px; object-fit: cover; border-radius: 8px; border: 1.5px solid #16a34a; cursor: pointer;" onclick="viewLargePhoto('${escapeHtml(handoverPhoto)}', 'Handover Proof — ${escapeHtml(brandModel)}')">
-          <div style="font-size: 0.72rem; color: #15803d; margin-top: 6px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 4px;">
-            <svg class="ui-icon" style="width: 11px; height: 11px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Verified Handover Photo Attached
-          </div>
+          <div style="font-size: 0.72rem; color: #15803d; margin-top: 6px; font-weight: 600;">✓ Verified Handover Photo Attached</div>
         ` : isInCustody ? `
           <div style="height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ffffff; border-radius: 8px; border: 1.5px dashed #cbd5e1; color: #64748b; font-size: 0.82rem; padding: 12px; text-align: center;">
-            <svg class="ui-icon" style="width: 24px; height: 24px; color: #94a3b8; margin-bottom: 6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            <span style="font-size: 1.5rem; margin-bottom: 4px;">📷</span>
             <strong style="color: #334155;">Not yet available until returned</strong>
             <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 4px;">Photo proof will be captured during physical return turnover.</div>
           </div>
         ` : `
           <div style="height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ffffff; border-radius: 8px; border: 1.5px dashed #cbd5e1; color: #94a3b8; font-size: 0.82rem; padding: 10px;">
-            <svg class="ui-icon" style="width: 24px; height: 24px; color: #94a3b8; margin-bottom: 6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            <span>📷</span>
             <div style="margin-top: 6px;">Handover photo will be captured upon physical return.</div>
           </div>
         `}
@@ -2328,8 +2323,8 @@ function openClaimDetailsModal(claimId) {
     <!-- Structured Details Groups -->
     <div style="display: grid; gap: 12px; font-size: 0.85rem;">
       <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px;">
-        <div style="font-weight: 800; color: #142a6d; font-size: 0.85rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.03em; display: flex; align-items: center; gap: 6px;">
-          <svg class="ui-icon" style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Registered Owner / Claimant
+        <div style="font-weight: 800; color: #142a6d; font-size: 0.85rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.03em;">
+          👤 Registered Owner / Claimant
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
           <div><span style="color:#64748b;">Full Name:</span> <strong>${escapeHtml(ownerName)}</strong></div>
@@ -2341,8 +2336,8 @@ function openClaimDetailsModal(claimId) {
       </div>
 
       <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px;">
-        <div style="font-weight: 800; color: #142a6d; font-size: 0.85rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.03em; display: flex; align-items: center; gap: 6px;">
-          <svg class="ui-icon" style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><line x1="12" x2="12.01" y1="18" y2="18"/></svg>Device Identification
+        <div style="font-weight: 800; color: #142a6d; font-size: 0.85rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.03em;">
+          📱 Device Identification
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
           <div><span style="color:#64748b;">Device:</span> <strong>${escapeHtml(brandModel)}</strong></div>
@@ -2355,8 +2350,8 @@ function openClaimDetailsModal(claimId) {
       </div>
 
       <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px;">
-        <div style="font-weight: 800; color: #142a6d; font-size: 0.85rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.03em; display: flex; align-items: center; gap: 6px;">
-          <svg class="ui-icon" style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Verification &amp; Return Handover Audit
+        <div style="font-weight: 800; color: #142a6d; font-size: 0.85rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.03em;">
+          📜 Verification &amp; Return Handover Audit
         </div>
         <div style="display: grid; gap: 6px;">
           ${isReturned ? `
@@ -2384,7 +2379,7 @@ async function handleApproveClaim(claimId) {
     title: 'Approve Ownership Claim?',
     html: '<p>Confirm student proof of ownership?</p><p style="font-size:0.85rem; color:#64748b;">This will approve the claim and schedule physical handover at OSA Room 1109.</p>',
     icon: 'question',
-    confirmText: 'Approve Claim',
+    confirmText: '✓ Approve Claim',
     cancelText: 'Cancel',
     confirmColor: '#059669'
   });
@@ -2393,7 +2388,7 @@ async function handleApproveClaim(claimId) {
 
   try {
     await api.reviewClaim(claimId, 'APPROVE');
-    await SwalHelper.success('Claim Approved', 'Claimant has been notified to proceed to OSA for device handover.');
+    await SwalHelper.success('Claim Approved! 🤝', 'Claimant has been notified to proceed to OSA for device handover.');
     loadClaimsDesk();
     loadFoundCustodyVault();
   } catch (err) {
@@ -2609,7 +2604,7 @@ async function handleDispatchReturnSubmit(e) {
   // Section C: Photo proof of gadget handover is STRICTLY REQUIRED before completing return
   if (!handoverPhotoRaw || !handoverPhotoRaw.trim()) {
     await SwalHelper.warning(
-      'Photo Proof Required',
+      'Photo Proof Required 📸',
       'Photo proof of gadget handover is required before completing the return. Please snap or upload a face-to-face turnover photo.'
     );
     return;
@@ -2647,21 +2642,15 @@ async function handleDispatchReturnSubmit(e) {
 
     await Swal.fire({
       icon: 'success',
-      title: 'Handover Completed',
+      title: 'Handover Completed! 🎉',
       html: `
         <p style="font-size:0.92rem; color:#334155; margin-bottom:12px;">
           The gadget has been officially returned to <strong>${escapeHtml(receivedByPersonName)}</strong> (${escapeHtml(receivedByPersonId)}).
         </p>
         <div style="background:#f0fdf4; border:1.5px solid #86efac; border-radius:10px; padding:12px; font-size:0.85rem; text-align:left;">
-          <div style="font-weight:700; color:#166534; margin-bottom:4px; display:flex; align-items:center; gap:5px;">
-            <svg class="ui-icon" style="width: 14px; height: 14px; color:#166534;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-            <span>Official Handover Receipt:</span>
-          </div>
+          <div style="font-weight:700; color:#166534; margin-bottom:4px;">📜 Official Handover Receipt:</div>
           <div style="font-family:monospace; font-weight:800; color:#14532d; font-size:1.05rem;">${escapeHtml(res.returnRecord?.id || 'RECEIPT-RECORDED')}</div>
-          <div style="font-size:0.75rem; color:#15803d; margin-top:6px; display:flex; align-items:center; gap:4px;">
-            <svg class="ui-icon" style="width: 12px; height: 12px; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            <span>Photo proof securely attached to audit trail and Claims table.</span>
-          </div>
+          <div style="font-size:0.75rem; color:#15803d; margin-top:6px;">✓ Photo proof securely attached to audit trail and Claims table.</div>
         </div>
       `,
       confirmButtonText: 'Great!',
@@ -2795,10 +2784,10 @@ function renderUsersTable(users, hasFilter = false) {
   if (!users || users.length === 0) {
     container.innerHTML = `
       <div style="padding: 48px 24px; text-align: center; color: var(--text-muted);">
-        <div style="margin-bottom: 12px; display: flex; justify-content: center;"><svg class="ui-icon" style="width: 38px; height: 38px; color: #94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">👥</div>
         <div style="font-weight: 700; font-size: 1rem; color: #334155;">No user accounts match criteria.</div>
         <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">Registered campus user accounts will appear here.</div>
-        ${hasFilter ? `<button class="btn btn-secondary btn-sm" onclick="clearUsersFilters()" style="margin-top: 12px;"><svg class="ui-icon" style="width: 13px; height: 13px; margin-right: 4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>Reset Filters</button>` : ''}
+        ${hasFilter ? `<button class="btn btn-secondary btn-sm" onclick="clearUsersFilters()" style="margin-top: 12px;">↺ Reset Filters</button>` : ''}
       </div>
     `;
     return;
@@ -2839,7 +2828,7 @@ function renderUsersTable(users, hasFilter = false) {
               <div class="table-action-btns">
                 ${u.role !== 'osa_admin' ? `
                   <button class="btn btn-secondary btn-sm btn-view-user-gadgets" onclick="openUserGadgetsModal('${escapeHtml(u.id)}')" style="display: inline-flex; align-items: center; gap: 5px; font-weight: 600;" title="View registered gadgets for this student">
-                    <svg class="ui-icon" style="width: 13px; height: 13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><line x1="12" x2="12.01" y1="18" y2="18"/></svg>View Registered Gadgets
+                    📱 View Registered Gadgets
                   </button>
                 ` : '<span class="text-muted" style="font-size:0.75rem;">Admin</span>'}
               </div>
@@ -2885,7 +2874,7 @@ async function openUserGadgetsModal(userId, optionalName, optionalIdNumber, opti
   // Show loading state
   bodyEl.innerHTML = `
     <div style="padding: 42px 20px; text-align: center; color: var(--text-muted);">
-      <div style="margin-bottom: 10px; display: flex; justify-content: center;"><svg class="ui-icon" style="width: 32px; height: 32px; color: #142a6d; animation: osa-spin 1.2s linear infinite;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" x2="12" y1="2" y2="6"/><line x1="12" x2="12" y1="18" y2="22"/><line x1="4.93" x2="7.76" y1="4.93" y2="7.76"/><line x1="16.24" x2="19.07" y1="16.24" y2="19.07"/><line x1="2" x2="6" y1="12" y2="12"/><line x1="18" x2="22" y1="12" y2="12"/><line x1="4.93" x2="7.76" y1="19.07" y2="16.24"/><line x1="16.24" x2="19.07" y1="7.76" y2="4.93"/></svg></div>
+      <div style="font-size: 2.2rem; margin-bottom: 10px; display: inline-block; animation: osa-spin 1.2s linear infinite;">⏳</div>
       <div style="font-weight: 700; font-size: 0.95rem; color: #1e293b;">Loading Registered Gadgets...</div>
       <div style="font-size: 0.8rem; color: #64748b; margin-top: 4px;">Querying official gadget vault records</div>
     </div>
@@ -2911,7 +2900,7 @@ async function openUserGadgetsModal(userId, optionalName, optionalIdNumber, opti
     if (studentGadgets.length === 0) {
       bodyEl.innerHTML = `
         <div style="padding: 42px 20px; text-align: center; color: var(--text-muted);">
-          <div style="margin-bottom: 12px; display: flex; justify-content: center;"><svg class="ui-icon" style="width: 40px; height: 40px; color: #94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></div>
+          <div style="font-size: 2.6rem; margin-bottom: 10px;">📦</div>
           <div style="font-weight: 700; font-size: 1.05rem; color: #1e293b;">No Registered Gadgets</div>
           <div style="font-size: 0.825rem; color: #64748b; margin-top: 6px; max-width: 380px; margin-left: auto; margin-right: auto; line-height: 1.5;">
             This user does not currently have any registered equipment recorded in the NCST GadgetGuard system.
@@ -2936,13 +2925,13 @@ async function openUserGadgetsModal(userId, optionalName, optionalIdNumber, opti
     console.error('Error loading student gadgets:', err);
     bodyEl.innerHTML = `
       <div style="padding: 36px 20px; text-align: center; color: #b91c1c;">
-        <div style="margin-bottom: 10px; display: flex; justify-content: center;"><svg class="ui-icon" style="width: 36px; height: 36px; color: #ef4444;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" x2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg></div>
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">⚠️</div>
         <div style="font-weight: 700; font-size: 0.95rem;">Unable to Retrieve Gadgets</div>
         <div style="font-size: 0.8rem; color: #7f1d1d; margin-top: 4px; margin-bottom: 14px;">
           ${escapeHtml(err.message || 'An error occurred while communicating with the central vault.')}
         </div>
         <button class="btn btn-secondary btn-sm" onclick="openUserGadgetsModal('${escapeHtml(userId)}')">
-          <svg class="ui-icon" style="width: 13px; height: 13px; margin-right: 4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>Retry
+          ↺ Retry
         </button>
       </div>
     `;
@@ -2965,7 +2954,7 @@ function renderUserGadgetItemCard(g, ownerName = 'Student') {
           <img src="${effectivePhoto}" alt="${escapeHtml(deviceTitle)}" class="user-gadget-photo-img" onclick="previewOsaDevicePhoto('${effectivePhoto}', '${escapeHtml(deviceTitle)}', '${escapeHtml(ownerName)}')" title="Click to enlarge photo">
         ` : `
           <div class="user-gadget-photo-placeholder" title="No photo uploaded (Physical inspection required)">
-            <svg class="ui-icon" style="width: 20px; height: 20px; color: #94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            <span style="font-size: 1.25rem; line-height: 1;">📷</span>
             <span style="font-size: 0.62rem; font-weight: 700; margin-top: 3px; color: #94a3b8;">No Photo</span>
           </div>
         `}
@@ -2976,8 +2965,8 @@ function renderUserGadgetItemCard(g, ownerName = 'Student') {
           <div class="user-gadget-status-wrap">${statusBadgeHtml}</div>
         </div>
         <div class="user-gadget-meta">
-          <span class="user-gadget-pill category"><svg class="ui-icon" style="width: 11px; height: 11px; margin-right: 3px; display: inline-block; vertical-align: -1px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>${escapeHtml(g.category || 'Device')}</span>
-          ${g.color ? `<span class="user-gadget-pill color"><span class="status-indicator-dot" style="display:inline-block; width:6px; height:6px; border-radius:50%; background-color:#64748b; margin-right:4px;"></span>${escapeHtml(g.color)}</span>` : '<span class="user-gadget-pill color"><span class="status-indicator-dot" style="display:inline-block; width:6px; height:6px; border-radius:50%; background-color:#94a3b8; margin-right:4px;"></span>Color: N/A</span>'}
+          <span class="user-gadget-pill category">📁 ${escapeHtml(g.category || 'Device')}</span>
+          ${g.color ? `<span class="user-gadget-pill color">🎨 ${escapeHtml(g.color)}</span>` : '<span class="user-gadget-pill color">🎨 Color: N/A</span>'}
           <span class="user-gadget-id-chip">ID: <code>${escapeHtml(g.id)}</code></span>
         </div>
         <div class="user-gadget-footer">
@@ -3013,7 +3002,7 @@ async function resendApprovalEmail(userId, email) {
       body: JSON.stringify({ userId })
     });
     if (res.success) {
-      await SwalHelper.success('Email Sent', `Approval notification has been dispatched to ${email}.`, 2200);
+      await SwalHelper.success('Email Sent! 📧', `Approval notification has been dispatched to ${email}.`, 2200);
     } else {
       await SwalHelper.error('Dispatch Failed', res.error || 'Could not send email.');
     }
@@ -3182,10 +3171,10 @@ function renderScansTable(scans, hasFilter = false) {
   if (!scans || scans.length === 0) {
     container.innerHTML = `
       <div style="padding: 48px 24px; text-align: center; color: var(--text-muted);">
-        <div style="margin-bottom: 12px; display: flex; justify-content: center;"><svg class="ui-icon" style="width: 38px; height: 38px; color: #94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg></div>
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">📡</div>
         <div style="font-weight: 700; font-size: 1rem; color: #334155;">No scan telemetry records match criteria.</div>
         <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">Real-time QR scan telemetry events will automatically appear here.</div>
-        ${hasFilter ? `<button class="btn btn-secondary btn-sm" onclick="clearScansFilters()" style="margin-top: 12px;"><svg class="ui-icon" style="width: 13px; height: 13px; margin-right: 4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>Reset Filters</button>` : ''}
+        ${hasFilter ? `<button class="btn btn-secondary btn-sm" onclick="clearScansFilters()" style="margin-top: 12px;">↺ Reset Filters</button>` : ''}
       </div>
     `;
     return;
@@ -3223,7 +3212,7 @@ function renderScansTable(scans, hasFilter = false) {
                 </span>
               </td>
               <td style="font-size: 0.85rem; font-weight: 600;">
-                <svg class="ui-icon" style="width: 13px; height: 13px; color: #ef4444; margin-right: 4px; display: inline-block; vertical-align: -1px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>${escapeHtml(s.scanLocationNote || 'Location unavailable')}
+                📍 ${escapeHtml(s.scanLocationNote || 'Location unavailable')}
                 ${s.locationSource === 'GPS' ? '<span class="badge" style="background:#ecfdf5; color:#047857; font-size:0.68rem; font-weight:700; border:1px solid #a7f3d0; border-radius:4px; padding:1px 5px; margin-left:4px;">GPS</span>' : (s.locationSource === 'IP' ? '<span class="badge" style="background:#eff6ff; color:#1e40af; font-size:0.68rem; font-weight:700; border:1px solid #bfdbfe; border-radius:4px; padding:1px 5px; margin-left:4px;">IP</span>' : '')}
               </td>
               <td style="font-size: 0.775rem; color: var(--text-secondary);">${escapeHtml(displayDev)}</td>
@@ -3505,26 +3494,24 @@ function exportAnalyticsSummary() {
       html: `
         <div style="text-align:left; font-size:0.875rem; background:#f8fafc; padding:16px; border-radius:12px; border:1px solid #e2e8f0; line-height:1.6;">
           <div style="font-weight:700; color:#142a6d; margin-bottom:8px; border-bottom:1px solid #cbd5e1; padding-bottom:6px;">
-            National College of Science & Technology (NCST)<br>
+            🏛️ National College of Science & Technology (NCST)<br>
             <span style="font-size:0.75rem; font-weight:600; color:#64748b;">Office of Student Affairs (OSA Room 1109)</span>
           </div>
-          <div style="margin-bottom:8px; font-size:0.8rem; background:#e0f2fe; padding:6px 10px; border-radius:6px; color:#0369a1; display:flex; align-items:center; gap:6px;">
-            <svg class="ui-icon" style="width: 14px; height: 14px; color: #0284c7; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
-            <span><strong>Reporting Period:</strong> ${escapeHtml(periodText)}</span>
+          <div style="margin-bottom:8px; font-size:0.8rem; background:#e0f2fe; padding:6px 10px; border-radius:6px; color:#0369a1;">
+            📅 <strong>Reporting Period:</strong> ${escapeHtml(periodText)}
           </div>
-          <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;"><svg class="ui-icon" style="width: 14px; height: 14px; color: #0284c7; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> <span><strong>Recovery Success Rate:</strong> <strong>${escapeHtml(recDisplay)}</strong></span></div>
-          <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;"><svg class="ui-icon" style="width: 14px; height: 14px; color: #f59e0b; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> <span><strong>Average Resolution Speed:</strong> <strong>${escapeHtml(timeDisplay)}</strong></span></div>
-          <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;"><svg class="ui-icon" style="width: 14px; height: 14px; color: #142a6d; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> <span><strong>Total Lifecycle Assets:</strong> <strong>${kpis.totalLifecycleAssets}</strong> (Current Snapshot)</span></div>
-          <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;"><svg class="ui-icon" style="width: 14px; height: 14px; color: #10b981; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg> <span><strong>Active QR Security Tags:</strong> <strong>${kpis.activeQrTags}</strong> (Current Snapshot)</span></div>
-          <div style="margin-top:8px; font-size:0.75rem; color:#64748b; border-top:1px dashed #cbd5e1; padding-top:6px; display:flex; align-items:center; gap:4px;">
-            <svg class="ui-icon" style="width: 12px; height: 12px; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            <span>Calculations strictly verified from live database records. Status: For Review / Not Yet Officially Certified.</span>
+          <div>🛡️ <strong>Recovery Success Rate:</strong> <strong>${escapeHtml(recDisplay)}</strong></div>
+          <div>⚡ <strong>Average Resolution Speed:</strong> <strong>${escapeHtml(timeDisplay)}</strong></div>
+          <div>📋 <strong>Total Lifecycle Assets:</strong> <strong>${kpis.totalLifecycleAssets}</strong> (Current Snapshot)</div>
+          <div>🏷️ <strong>Active QR Security Tags:</strong> <strong>${kpis.activeQrTags}</strong> (Current Snapshot)</div>
+          <div style="margin-top:8px; font-size:0.75rem; color:#64748b; border-top:1px dashed #cbd5e1; padding-top:6px;">
+            ✓ Calculations strictly verified from live database records. Status: For Review / Not Yet Officially Certified.
           </div>
         </div>
       `,
       showCancelButton: true,
       cancelButtonText: 'Close',
-      confirmButtonText: 'Download Summary',
+      confirmButtonText: '📥 Download Summary',
       confirmButtonColor: '#142a6d'
     }).then((result) => {
       if (result.isConfirmed) {
@@ -3750,10 +3737,10 @@ function renderAuditLogsTable(logs, hasFilter = false) {
   if (!logs || logs.length === 0) {
     container.innerHTML = `
       <div style="padding: 48px 24px; text-align: center; color: var(--text-muted);">
-        <div style="margin-bottom: 12px; display: flex; justify-content: center;"><svg class="ui-icon" style="width: 38px; height: 38px; color: #94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">🛡️</div>
         <div style="font-weight: 700; font-size: 1rem; color: #334155;">No audit log records match criteria.</div>
         <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">Institutional security events and administrator activities will appear here.</div>
-        ${hasFilter ? `<button class="btn btn-secondary btn-sm" onclick="clearAuditFilters()" style="margin-top: 12px;"><svg class="ui-icon" style="width: 13px; height: 13px; margin-right: 4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>Reset Filters</button>` : ''}
+        ${hasFilter ? `<button class="btn btn-secondary btn-sm" onclick="clearAuditFilters()" style="margin-top: 12px;">↺ Reset Filters</button>` : ''}
       </div>
     `;
     return;
@@ -3952,27 +3939,25 @@ function resolveOsaDestination(n) {
 
 function getOsaNotifIcon(type = '', title = '') {
   const t = (type + ' ' + title).toLowerCase();
-  const iconSvg = (inner) => `<svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
-
   if (t.includes('missing') || t.includes('stolen') || t.includes('alert')) {
-    return iconSvg('<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>');
+    return '🚨';
   }
   if (t.includes('approv') || t.includes('regist')) {
-    return iconSvg('<rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="m9 14 2 2 4-4"></path>');
+    return '📋';
   }
   if (t.includes('custody') || t.includes('drop') || t.includes('vault') || t.includes('surrender')) {
-    return iconSvg('<path d="m7.5 4.27 9 5.15"></path><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path>');
+    return '📦';
   }
   if (t.includes('claim')) {
-    return iconSvg('<rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="m9 12 2 2 4-4"></path>');
+    return '🏷️';
   }
   if (t.includes('return')) {
-    return iconSvg('<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>');
+    return '✅';
   }
   if (t.includes('scan') || t.includes('telemetry')) {
-    return iconSvg('<path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><line x1="7" y1="12" x2="17" y2="12"></line>');
+    return '📍';
   }
-  return iconSvg('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>');
+  return '🔔';
 }
 
 function formatOsaNotificationMessage(msg) {
@@ -4008,7 +3993,7 @@ function formatOsaNotificationMessage(msg) {
     if (line.includes('Safety Notice') || line.includes('Security Notice') || line.includes('Notice:')) {
       flushParagraph();
       flushMeta();
-      html += `<div style="background:#fef3c7; border:1px solid #fde68a; border-left:4px solid #d97706; padding:8px 12px; border-radius:6px; font-size:0.825rem; color:#92400e; margin:8px 0; display:flex; align-items:flex-start; gap:6px;"><svg class="ui-icon" style="width: 14px; height: 14px; color: #d97706; flex-shrink: 0; margin-top: 2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span>${escapeHtml(line)}</span></div>`;
+      html += `<div style="background:#fef3c7; border:1px solid #fde68a; border-left:4px solid #d97706; padding:8px 12px; border-radius:6px; font-size:0.825rem; color:#92400e; margin:8px 0;">⚠️ ${escapeHtml(line)}</div>`;
       continue;
     }
 
@@ -4073,8 +4058,8 @@ function renderOsaNotificationCard(n) {
                   </button>
                 ` : ''}
                 ${isUnread ? `
-                  <button class="btn btn-secondary btn-sm" onclick="markSingleOsaNotificationRead('${n.id}', event)" style="font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px;">
-                    <svg class="ui-icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Mark as Read
+                  <button class="btn btn-secondary btn-sm" onclick="markSingleOsaNotificationRead('${n.id}', event)" style="font-size: 0.8rem;">
+                    ✓ Mark as Read
                   </button>
                 ` : ''}
               </div>
@@ -4101,7 +4086,7 @@ function renderOsaNotificationsFeed() {
     if (currentOsaNotifFilter === 'unread') {
       container.innerHTML = `
         <div style="padding: 44px 20px; text-align: center; color: var(--text-muted);">
-          <div style="margin-bottom: 12px; display: flex; justify-content: center;"><svg class="ui-icon" style="width: 38px; height: 38px; color: #10b981;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+          <div style="font-size: 2.2rem; margin-bottom: 8px;">🎉</div>
           <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 4px;">No unread notifications</h4>
           <p style="font-size: 0.85rem;">All administrative notices have been reviewed.</p>
         </div>
@@ -4109,7 +4094,7 @@ function renderOsaNotificationsFeed() {
     } else {
       container.innerHTML = `
         <div style="padding: 44px 20px; text-align: center; color: var(--text-muted);">
-          <div style="margin-bottom: 12px; display: flex; justify-content: center;"><svg class="ui-icon" style="width: 38px; height: 38px; color: #94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><line x1="2" x2="22" y1="2" y2="22"/></svg></div>
+          <div style="font-size: 2.2rem; margin-bottom: 8px;">📭</div>
           <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 4px;">No notifications yet</h4>
           <p style="font-size: 0.85rem;">No incident notifications recorded.</p>
         </div>
@@ -4315,7 +4300,7 @@ async function handleOsaChangePassword(e) {
   try {
     const res = await api.changePassword(currentPassword, newPassword, confirmNewPassword);
     if (res.success) {
-      await SwalHelper.success('Password Updated', 'Your OSA account password has been successfully updated.');
+      await SwalHelper.success('Password Updated! 🔒', 'Your OSA account password has been successfully updated.');
       const form = document.getElementById('osa-change-password-form');
       if (form) form.reset();
     } else {
@@ -4326,7 +4311,7 @@ async function handleOsaChangePassword(e) {
   } finally {
     if (submitBtn) {
       submitBtn.disabled = false;
-      submitBtn.innerHTML = '<svg class="ui-icon" style="width: 14px; height: 14px; margin-right: 6px; display: inline-block; vertical-align: -2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Update Password';
+      submitBtn.innerHTML = '<span>🔒</span> Update Password';
     }
   }
 }
@@ -4352,7 +4337,7 @@ async function handleOsaSettingsSave(e) {
 
   try {
     await api.updateSettings({ schoolName, osaOfficeLocation, osaContactPhone, osaEmail, operatingHours });
-    await SwalHelper.success('Settings Saved', 'NCST campus configuration updated across all interfaces.');
+    await SwalHelper.success('Settings Saved! 💾', 'NCST campus configuration updated across all interfaces.');
   } catch (err) {
     await SwalHelper.error('Save Failed', err.message || 'Could not update settings.');
   }
@@ -4360,7 +4345,7 @@ async function handleOsaSettingsSave(e) {
 
 async function handleResetDemoData() {
   const confirmReset = await SwalHelper.confirm({
-    title: 'Reset Database to Demo State?',
+    title: '⚠️ Reset Database to Demo State?',
     html: '<p>Are you sure you want to <strong>reset the entire NCST database</strong> to default demo state?</p><p style="font-size:0.85rem; color:#dc2626;">All new gadgets, missing reports, custody intake records, and claims will be re-seeded.</p>',
     icon: 'warning',
     confirmText: 'Yes, Reset Everything',
@@ -4372,7 +4357,7 @@ async function handleResetDemoData() {
 
   try {
     await api.resetDemoData();
-    await SwalHelper.success('Database Reset', 'All NCST demo records restored successfully.', 1500);
+    await SwalHelper.success('Database Reset! ⚡', 'All NCST demo records restored successfully.', 1500);
     setTimeout(() => {
       window.location.reload();
     }, 800);
