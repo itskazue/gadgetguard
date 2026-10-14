@@ -955,10 +955,13 @@
           </div>
 
           <!-- Report Date Range Filter Toolbar -->
-          <div class="osa-toolbar-filter-grid reports-filter-toolbar" style="margin-bottom: 14px;">
-            <div class="osa-filter-item">
-              <label class="osa-filter-label" for="reports-date-filter">📅 Reporting Period</label>
-              <select id="reports-date-filter" class="form-control osa-filter-select" onchange="handleReportDateFilterChange()">
+          <div class="reports-filter-toolbar" style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 10px 16px; margin-bottom: 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <div style="display: inline-flex; align-items: center; gap: 8px;">
+              <label for="reports-date-filter" style="font-size: 0.82rem; font-weight: 700; color: #1e293b; margin: 0; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;color:#142a6d;display:inline-block;"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                Reporting Period:
+              </label>
+              <select id="reports-date-filter" class="form-control osa-filter-select" onchange="handleReportDateFilterChange()" style="height: 38px; min-width: 160px;">
                 <option value="ALL" selected>All Time</option>
                 <option value="TODAY">Today</option>
                 <option value="WEEK">This Week</option>
@@ -967,29 +970,25 @@
                 <option value="CUSTOM">Custom Date Range</option>
               </select>
             </div>
-            <div class="osa-filter-item" id="reports-custom-date-wrap" style="display: none;">
-              <label class="osa-filter-label">📆 Start Date – End Date</label>
-              <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-                <input type="date" id="reports-date-from" class="form-control osa-filter-input" style="width: 135px;" onchange="validateCustomReportDates()">
-                <span style="color: #64748b; font-size: 0.8rem;">–</span>
-                <input type="date" id="reports-date-to" class="form-control osa-filter-input" style="width: 135px;" onchange="validateCustomReportDates()">
-                <button class="btn btn-primary btn-sm" id="reports-apply-btn" onclick="applyCustomReportDateFilter()" style="height: 38px; padding: 0 14px; font-weight: 700;">
-                  Apply Filter
-                </button>
-              </div>
-            </div>
-            <div class="osa-filter-item">
-              <label class="osa-filter-label">&nbsp;</label>
-              <button class="btn btn-secondary btn-sm" id="reports-reset-btn" onclick="resetReportDateFilter()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset reporting period to All Time">
-                ↺ Reset Filter
+
+            <div id="reports-custom-date-wrap" style="display: none; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <input type="date" id="reports-date-from" class="form-control osa-filter-input" style="width: 135px; height: 38px;" onchange="validateCustomReportDates()">
+              <span style="color: #64748b; font-size: 0.8rem;">–</span>
+              <input type="date" id="reports-date-to" class="form-control osa-filter-input" style="width: 135px; height: 38px;" onchange="validateCustomReportDates()">
+              <button class="btn btn-primary btn-sm" id="reports-apply-btn" onclick="applyCustomReportDateFilter()" style="height: 38px; padding: 0 14px; font-weight: 700;">
+                Apply
               </button>
             </div>
+
+            <button class="btn btn-secondary btn-sm" id="reports-reset-btn" onclick="resetReportDateFilter()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset reporting period to All Time">
+              ↺ Reset Filter
+            </button>
           </div>
 
           <!-- Reporting Period Indicator Banner -->
           <div id="reports-period-indicator" style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 10px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: #334155; flex-wrap: wrap; gap: 8px;">
             <div>
-              <span style="color: #64748b; font-weight: 600;">📅 Selected Reporting Period:</span>
+              <span style="color: #64748b; font-weight: 600;">Selected Reporting Period:</span>
               <strong id="reports-period-label" style="color: #142a6d; margin-left: 4px;">All Time (Complete Historical Archive)</strong>
             </div>
             <div id="reports-period-status-badge" style="font-size: 0.75rem; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; padding: 2px 8px; border-radius: 4px; font-weight: 700;">

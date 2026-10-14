@@ -99,9 +99,18 @@ router.post('/report', (req, res) => {
     }
 
     // Contact Number is OPTIONAL (only accessible by authorized OSA staff, never exposed to owner or publicly)
+    // If entered, strictly require 11 digits starting with 09, preserving leading zero as string
     let effectiveFinderContact = '';
-    if (finderContact && typeof finderContact === 'string') {
-      effectiveFinderContact = finderContact.trim().substring(0, 30);
+    if (finderContact !== undefined && finderContact !== null && String(finderContact).trim() !== '') {
+      const trimmedContact = String(finderContact).trim();
+      const mobileRegex = /^09\d{9}$/;
+      if (!mobileRegex.test(trimmedContact)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Enter a valid 11-digit mobile number starting with 09.'
+        });
+      }
+      effectiveFinderContact = trimmedContact;
     }
 
     // Check if updating the current finder's existing report, or creating a new independent report

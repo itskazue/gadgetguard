@@ -751,10 +751,13 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">
+            <label class="form-label" for="osa-finder-contact">
               Contact Number <span style="font-size: 0.78rem; color: #64748b; font-weight: normal;">(Optional)</span>
             </label>
-            <input type="tel" id="osa-finder-contact" class="form-control" placeholder="e.g. 09123456789 (or leave blank)">
+            <input type="tel" id="osa-finder-contact" class="form-control" inputmode="numeric" maxlength="11" placeholder="09XXXXXXXXX" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 11); validateOsaFinderContact(this.value);">
+            <div id="osa-finder-contact-error" style="display: none; font-size: 0.78rem; color: #dc2626; margin-top: 4px; font-weight: 600;">
+              Enter a valid 11-digit mobile number starting with 09.
+            </div>
             <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px; line-height: 1.4;">
               🔒 <strong>Privacy:</strong> Only authorized OSA staff can access this if needed regarding surrender/recovery. It is never shown to the gadget owner or displayed on the public QR page.
             </div>
@@ -1753,6 +1756,22 @@
       }
     }
 
+    // Validate Finder Mobile Contact Number (Optional; if entered, strictly 11 digits starting with 09)
+    function validateOsaFinderContact(val) {
+      const errEl = document.getElementById('osa-finder-contact-error');
+      const inputEl = document.getElementById('osa-finder-contact');
+      const clean = (val || '').trim();
+      if (!clean) {
+        if (errEl) errEl.style.display = 'none';
+        if (inputEl) inputEl.style.borderColor = '';
+        return true;
+      }
+      const isValid = /^09\d{9}$/.test(clean);
+      if (errEl) errEl.style.display = isValid ? 'none' : 'block';
+      if (inputEl) inputEl.style.borderColor = isValid ? '' : '#dc2626';
+      return isValid;
+    }
+
     // Handle "I Will Surrender It to OSA" Modal Form Submit
     async function handleSurrenderOsaSubmit(e) {
       e.preventDefault();
@@ -1771,6 +1790,21 @@
         const nameRegex = /^[a-zA-ZñÑ\s\.\,\-]+$/;
         if (!nameRegex.test(finderNameInput)) {
           await SwalHelper.warning('Invalid Name', 'Finder Name must only contain letters and spaces.');
+          return;
+        }
+      }
+
+      // Contact Number is Optional; if entered, must be strictly 11 digits starting with 09
+      if (contactNumber) {
+        if (!validateOsaFinderContact(contactNumber)) {
+          const errEl = document.getElementById('osa-finder-contact-error');
+          if (errEl) errEl.style.display = 'block';
+          const inputEl = document.getElementById('osa-finder-contact');
+          if (inputEl) {
+            inputEl.style.borderColor = '#dc2626';
+            inputEl.focus();
+          }
+          await SwalHelper.warning('Invalid Contact Number', 'Enter a valid 11-digit mobile number starting with 09.');
           return;
         }
       }
