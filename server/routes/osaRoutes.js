@@ -4,6 +4,23 @@ const { authMiddleware, requireRole } = require('../auth');
 const { seedDatabase } = require('../seed');
 const db = require('../db');
 
+// Call only with the exact, uniquely linked finder report. No gadget/name inference.
+function verifiedRecoverySource(foundReport, savedSource) {
+  if (!foundReport) return 'Not recorded';
+  const sources = [foundReport.recoverySource, savedSource]
+    .filter(source => source && source !== 'Not recorded');
+  if (sources.some(source => !['QR Finder Report', 'Direct OSA Surrender'].includes(source))) {
+    return 'Not recorded';
+  }
+  const hasFinderEvidence = ['KEPT_SAFE', 'WILL_SURRENDER_TO_OSA'].includes(foundReport.finderDecision) ||
+    db.find('recovery_chats', chat => chat.gadgetId === foundReport.gadgetId &&
+      chat.foundReportId === foundReport.id &&
+      (!chat.missingReportId || !foundReport.missingReportId || chat.missingReportId === foundReport.missingReportId)).length > 0;
+  if (hasFinderEvidence) sources.push('QR Finder Report');
+  const uniqueSources = [...new Set(sources)];
+  return uniqueSources.length === 1 ? uniqueSources[0] : 'Not recorded';
+}
+
 // GET /api/osa/stats (Dashboard Analytics & KPIs)
 router.get('/stats', authMiddleware, requireRole('osa_admin'), (req, res) => {
   try {
@@ -159,6 +176,7 @@ router.post('/return', authMiddleware, requireRole('osa_admin'), (req, res) => {
       userId: gadget.userId,
       ownerStudentId: owner ? (owner.idNumber || receivedByPersonId) : receivedByPersonId,
       claimId: claimId || null,
+      recoverySource: verifiedRecoverySource(foundReport),
       returnedByOsaAdminId: req.user.id,
       returnedByOsaAdminName: req.user.name,
       receivedByPersonName: receivedByPersonName.trim(),
@@ -319,10 +337,7 @@ router.get('/returns', authMiddleware, (req, res) => {
       );
       const foundReport = linkedFoundReports.length === 1 ? linkedFoundReports[0] : null;
 
-      // Names and turnover methods do not establish how recovery originated.
-      const recoverySource = foundReport &&
-        ['QR Finder Report', 'Direct OSA Surrender'].includes(r.recoverySource)
-        ? r.recoverySource : 'Not recorded';
+      const recoverySource = verifiedRecoverySource(foundReport, r.recoverySource);
 
       return {
         ...r,

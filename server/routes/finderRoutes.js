@@ -150,6 +150,7 @@ router.post('/report', (req, res) => {
       // Insert new independent Found Report record for this finder
       report = db.insert('found_reports', {
         id: 'fnd_' + Date.now().toString(36) + crypto.randomBytes(3).toString('hex'),
+        recoverySource: 'QR Finder Report',
         surrenderReference: surrenderRef,
         gadgetId: targetGadget.id,
         missingReportId: activeMissing ? activeMissing.id : null,
@@ -486,6 +487,7 @@ router.post('/:id/receive', authMiddleware, requireRole('osa_admin'), (req, res)
     } else {
       report = db.insert('found_reports', {
         id: 'fnd_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
+        recoverySource: 'Direct OSA Surrender',
         surrenderReference: 'SRF-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase(),
         gadgetId: gadget.id,
         finderName: 'Face-to-Face Walk-in (Surrendered at OSA)',

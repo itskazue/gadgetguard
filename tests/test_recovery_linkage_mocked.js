@@ -50,7 +50,8 @@ function routes(file) {
     router[method] = (url, ...chain) => { handlers[`${method} ${url}`] = chain; };
   }
   evaluate(file, { express: { Router: () => router }, '../db': db, '../auth': auth,
-    '../seed': { seedDatabase() { throw Error('Seeding prohibited'); } }, jsonwebtoken: jwt });
+    '../seed': { seedDatabase() { throw Error('Seeding prohibited'); } }, jsonwebtoken: jwt,
+    crypto: require('node:crypto') });
   return (method, url, token = 'osa', params = {}, body = {}) => {
     const req = { headers: token ? { authorization: `Bearer ${token}` } : {}, query: {}, params, body };
     const res = { code: 200, status(code) { this.code = code; return this; }, json(body) { this.body = body; return this; } };
@@ -344,5 +345,120 @@ check('Verified iPhone configuration uses exact incident link despite five custo
   assert.equal(data.claims[0].returnId, returnId);
   assert.equal(returned(returnId).foundReport.id, 'fnd_mv7yp4jh5c2548');
   assert.equal(returned('historical-return-1').foundReport.id, 'historical-finder-1');
+});
+const finder = routes('server/routes/finderRoutes.js');
+check('Public finder creation records server-selected QR source through custody and return', () => {
+  returnFixture();
+  data.found_reports = [];
+  data.gadgets[0].status = 'MISSING';
+  data.missing_reports[1].status = 'ACTIVE';
+  const created = finder('post', '/report', null, {}, { gadgetId: 'g1', foundLocation: 'Library',
+    turnInMethod: 'SUBMITTED_TO_OSA', recoverySource: 'Owner Recovered' });
+  assert.equal(created.code, 200);
+  const report = data.found_reports[0];
+  assert.equal(report.recoverySource, 'QR Finder Report');
+  assert.equal(finder('post', '/:id/receive', 'osa', { id: report.id }).code, 200);
+  assert.equal(report.recoverySource, 'QR Finder Report', 'Custody does not overwrite QR origin');
+  const result = officialReturn();
+  assert.equal(result.code, 200);
+  assert.equal(result.body.returnRecord.recoverySource, 'QR Finder Report');
+  assert.equal(returned(result.body.returnRecord.id).recoverySource, 'QR Finder Report');
+});
+check('Direct OSA intake records server-selected direct source and persists it on return', () => {
+  returnFixture();
+  data.found_reports = [];
+  data.gadgets[0].status = 'MISSING';
+  data.missing_reports[1].status = 'ACTIVE';
+  const received = finder('post', '/:id/receive', 'osa', { id: 'g1' }, { recoverySource: 'QR Finder Report' });
+  assert.equal(received.code, 200);
+  assert.equal(data.found_reports[0].recoverySource, 'Direct OSA Surrender');
+  const result = officialReturn();
+  assert.equal(result.code, 200);
+  assert.equal(result.body.returnRecord.recoverySource, 'Direct OSA Surrender');
+  assert.equal(returned(result.body.returnRecord.id).recoverySource, 'Direct OSA Surrender');
+});
+check('Invalid finder submission creates no report or source', () => {
+  returnFixture();
+  const before = JSON.stringify(data);
+  assert.equal(finder('post', '/report', null, {}, { gadgetId: 'g1', foundLocation: '' }).code, 400);
+  assert.equal(JSON.stringify(data), before);
+});
+function historicalSourceFixture() {
+  returnFixture();
+  data.found_reports = [{ id: 'historical-exact', gadgetId: 'g1', missingReportId: 'old',
+    returnId: 'previous-return', status: 'RETURNED' }];
+}
+check('Historical QR decision derives source through exact return link without database writes', () => {
+  for (const decision of ['KEPT_SAFE', 'WILL_SURRENDER_TO_OSA']) {
+    historicalSourceFixture();
+    data.found_reports[0].finderDecision = decision;
+    data.returns[0].recoverySource = 'Not recorded';
+    const before = JSON.stringify(data);
+    assert.equal(returned('previous-return').recoverySource, 'QR Finder Report');
+    assert.equal(JSON.stringify(data), before);
+  }
+});
+check('Exactly linked recovery chat verifies historical QR source even when closed', () => {
+  historicalSourceFixture();
+  data.recovery_chats = [{ id: 'chat', gadgetId: 'g1', foundReportId: 'historical-exact',
+    missingReportId: 'old', status: 'CLOSED' }];
+  assert.equal(returned('previous-return').recoverySource, 'QR Finder Report');
+});
+check('Chat for wrong report, gadget or incident cannot establish source', () => {
+  for (const patch of [{ foundReportId: 'different' }, { gadgetId: 'g2' }, { missingReportId: 'different' }]) {
+    historicalSourceFixture();
+    data.recovery_chats = [{ id: 'chat', gadgetId: 'g1', foundReportId: 'historical-exact',
+      missingReportId: 'old', ...patch }];
+    assert.equal(returned('previous-return').recoverySource, 'Not recorded');
+  }
+});
+check('Explicit historical direct provenance is accepted, names and turnover alone are not', () => {
+  historicalSourceFixture();
+  data.found_reports[0].recoverySource = 'Direct OSA Surrender';
+  assert.equal(returned('previous-return').recoverySource, 'Direct OSA Surrender');
+  delete data.found_reports[0].recoverySource;
+  data.found_reports[0].finderName = 'Face-to-Face Walk-in (Surrendered at OSA)';
+  data.found_reports[0].turnInMethod = 'SUBMITTED_TO_OSA';
+  assert.equal(returned('previous-return').recoverySource, 'Not recorded');
+  data.found_reports[0].finderName = 'Regular finder name';
+  assert.equal(returned('previous-return').recoverySource, 'Not recorded');
+});
+check('Multiple exact finder links cannot establish historical source', () => {
+  historicalSourceFixture();
+  data.found_reports[0].finderDecision = 'WILL_SURRENDER_TO_OSA';
+  data.found_reports.push({ ...data.found_reports[0], id: 'other-exact' });
+  assert.equal(returned('previous-return').recoverySource, 'Not recorded');
+});
+check('Unsupported owner and conflicting sources remain Not recorded', () => {
+  for (const source of ['Owner Recovered', 'UNVERIFIED_SOURCE']) {
+    historicalSourceFixture();
+    data.returns[0].recoverySource = source;
+    data.found_reports[0].finderDecision = 'WILL_SURRENDER_TO_OSA';
+    assert.equal(returned('previous-return').recoverySource, 'Not recorded');
+  }
+  historicalSourceFixture();
+  data.found_reports[0].recoverySource = 'Direct OSA Surrender';
+  data.found_reports[0].finderDecision = 'WILL_SURRENDER_TO_OSA';
+  assert.equal(returned('previous-return').recoverySource, 'Not recorded');
+});
+check('Future return persists verified legacy QR provenance and rejects unsupported source labels', () => {
+  returnFixture();
+  data.found_reports[3].finderDecision = 'WILL_SURRENDER_TO_OSA';
+  assert.equal(officialReturn().body.returnRecord.recoverySource, 'QR Finder Report');
+  returnFixture();
+  data.found_reports[3].recoverySource = 'Owner Recovered';
+  assert.equal(officialReturn().body.returnRecord.recoverySource, 'Not recorded');
+});
+check('History table and View Details display the same derived API source', () => {
+  historicalSourceFixture();
+  data.found_reports[0].finderDecision = 'KEPT_SAFE';
+  const record = returned('previous-return');
+  ui.window._historyList = [record];
+  elements['returned-history-table'] = { innerHTML: '' };
+  vm.runInContext(uiFunction('renderReturnedHistoryTable', 'function viewLargePhoto'), ui);
+  vm.runInContext('renderReturnedHistoryTable(window._historyList)', ui);
+  vm.runInContext("openClaimDetailsModal('previous-return', 'history')", ui);
+  assert.match(elements['returned-history-table'].innerHTML, /QR Finder Report/);
+  assert.match(content.innerHTML, /Recovery Source:<\/span> <strong>QR Finder Report/);
 });
 console.log(`${checks} focused checks passed; application imports mocked, no DB or server loaded.`);
