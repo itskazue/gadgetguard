@@ -3761,11 +3761,19 @@ function renderAuditLogsTable(logs, hasFilter = false) {
       <tbody>
         ${logs.map(l => {
           const actorDisplay = l.userName ? `${escapeHtml(l.userName)} <span class="font-mono" style="font-size:0.75rem; color:#142a6d; font-weight:700;">(${escapeHtml(l.userStudentId || l.userId)})</span>` : escapeHtml(l.userId);
+          let badgeStyle = "background:#eff6ff; color:#142a6d; font-size:0.75rem; font-weight:700; padding:4px 10px; border:1px solid #bfdbfe;";
+          if (l.action && l.action.includes('FAILED')) {
+            badgeStyle = "background:#fef2f2; color:#b91c1c; font-size:0.75rem; font-weight:700; padding:4px 10px; border:1px solid #fecaca;";
+          } else if (l.action && (l.action.includes('COMPLETED') || l.action.includes('SUCCESS'))) {
+            badgeStyle = "background:#f0fdf4; color:#15803d; font-size:0.75rem; font-weight:700; padding:4px 10px; border:1px solid #bbf7d0;";
+          } else if (l.action && l.action.includes('PASSWORD_RESET')) {
+            badgeStyle = "background:#fefce8; color:#854d0e; font-size:0.75rem; font-weight:700; padding:4px 10px; border:1px solid #fef08a;";
+          }
           return `
             <tr>
               <td class="font-mono" style="font-size: 0.775rem; color: #94a3b8;">${escapeHtml(l.id)}</td>
               <td>
-                <span class="status-badge" style="background:#eff6ff; color:#142a6d; font-size:0.75rem; font-weight:700; padding:4px 10px; border:1px solid #bfdbfe;">
+                <span class="status-badge" style="${badgeStyle}">
                   ${escapeHtml(l.action)}
                 </span>
               </td>

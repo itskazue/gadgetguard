@@ -332,15 +332,18 @@
       const { value: email } = await Swal.fire({
         title: '🔑 OSA Staff Password Reset',
         html: `
-          <p style="font-size:0.85rem; color:#475569; margin-bottom:12px;">
-            Enter your verified Office of Student Affairs staff email address. While automated email delivery is temporarily disabled, please consult the OSA IT Administrator or visit Cubicle 8 for assisted credential recovery.
+          <p style="font-size:0.85rem; color:#475569; margin-bottom:12px; line-height:1.5;">
+            Enter your registered staff email. A password reset link will be sent to your registered email.
           </p>
+          <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:10px 12px; font-size:0.75rem; color:#1e40af; text-align:left; line-height:1.45;">
+            🏢 <strong>Having trouble accessing your NCST school email or Student ID?</strong> Visit <strong>Cubicle 8, Multipurpose Building</strong> for assistance.
+          </div>
         `,
         input: 'email',
         inputValue: currentEmail,
         inputPlaceholder: 'e.g. mrconsonants@gmail.com',
         showCancelButton: true,
-        confirmButtonText: 'Submit Reset Request',
+        confirmButtonText: 'Send Reset Link',
         cancelButtonText: 'Cancel',
         confirmButtonColor: '#142a6d',
         inputValidator: (val) => {

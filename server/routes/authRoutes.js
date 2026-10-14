@@ -220,26 +220,64 @@ router.post('/forgot-password', forgotPasswordIpLimiter, forgotPasswordEmailLimi
       const baseUrl = getAppBaseUrl(req);
       const resetUrl = `${baseUrl}/reset-password.html?token=${rawToken}`;
 
-      // Dispatch branded reset email (never log rawToken or resetUrl)
-      sendPasswordResetEmail({
-        to: user.email,
-        name: user.name,
-        resetUrl,
-        role: user.role,
-        req
-      }).catch(err => {
-        console.warn('⚠️ [Forgot Password] Email delivery dispatch failed:', err.message);
-      });
-
+      // 1. Record Audit Log: PASSWORD_RESET_REQUESTED
       db.addAuditLog({
         userId: user.id,
         userRole: user.role,
-        action: 'REQUEST_PASSWORD_RESET',
+        action: 'PASSWORD_RESET_REQUESTED',
         targetType: 'user',
         targetId: user.id,
-        details: `Password reset link requested for ${user.email}`,
+        details: `Password reset requested for registered account (${user.email})`,
         ipAddress: req.ip
       });
+
+      // 2. Dispatch branded reset email (never log rawToken or resetUrl)
+      // MUST await to ensure delivery completes before HTTP response finishes on Render Free Tier
+      const emailsEnabled = process.env.SEND_RESET_EMAILS !== 'false';
+      if (emailsEnabled) {
+        try {
+          const mailRes = await sendPasswordResetEmail({
+            to: user.email,
+            name: user.name,
+            resetUrl,
+            role: user.role,
+            req
+          });
+
+          if (mailRes && mailRes.success && !mailRes.disabled && !mailRes.held) {
+            db.addAuditLog({
+              userId: user.id,
+              userRole: user.role,
+              action: 'PASSWORD_RESET_EMAIL_SENT',
+              targetType: 'user',
+              targetId: user.id,
+              details: `Password reset recovery email successfully dispatched to ${user.email}`,
+              ipAddress: req.ip
+            });
+          } else {
+            db.addAuditLog({
+              userId: user.id,
+              userRole: user.role,
+              action: 'PASSWORD_RESET_EMAIL_FAILED',
+              targetType: 'user',
+              targetId: user.id,
+              details: `Password reset recovery email delivery failed for ${user.email}: ${mailRes?.error || 'Transport failed'}`,
+              ipAddress: req.ip
+            });
+          }
+        } catch (err) {
+          console.warn('⚠️ [Forgot Password] Email delivery dispatch failed:', err.message);
+          db.addAuditLog({
+            userId: user.id,
+            userRole: user.role,
+            action: 'PASSWORD_RESET_EMAIL_FAILED',
+            targetType: 'user',
+            targetId: user.id,
+            details: `Password reset recovery email dispatch error for ${user.email}: ${err.message}`,
+            ipAddress: req.ip
+          });
+        }
+      }
 
       if (process.env.NODE_ENV === 'test') {
         res.setHeader('X-Test-Reset-Token', rawToken);
@@ -247,7 +285,7 @@ router.post('/forgot-password', forgotPasswordIpLimiter, forgotPasswordEmailLimi
     }
 
     // Generic response returned for both found and non-existent accounts to prevent enumeration
-    const emailsEnabled = process.env.SEND_RESET_EMAILS === 'true';
+    const emailsEnabled = process.env.SEND_RESET_EMAILS !== 'false';
     const message = emailsEnabled
       ? 'If an active account with that email exists, password reset instructions have been sent.'
       : 'Password reset request received. Automated email delivery is temporarily disabled. If an active account with that email exists, please visit the Office of Student Affairs (Cubicle 8, Multipurpose Building) for assisted credential recovery.';
@@ -389,10 +427,10 @@ router.post('/reset-password', resetPasswordLimiter, async (req, res) => {
     db.addAuditLog({
       userId: user.id,
       userRole: user.role,
-      action: 'RESET_PASSWORD_SUCCESS',
+      action: 'PASSWORD_RESET_COMPLETED',
       targetType: 'user',
       targetId: user.id,
-      details: `Password reset successfully via verified token for ${user.email}`,
+      details: `Password reset successfully completed and new credentials set for ${user.email}`,
       ipAddress: req.ip
     });
 

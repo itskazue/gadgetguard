@@ -402,7 +402,7 @@ function generatePasswordResetEmailPayload({ to, name, resetUrl, role, req }) {
       </div>
 
       <div class="help-box">
-        🏢 <strong>In-Person Assistance:</strong> If you cannot access your school email or require in-person identity verification, please proceed to <strong>Cubicle 8, Multipurpose Building</strong>.
+        🏢 <strong>Having trouble accessing your NCST school email or Student ID?</strong> Visit <strong>Cubicle 8, Multipurpose Building</strong> for assistance.
       </div>
 
       <p style="font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 24px;">
@@ -424,13 +424,13 @@ function generatePasswordResetEmailPayload({ to, name, resetUrl, role, req }) {
 async function sendPasswordResetEmail(options) {
   const payload = generatePasswordResetEmailPayload(options);
 
-  // Respect owner authorization rule: do not dispatch external reset emails without owner approval
-  if (process.env.SEND_RESET_EMAILS !== 'true') {
-    console.log(`📡 [Password Reset Mailer] Real email dispatch held for ${options.to} (SEND_RESET_EMAILS != true, awaiting owner approval).`);
-    return { success: true, held: true, dispatched: false, message: 'Email dispatch held awaiting owner approval.', payload };
+  // If explicitly disabled via configuration (e.g. offline unit testing)
+  if (process.env.SEND_RESET_EMAILS === 'false') {
+    console.log(`📡 [Password Reset Mailer] Real email dispatch held for ${options.to} (SEND_RESET_EMAILS=false).`);
+    return { success: true, held: true, dispatched: false, message: 'Email dispatch held by SEND_RESET_EMAILS=false configuration.', payload };
   }
 
-  return sendMail(payload);
+  return await sendMail(payload);
 }
 
 module.exports = {
