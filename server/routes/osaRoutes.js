@@ -16,7 +16,24 @@ router.get('/stats', authMiddleware, requireRole('osa_admin'), (req, res) => {
     const returns = db.get('returns');
 
     const totalGadgets = gadgets.length;
-    const registeredGadgets = gadgets.filter(g => g.status === 'REGISTERED').length;
+
+    // Registered Gadgets KPI: Count authoritative approved registered gadgets from the directory,
+    // regardless of current operational/incident status (REGISTERED, MISSING, FOUND_IN_CUSTODY, RETURNED).
+    // Exclude pending and rejected registrations, deduplicated by gadget ID.
+    const approvedGadgetIds = new Set();
+    gadgets.forEach(g => {
+      if (
+        g &&
+        g.id &&
+        g.status !== 'PENDING_APPROVAL' &&
+        g.status !== 'PENDING' &&
+        g.status !== 'REJECTED'
+      ) {
+        approvedGadgetIds.add(g.id);
+      }
+    });
+    const registeredGadgets = approvedGadgetIds.size;
+
     const pendingGadgets = gadgets.filter(g => g.status === 'PENDING_APPROVAL').length;
     const missingGadgets = gadgets.filter(g => g.status === 'MISSING').length;
     const inCustodyGadgets = gadgets.filter(g => g.status === 'FOUND_IN_CUSTODY').length;
