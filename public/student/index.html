@@ -159,11 +159,12 @@
         </div>
 
         <div style="display: flex; align-items: center; gap: 12px;">
-          <button class="btn btn-primary btn-sm" onclick="openRegisterGadgetModal()">
-            ➕ Register Gadget
+          <button class="btn btn-primary btn-sm" onclick="openRegisterGadgetModal()" style="display: inline-flex; align-items: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Register Gadget</span>
           </button>
-          <button class="btn btn-secondary btn-icon" onclick="navigateStudent('notifications')" title="Notifications">
-            🔔
+          <button class="btn btn-secondary btn-icon" onclick="navigateStudent('notifications')" title="Notifications" aria-label="Notifications" style="display: inline-flex; align-items: center; justify-content: center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
           </button>
         </div>
       </header>
@@ -182,7 +183,9 @@
           <!-- Pending OSA Physical Verification Banner -->
           <div id="student-osa-verify-banner" style="display: none; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 20px;">
             <div style="display: flex; gap: 14px; align-items: flex-start;">
-              <div style="font-size: 1.8rem; line-height: 1;">🏢</div>
+              <div style="width: 44px; height: 44px; border-radius: 10px; background: #dbeafe; color: #1e40af; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>
+              </div>
               <div style="flex: 1;">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                   <h4 style="font-weight: 800; font-size: 0.95rem; color: #1e40af; margin: 0;">
@@ -194,11 +197,11 @@
                   You have a device awaiting verification (<strong id="pending-verify-device-name">Device</strong>). Please proceed to the <strong>Office of Student Affairs (Room 1109)</strong> with your <strong>physical Student ID</strong> and the actual device. The OSA officer will confirm ownership and issue your official printed QR code sticker.
                 </p>
                 <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 0.75rem; color: #2563eb;">
-                  <span>📍 Room 1109, Student Services Bldg.</span>
+                  <span style="display: inline-flex; align-items: center; gap: 4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>Room 1109, Student Services Bldg.</span>
                   <span>•</span>
-                  <span>⏰ Mon–Fri, 8:00 AM – 5:00 PM</span>
+                  <span style="display: inline-flex; align-items: center; gap: 4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>Mon–Fri, 8:00 AM – 5:00 PM</span>
                   <span>•</span>
-                  <span>🏷️ Official Anti-Theft QR Sticker Issued On-Site</span>
+                  <span style="display: inline-flex; align-items: center; gap: 4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"></path><circle cx="7" cy="7" r="1" fill="currentColor"></circle></svg>Official Anti-Theft QR Sticker Issued On-Site</span>
                 </div>
               </div>
             </div>
@@ -207,7 +210,9 @@
           <!-- 4 Clean Metric Cards -->
           <div class="metrics-grid-4">
             <div class="metric-card" onclick="navigateStudent('gadgets')" style="cursor: pointer;">
-              <div class="metric-icon-box" style="background: #ecfdf5; color: #047857;">💻</div>
+              <div class="metric-icon-box" style="background: #ecfdf5; color: #047857;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+              </div>
               <div>
                 <div class="metric-value" id="stat-registered-val">0</div>
                 <div class="metric-label">Registered Gadgets</div>
@@ -215,7 +220,9 @@
             </div>
 
             <div class="metric-card" onclick="navigateStudent('lost-status')" style="cursor: pointer;">
-              <div class="metric-icon-box" style="background: #fef2f2; color: #b91c1c;">🚨</div>
+              <div class="metric-icon-box" style="background: #fef2f2; color: #b91c1c;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              </div>
               <div>
                 <div class="metric-value" id="stat-missing-val" style="color: #b91c1c;">0</div>
                 <div class="metric-label">Missing Gadgets</div>
@@ -223,7 +230,9 @@
             </div>
 
             <div class="metric-card" onclick="navigateStudent('claims')" style="cursor: pointer;">
-              <div class="metric-icon-box" style="background: #eff6ff; color: #1d4ed8;">📋</div>
+              <div class="metric-icon-box" style="background: #eff6ff; color: #1d4ed8;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><polyline points="12 7 12 12 15 15"></polyline></svg>
+              </div>
               <div>
                 <div class="metric-value" id="stat-claims-val" style="color: #1d4ed8;">0</div>
                 <div class="metric-label">Return History</div>
@@ -231,7 +240,9 @@
             </div>
 
             <div class="metric-card" onclick="navigateStudent('claims')" style="cursor: pointer;">
-              <div class="metric-icon-box" style="background: #f5f3ff; color: #6d28d9;">✨</div>
+              <div class="metric-icon-box" style="background: #f5f3ff; color: #6d28d9;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 16 2 2 4-4"></path><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"></path><path d="m7.5 4.27 9 5.15"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line></svg>
+              </div>
               <div>
                 <div class="metric-value" id="stat-returned-val" style="color: #6d28d9;">0</div>
                 <div class="metric-label">Found / Returned</div>
@@ -242,7 +253,9 @@
           <!-- Highlighted Recent Activity Section -->
           <div class="highlight-activity-card" id="dash-highlight-activity">
             <div class="highlight-activity-info">
-              <div class="highlight-icon-circle">📡</div>
+              <div class="highlight-icon-circle">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><line x1="7" y1="12" x2="17" y2="12"></line></svg>
+              </div>
               <div>
                 <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);" id="highlight-act-title">
                   QR Scan Activity Monitor
@@ -282,7 +295,10 @@
                 <h3 style="font-weight: 800; font-size: 1.15rem;">Gadget Inventory</h3>
                 <p class="text-muted" style="font-size: 0.825rem;">Review, manage stickers, and check status of all your devices.</p>
               </div>
-              <button class="btn btn-primary btn-sm" onclick="openRegisterGadgetModal()">➕ Register New Device</button>
+              <button class="btn btn-primary btn-sm" onclick="openRegisterGadgetModal()" style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Register New Device</span>
+              </button>
             </div>
 
             <!-- Filter Tabs -->
@@ -345,8 +361,9 @@
                 <strong>Privacy Notice:</strong> When marked missing, anyone scanning the QR code will only see your First Name and Contact Number to coordinate recovery.
               </div>
 
-              <button type="submit" class="btn btn-danger" style="width: 100%;">
-                🚨 Continue to Submit Missing Report
+              <button type="submit" class="btn btn-danger" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                <span>Continue to Submit Missing Report</span>
               </button>
             </form>
           </div>
@@ -383,7 +400,10 @@
                   Official handover records and verified return receipts for devices retrieved from the Office of Student Affairs (OSA).
                 </p>
               </div>
-              <button class="btn btn-secondary btn-sm" onclick="loadClaimsScreen()">🔄 Refresh</button>
+              <button class="btn btn-secondary btn-sm" onclick="loadClaimsScreen()" style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 21h5v-5"></path></svg>
+                <span>Refresh</span>
+              </button>
             </div>
 
             <div id="student-returns-table-container">
@@ -452,8 +472,8 @@
           <!-- Change Password Card -->
           <div class="app-card" style="max-width: 600px; margin: 20px auto 0;">
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
-              <div style="width: 36px; height: 36px; background: #eff6ff; color: #2563eb; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
-                🔑
+              <div style="width: 36px; height: 36px; background: #eff6ff; color: #2563eb; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"></path><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"></circle></svg>
               </div>
               <div>
                 <h4 style="font-weight: 800; font-size: 1.05rem; color: var(--text-main); margin: 0;">Change Account Password</h4>
@@ -495,7 +515,10 @@
   <div id="register-gadget-modal" class="modal-overlay">
     <div class="modal-box" style="max-width: 520px;">
       <div class="modal-header">
-        <h3 class="modal-title">➕ Register New Campus Gadget</h3>
+        <h3 class="modal-title" style="display: inline-flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span>Register New Campus Gadget</span>
+        </h3>
         <button class="btn btn-secondary btn-icon" onclick="closeModal('register-gadget-modal')">&times;</button>
       </div>
       <form onsubmit="handleRegisterGadgetSubmit(event)">
@@ -557,7 +580,7 @@
             <!-- Image Preview Box -->
             <div id="modal-reg-photo-preview-wrap" style="display: none; margin-top: 8px; text-align: center;">
               <img id="modal-reg-photo-preview" src="" alt="Device Preview" style="max-height: 120px; max-width: 100%; border-radius: 8px; border: 1px solid #cbd5e1; object-fit: contain;">
-              <div style="font-size: 0.7rem; color: #059669; margin-top: 3px;">✓ Photo selected for OSA proof inspection</div>
+              <div style="font-size: 0.7rem; color: #059669; margin-top: 3px; display: inline-flex; align-items: center; gap: 4px;"><svg class="ui-icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg><span>Photo selected for OSA proof inspection</span></div>
             </div>
           </div>
         </div>
@@ -574,7 +597,8 @@
     <div class="modal-box" style="max-width: 530px;">
       <div class="modal-header">
         <h3 class="modal-title" style="color: #142a6d; display: flex; align-items: center; gap: 8px;">
-          <span>✏️</span> Edit & Resubmit Gadget Registration
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+          <span>Edit & Resubmit Gadget Registration</span>
         </h3>
         <button class="btn btn-secondary btn-icon" onclick="closeModal('edit-resubmit-gadget-modal')">&times;</button>
       </div>
@@ -585,7 +609,8 @@
           <!-- Rejection Reason Banner -->
           <div style="background: #fef2f2; border: 1.5px solid #fca5a5; border-radius: var(--radius-md, 8px); padding: 14px; margin-bottom: 16px; font-size: 0.825rem; color: #991b1b;">
             <div style="font-weight: 800; font-size: 0.88rem; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-              <span>⚠️</span> OSA Rejection Reason:
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              <span>OSA Rejection Reason:</span>
             </div>
             <div id="edit-resubmit-rejection-reason" style="background: #ffffff; border: 1px solid #fecaca; border-radius: 6px; padding: 8px 10px; color: #111827; font-weight: 600; margin-bottom: 6px; line-height: 1.45;">
               —
@@ -649,16 +674,17 @@
             <div id="edit-resubmit-photo-wrap" style="display: none; margin-top: 8px; text-align: center; position: relative; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px;">
               <img id="edit-resubmit-photo-preview" src="" alt="Device Preview" style="max-height: 120px; max-width: 100%; border-radius: 6px; object-fit: contain;">
               <div style="margin-top: 6px; display: flex; justify-content: center; gap: 8px; align-items: center;">
-                <span style="font-size: 0.72rem; color: #059669; font-weight: 600;">✓ Attached Photo Proof</span>
-                <button type="button" class="btn btn-outline-danger btn-xs" onclick="handleClearResubmitPhoto()" style="font-size: 0.7rem; padding: 2px 8px; color: #dc2626; border-color: #fca5a5; background: #fff;">
-                  🗑️ Remove Photo
+                <span style="font-size: 0.72rem; color: #059669; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><svg class="ui-icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Attached Photo Proof</span>
+                <button type="button" class="btn btn-outline-danger btn-xs" onclick="handleClearResubmitPhoto()" style="font-size: 0.7rem; padding: 2px 8px; color: #dc2626; border-color: #fca5a5; background: #fff; display: inline-flex; align-items: center; gap: 4px;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                  <span>Remove Photo</span>
                 </button>
               </div>
             </div>
 
             <!-- Placeholder when no photo attached -->
             <div id="edit-resubmit-photo-placeholder" style="display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 0.75rem; color: #64748b; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 8px 10px;">
-              <span>📷</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>
               <span>No photo attached. Physical inspection will be conducted at OSA.</span>
             </div>
           </div>
@@ -676,8 +702,8 @@
     <div class="modal-box" style="max-width: 480px; padding: 24px;">
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
         <div style="display: flex; align-items: center; gap: 10px;">
-          <div style="width: 38px; height: 38px; background: #eff6ff; color: #2563eb; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
-            🔍
+          <div style="width: 38px; height: 38px; background: #eff6ff; color: #2563eb; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           </div>
           <div>
             <h3 style="font-weight: 800; font-size: 1.15rem; color: #0f172a; margin: 0;">Review Device Details</h3>
@@ -709,16 +735,19 @@
         </div>
       </div>
 
-      <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 10px 12px; font-size: 0.75rem; color: #b45309; line-height: 1.4; margin-bottom: 16px;">
-        🏢 <strong>In-Person OSA Verification Required:</strong> After submitting, please present your device and Student ID to the <strong>Office of Student Affairs (OSA Room 1109)</strong> for physical inspection and official anti-theft QR sticker issuance.
+      <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 10px 12px; font-size: 0.75rem; color: #b45309; line-height: 1.4; margin-bottom: 16px; display: flex; gap: 8px; align-items: flex-start;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>
+        <div><strong>In-Person OSA Verification Required:</strong> After submitting, please present your device and Student ID to the <strong>Office of Student Affairs (OSA Room 1109)</strong> for physical inspection and official anti-theft QR sticker issuance.</div>
       </div>
 
       <div style="display: flex; gap: 10px;">
-        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('confirm-gadget-reg-modal')" style="flex: 1;">
-          ✏️ Edit Details
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('confirm-gadget-reg-modal')" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+          <span>Edit Details</span>
         </button>
-        <button type="button" id="btn-final-gadget-submit" class="btn btn-primary btn-sm" onclick="executeFinalGadgetSubmit()" style="flex: 1.4;">
-          ✓ Confirm & Submit Device
+        <button type="button" id="btn-final-gadget-submit" class="btn btn-primary btn-sm" onclick="executeFinalGadgetSubmit()" style="flex: 1.4; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+          <svg class="ui-icon" style="width: 13px; height: 13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Confirm & Submit Device</span>
         </button>
       </div>
     </div>
@@ -728,7 +757,10 @@
   <div id="confirm-missing-modal" class="modal-overlay">
     <div class="modal-box" style="max-width: 460px;">
       <div class="modal-header">
-        <h3 class="modal-title" style="color: #b91c1c;">⚠️ Confirm Missing Report</h3>
+        <h3 class="modal-title" style="color: #b91c1c; display: inline-flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          <span>Confirm Missing Report</span>
+        </h3>
         <button class="btn btn-secondary btn-icon" onclick="closeModal('confirm-missing-modal')">&times;</button>
       </div>
       <div class="modal-body">
@@ -736,8 +768,8 @@
           Are you sure you want to report <strong id="confirm-missing-device-name">this gadget</strong> as <strong>MISSING</strong>?
         </p>
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 12px; font-size: 0.8rem; color: var(--text-secondary);">
-          <div>📍 <strong>Location:</strong> <span id="confirm-missing-loc-val">-</span></div>
-          <div style="margin-top: 4px;">📅 <strong>Date:</strong> <span id="confirm-missing-date-val">-</span></div>
+          <div style="display: flex; align-items: center; gap: 6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg><span><strong>Location:</strong> <span id="confirm-missing-loc-val">-</span></span></div>
+          <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg><span><strong>Date:</strong> <span id="confirm-missing-date-val">-</span></span></div>
         </div>
         <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 12px;">
           This will alert campus security and update the public QR code to display your recovery contact.
@@ -777,7 +809,8 @@
           <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: var(--radius-md); padding: 14px 16px; text-align: left;">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px;">
               <span style="font-weight: 800; font-size: 0.85rem; color: #142a6d; display:flex; align-items:center; gap:6px;">
-                <span>🛡️</span> NCST Asset Protection Status
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></svg>
+                <span>NCST Asset Protection Status</span>
               </span>
               <span class="status-badge REGISTERED" style="font-size:0.7rem;">OSA VERIFIED</span>
             </div>
@@ -785,8 +818,9 @@
               <span class="text-muted">Assigned Security Token:</span>
               <strong class="font-mono" id="gmodal-token" style="color: #142a6d; background: #eff6ff; padding: 2px 8px; border-radius: 4px; border: 1px solid #bfdbfe;">gg_dev_xxxx</strong>
             </div>
-            <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 8px 10px; font-size: 0.75rem; color: #92400e; line-height: 1.45; margin-top: 8px;">
-              🔒 <strong>Physical Security Notice:</strong> Official tamper-evident security QR stickers are exclusively printed and affixed on-site by the <strong>Office of Student Affairs (OSA Room 1109)</strong>. Students are not permitted to print or duplicate security stickers.
+            <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 8px 10px; font-size: 0.75rem; color: #92400e; line-height: 1.45; margin-top: 8px; display: flex; gap: 8px; align-items: flex-start;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 1px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              <div><strong>Physical Security Notice:</strong> Official tamper-evident security QR stickers are exclusively printed and affixed on-site by the <strong>Office of Student Affairs (OSA Room 1109)</strong>. Students are not permitted to print or duplicate security stickers.</div>
             </div>
           </div>
         </div>
@@ -806,7 +840,10 @@
   <div id="submit-claim-modal" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header">
-        <h3 class="modal-title">📋 Submit Ownership Claim</h3>
+        <h3 class="modal-title" style="display: inline-flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="4" rx="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="m9 14 2 2 4-4"></path></svg>
+          <span>Submit Ownership Claim</span>
+        </h3>
         <button class="btn btn-secondary btn-icon" onclick="closeModal('submit-claim-modal')">&times;</button>
       </div>
       <form onsubmit="handleClaimSubmit(event)">
@@ -847,7 +884,10 @@
   <div id="update-photo-modal" class="modal-overlay">
     <div class="modal-box" style="max-width: 480px;">
       <div class="modal-header">
-        <h3 class="modal-title">📷 Update Device Photo / Proof</h3>
+        <h3 class="modal-title" style="display: inline-flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>
+          <span>Update Device Photo / Proof</span>
+        </h3>
         <button class="btn btn-secondary btn-icon" onclick="closeModal('update-photo-modal')">&times;</button>
       </div>
       <form onsubmit="handleUpdatePhotoSubmit(event)">
@@ -872,8 +912,9 @@
           </div>
         </div>
         <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
-          <button type="button" class="btn btn-outline-danger btn-sm" onclick="handleRemovePhotoSubmit()" id="btn-remove-photo" style="color: #dc2626; border: 1px solid #fca5a5; background: #fff;">
-            🗑️ Remove Photo
+          <button type="button" class="btn btn-outline-danger btn-sm" onclick="handleRemovePhotoSubmit()" id="btn-remove-photo" style="color: #dc2626; border: 1px solid #fca5a5; background: #fff; display: inline-flex; align-items: center; gap: 4px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+            <span>Remove Photo</span>
           </button>
           <div style="display: flex; gap: 8px;">
             <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('update-photo-modal')">Cancel</button>
@@ -889,8 +930,8 @@
     <div class="modal-box" style="max-width: 520px; padding: 20px;">
       <div class="modal-header" style="padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--card-border);">
         <div style="display: flex; align-items: center; gap: 10px;">
-          <div style="width: 40px; height: 40px; background: #eff6ff; color: #1e40af; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
-            💬
+          <div style="width: 40px; height: 40px; background: #eff6ff; color: #1e40af; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
           </div>
           <div>
             <h3 style="font-weight: 800; font-size: 1.1rem; color: #142a6d; margin: 0;">
@@ -907,8 +948,9 @@
       <div class="modal-body" style="padding: 0;">
         <!-- Safety & Liability Notice (Section G & H) -->
         <div style="background: #fffbeb; border: 1.5px solid #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 10px 12px; font-size: 0.74rem; color: #92400e; line-height: 1.5; margin-bottom: 12px;">
-          <div style="font-weight: 800; color: #b45309; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; font-size: 0.78rem;">
-            <span>⚠️</span> Safety &amp; Liability Notice
+          <div style="font-weight: 800; color: #b45309; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; font-size: 0.78rem;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            <span>Safety &amp; Liability Notice</span>
           </div>
           <p style="margin-bottom: 4px;">
             Please prioritize your safety when arranging the return of a missing gadget.
@@ -935,14 +977,15 @@
 
           <!-- Closed banner if recovery completed -->
           <div id="owner-chat-closed-banner" style="display: none; background: #f1f5f9; border-top: 1px solid #cbd5e1; padding: 10px; font-size: 0.8rem; color: #475569; text-align: center; font-weight: 600;">
-            🔒 This recovery conversation is closed.
+            <span style="display: inline-flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>This recovery conversation is closed.</span>
           </div>
 
           <!-- Input form -->
           <form id="owner-chat-form" onsubmit="handleSendOwnerChatMessage(event)" style="display: flex; gap: 8px; padding: 10px; background: #ffffff; border-top: 1px solid #e2e8f0;">
             <input type="text" id="owner-chat-input" class="form-control" placeholder="Type a message to the finder..." maxlength="1000" autocomplete="off" style="font-size: 0.85rem;" required>
-            <button type="submit" class="btn btn-primary btn-sm" style="background: #142a6d; border-color: #142a6d; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; padding: 0 16px;">
-              Send 📤
+            <button type="submit" class="btn btn-primary btn-sm" style="background: #142a6d; border-color: #142a6d; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; padding: 0 16px;">
+              <span>Send</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
             </button>
           </form>
         </div>
@@ -957,8 +1000,8 @@
       <div style="background: linear-gradient(135deg, #142a6d 0%, #1e3a8a 100%); color: #ffffff; padding: 20px 24px; position: relative;">
         <button type="button" class="btn btn-secondary btn-icon" onclick="closeModal('student-return-receipt-modal')" style="position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.15); border: none; color: #ffffff; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.2rem;">&times;</button>
         <div style="display: flex; align-items: center; gap: 12px;">
-          <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.15); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
-            🧾
+          <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.15); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
           </div>
           <div>
             <div style="font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: #ffc72c; font-weight: 700;">Office of Student Affairs (OSA)</div>
@@ -978,14 +1021,14 @@
             <div id="receipt-modal-ref" class="font-mono" style="font-size: 1rem; font-weight: 800; color: #065f46;">RET-0000</div>
           </div>
           <span style="background: #10b981; color: #ffffff; font-weight: 800; font-size: 0.75rem; padding: 4px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;">
-            ✓ OFFICIAL RETURN
+            <svg class="ui-icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>OFFICIAL RETURN
           </span>
         </div>
 
         <!-- Section 1: Gadget Information -->
         <div style="margin-bottom: 18px;">
           <div style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 8px;">
-            📱 Device Information
+            <span style="display: inline-flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>Device Information</span>
           </div>
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
@@ -1008,7 +1051,7 @@
         <!-- Section 2: Handover Details -->
         <div style="margin-bottom: 18px;">
           <div style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 8px;">
-            🤝 Verified Handover Details
+            <span style="display: inline-flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><polyline points="16 11 18 13 22 9"></polyline></svg>Verified Handover Details</span>
           </div>
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; font-size: 0.825rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
@@ -1037,7 +1080,7 @@
         <!-- Section 3: Notes & Handover Remarks -->
         <div style="margin-bottom: 18px;">
           <div style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 8px;">
-            📝 Official Remarks &amp; Intake Notes
+            <span style="display: inline-flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>Official Remarks &amp; Intake Notes</span>
           </div>
           <div id="receipt-modal-notes" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; font-size: 0.825rem; color: #334155; line-height: 1.5; font-style: italic;">
             Official gadget handover completed at OSA Room 1109.
@@ -1047,7 +1090,7 @@
         <!-- Section 4: Handover Photo Proof -->
         <div style="margin-bottom: 12px;">
           <div style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 8px;">
-            📸 Handover Photo Evidence
+            <span style="display: inline-flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>Handover Photo Evidence</span>
           </div>
           <div id="receipt-modal-photo-container" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center;">
             <img id="receipt-modal-photo-img" src="" alt="Handover Photo Proof" style="max-height: 200px; max-width: 100%; border-radius: 8px; border: 1.5px solid #10b981; object-fit: contain; box-shadow: 0 2px 6px rgba(0,0,0,0.06); display: none;">
@@ -1055,7 +1098,7 @@
               No handover photo attached to this record.
             </div>
             <div id="receipt-modal-photo-caption" style="font-size: 0.72rem; color: #047857; margin-top: 6px; font-weight: 600; display: none;">
-              ✓ Verified physical handover photo captured at OSA Room 1109
+              <svg class="ui-icon" style="width: 12px; height: 12px; margin-right: 4px; display: inline-block; vertical-align: -1px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Verified physical handover photo captured at OSA Room 1109
             </div>
           </div>
         </div>
@@ -1066,7 +1109,8 @@
       <div class="modal-footer" style="padding: 16px 24px; background: #f8fafc; border-top: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center;">
         <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('student-return-receipt-modal')">Close</button>
         <button type="button" class="btn btn-primary btn-sm" onclick="window.print()" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
-          🖨️ Print Receipt
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          <span>Print Receipt</span>
         </button>
       </div>
     </div>

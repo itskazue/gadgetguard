@@ -237,9 +237,13 @@
 
         <div style="display: flex; align-items: center; gap: 10px;">
           <a href="/campus-poster.html" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration: none; color: inherit; display: inline-flex; align-items: center; gap: 6px;">
-            <span>📋</span> Campus Poster
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+            <span>Campus Poster</span>
           </a>
-          <button class="btn btn-secondary btn-sm" onclick="reloadCurrentOsaScreen()">🔄 Refresh</button>
+          <button class="btn btn-secondary btn-sm" onclick="reloadCurrentOsaScreen()" style="display: inline-flex; align-items: center; gap: 5px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+            <span>Refresh</span>
+          </button>
         </div>
       </header>
 
@@ -380,22 +384,34 @@
           <div class="table-container-card">
             <div class="table-title-bar">
               <div>
-                <h3 style="font-weight: 800; font-size: 1.1rem;">⏳ Gadget Registration Submissions</h3>
+                <h3 style="font-weight: 800; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#142a6d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="4" rx="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="m9 14 2 2 4-4"></path></svg>
+                  <span>Gadget Registration Submissions</span>
+                </h3>
                 <div style="font-size: 0.8rem; color: var(--text-muted);">Review student hardware specs, photo evidence, and approve to generate official QR sticker</div>
               </div>
             </div>
             <!-- Filter & Search Toolbar -->
             <div class="osa-toolbar-filter-grid">
               <div class="osa-filter-item grow">
-                <label class="osa-filter-label" for="approvals-student-filter">🎓 Student Search</label>
+                <label class="osa-filter-label" for="approvals-student-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+                  <span>Student Search</span>
+                </label>
                 <input type="text" id="approvals-student-filter" class="form-control osa-filter-input" placeholder="Search Student ID or Surname..." oninput="filterApprovalsTable()">
               </div>
               <div class="osa-filter-item grow">
-                <label class="osa-filter-label" for="approvals-device-search">🔍 Device Search</label>
+                <label class="osa-filter-label" for="approvals-device-search">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                  <span>Device Search</span>
+                </label>
                 <input type="text" id="approvals-device-search" class="form-control osa-filter-input" placeholder="Search device, serial no., or QR token" oninput="filterApprovalsTable()">
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="approvals-type-filter">💻 Device Type</label>
+                <label class="osa-filter-label" for="approvals-type-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                  <span>Device Type</span>
+                </label>
                 <select id="approvals-type-filter" class="form-control osa-filter-select" onchange="filterApprovalsTable()">
                   <option value="ALL">All Devices</option>
                   <option value="Smartphone">Smartphone</option>
@@ -407,7 +423,10 @@
                 </select>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="approvals-status-filter">📋 Registration Status</label>
+                <label class="osa-filter-label" for="approvals-status-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="4" rx="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="m9 14 2 2 4-4"></path></svg>
+                  <span>Registration Status</span>
+                </label>
                 <select id="approvals-status-filter" class="form-control osa-filter-select" onchange="filterApprovalsTable()">
                   <option value="PENDING_APPROVAL" selected>Pending Registrations</option>
                   <option value="ALL">All Submissions</option>
@@ -416,7 +435,10 @@
                 </select>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="approvals-sort-filter">↕️ Sort By</label>
+                <label class="osa-filter-label" for="approvals-sort-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"></path><path d="m7 9 5-5 5 5"></path></svg>
+                  <span>Sort By</span>
+                </label>
                 <select id="approvals-sort-filter" class="form-control osa-filter-select" onchange="filterApprovalsTable()">
                   <option value="SURNAME_ASC" selected>Surname A–Z</option>
                   <option value="SURNAME_DESC">Surname Z–A</option>
@@ -429,7 +451,8 @@
               <div class="osa-filter-item">
                 <label class="osa-filter-label">&nbsp;</label>
                 <button class="btn btn-secondary btn-sm" onclick="clearApprovalsFilter()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset to default table view">
-                  ↺ Reset Filters
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                  <span>Reset Filters</span>
                 </button>
               </div>
             </div>
@@ -444,22 +467,34 @@
           <div class="table-container-card">
             <div class="table-title-bar">
               <div>
-                <h3 style="font-weight: 800; font-size: 1.1rem;">💻 Registered Gadgets Vault Directory</h3>
+                <h3 style="font-weight: 800; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#142a6d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                  <span>Registered Gadgets Vault Directory</span>
+                </h3>
                 <div style="font-size: 0.8rem; color: var(--text-muted);">Searchable inventory of all campus-registered equipment</div>
               </div>
             </div>
             <!-- Filter & Search Toolbar -->
             <div class="osa-toolbar-filter-grid">
               <div class="osa-filter-item grow">
-                <label class="osa-filter-label" for="vault-student-filter">🎓 Student Search</label>
+                <label class="osa-filter-label" for="vault-student-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+                  <span>Student Search</span>
+                </label>
                 <input type="text" id="vault-student-filter" class="form-control osa-filter-input" placeholder="Search Student ID or Surname..." oninput="filterVaultTable()">
               </div>
               <div class="osa-filter-item grow">
-                <label class="osa-filter-label" for="vault-search-input">🔍 Device Search</label>
+                <label class="osa-filter-label" for="vault-search-input">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                  <span>Device Search</span>
+                </label>
                 <input type="text" id="vault-search-input" class="form-control osa-filter-input" placeholder="Search device, serial no., or QR token" oninput="filterVaultTable()">
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="vault-type-filter">💻 Device Type</label>
+                <label class="osa-filter-label" for="vault-type-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                  <span>Device Type</span>
+                </label>
                 <select id="vault-type-filter" class="form-control osa-filter-select" onchange="filterVaultTable()">
                   <option value="ALL">All Devices</option>
                   <option value="Smartphone">Smartphone</option>
@@ -471,7 +506,10 @@
                 </select>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="vault-status-select">📋 Gadget Status</label>
+                <label class="osa-filter-label" for="vault-status-select">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="4" rx="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="m9 14 2 2 4-4"></path></svg>
+                  <span>Gadget Status</span>
+                </label>
                 <select id="vault-status-select" class="form-control osa-filter-select" onchange="filterVaultTable()">
                   <option value="ALL" selected>All Statuses</option>
                   <option value="REGISTERED">Registered</option>
@@ -482,7 +520,10 @@
                 </select>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="vault-sort-filter">↕️ Sort By</label>
+                <label class="osa-filter-label" for="vault-sort-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"></path><path d="m7 9 5-5 5 5"></path></svg>
+                  <span>Sort By</span>
+                </label>
                 <select id="vault-sort-filter" class="form-control osa-filter-select" onchange="filterVaultTable()">
                   <option value="SURNAME_ASC" selected>Surname A–Z</option>
                   <option value="SURNAME_DESC">Surname Z–A</option>
@@ -495,7 +536,8 @@
               <div class="osa-filter-item">
                 <label class="osa-filter-label">&nbsp;</label>
                 <button class="btn btn-secondary btn-sm" onclick="clearVaultFilter()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset to default table view">
-                  ↺ Reset Filters
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                  <span>Reset Filters</span>
                 </button>
               </div>
             </div>
@@ -510,22 +552,34 @@
           <div class="table-container-card">
             <div class="table-title-bar">
               <div>
-                <h3 style="font-weight: 800; font-size: 1.1rem; color: #b91c1c;">🚨 Active Missing Incidents Monitor</h3>
+                <h3 style="font-weight: 800; font-size: 1.1rem; color: #b91c1c; display: flex; align-items: center; gap: 8px;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b91c1c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                  <span>Active Missing Incidents Monitor</span>
+                </h3>
                 <div style="font-size: 0.8rem; color: var(--text-muted);">Devices actively reported as lost across campus grounds</div>
               </div>
             </div>
             <!-- Filter & Search Toolbar -->
             <div class="osa-toolbar-filter-grid">
               <div class="osa-filter-item grow">
-                <label class="osa-filter-label" for="missing-student-filter">🎓 Student Search</label>
+                <label class="osa-filter-label" for="missing-student-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+                  <span>Student Search</span>
+                </label>
                 <input type="text" id="missing-student-filter" class="form-control osa-filter-input" placeholder="Search Student ID or Surname..." oninput="filterMissingTable()">
               </div>
               <div class="osa-filter-item grow">
-                <label class="osa-filter-label" for="missing-device-search">🔍 Device Search</label>
+                <label class="osa-filter-label" for="missing-device-search">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                  <span>Device Search</span>
+                </label>
                 <input type="text" id="missing-device-search" class="form-control osa-filter-input" placeholder="Search device, serial no., or QR token" oninput="filterMissingTable()">
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="missing-type-filter">💻 Device Type</label>
+                <label class="osa-filter-label" for="missing-type-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                  <span>Device Type</span>
+                </label>
                 <select id="missing-type-filter" class="form-control osa-filter-select" onchange="filterMissingTable()">
                   <option value="ALL">All Devices</option>
                   <option value="Smartphone">Smartphone</option>
@@ -537,7 +591,10 @@
                 </select>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="missing-status-filter">📋 Missing Status</label>
+                <label class="osa-filter-label" for="missing-status-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="4" rx="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="m9 14 2 2 4-4"></path></svg>
+                  <span>Missing Status</span>
+                </label>
                 <select id="missing-status-filter" class="form-control osa-filter-select" onchange="filterMissingTable()">
                   <option value="ACTIVE" selected>Active Missing</option>
                   <option value="ALL">All Incidents</option>
@@ -546,7 +603,10 @@
                 </select>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="missing-sort-filter">↕️ Sort By</label>
+                <label class="osa-filter-label" for="missing-sort-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"></path><path d="m7 9 5-5 5 5"></path></svg>
+                  <span>Sort By</span>
+                </label>
                 <select id="missing-sort-filter" class="form-control osa-filter-select" onchange="filterMissingTable()">
                   <option value="SURNAME_ASC" selected>Surname A–Z</option>
                   <option value="SURNAME_DESC">Surname Z–A</option>
@@ -559,7 +619,8 @@
               <div class="osa-filter-item">
                 <label class="osa-filter-label">&nbsp;</label>
                 <button class="btn btn-secondary btn-sm" onclick="clearMissingFilter()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset to default table view">
-                  ↺ Reset Filters
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                  <span>Reset Filters</span>
                 </button>
               </div>
             </div>
@@ -574,18 +635,27 @@
           <div class="table-container-card">
             <div class="table-title-bar">
               <div>
-                <h3 style="font-weight: 800; font-size: 1.1rem; color: #142a6d;">📦 Custody Vault & Finder Intake</h3>
+                <h3 style="font-weight: 800; font-size: 1.1rem; color: #142a6d; display: flex; align-items: center; gap: 8px;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#142a6d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7.5 4.27 9 5.15"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                  <span>Custody Vault &amp; Finder Intake</span>
+                </h3>
                 <div style="font-size: 0.8rem; color: var(--text-muted);">Match surrendered gadgets by Surrender Reference, Gadget ID, QR Code, or Student ID Number</div>
               </div>
             </div>
             <!-- Filter & Search Toolbar -->
             <div class="osa-toolbar-filter-grid">
               <div class="osa-filter-item grow">
-                <label class="osa-filter-label" for="found-search-input">🔍 Search Found Reports</label>
+                <label class="osa-filter-label" for="found-search-input">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                  <span>Search Found Reports</span>
+                </label>
                 <input type="text" id="found-search-input" class="form-control osa-filter-input" placeholder="Search Surrender Ref, Case ID, Gadget ID, QR Token, Owner, Student ID..." oninput="filterFoundCustodyTable()">
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="found-status-filter">📋 Turnover Status</label>
+                <label class="osa-filter-label" for="found-status-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="4" rx="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="m9 14 2 2 4-4"></path></svg>
+                  <span>Turnover Status</span>
+                </label>
                 <select id="found-status-filter" class="form-control osa-filter-select" onchange="filterFoundCustodyTable()">
                   <option value="ALL">All Statuses</option>
                   <option value="FINDER_HOLDING">Finder Holding</option>
@@ -595,7 +665,10 @@
                 </select>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="found-type-filter">💻 Device Type</label>
+                <label class="osa-filter-label" for="found-type-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                  <span>Device Type</span>
+                </label>
                 <select id="found-type-filter" class="form-control osa-filter-select" onchange="filterFoundCustodyTable()">
                   <option value="ALL">All Devices</option>
                   <option value="Smartphone">Smartphone</option>
@@ -607,7 +680,10 @@
                 </select>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="found-sort-filter">↕️ Sort By</label>
+                <label class="osa-filter-label" for="found-sort-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"></path><path d="m7 9 5-5 5 5"></path></svg>
+                  <span>Sort By</span>
+                </label>
                 <select id="found-sort-filter" class="form-control osa-filter-select" onchange="filterFoundCustodyTable()">
                   <option value="NEWEST" selected>Newest First</option>
                   <option value="OLDEST">Oldest First</option>
@@ -618,7 +694,8 @@
               <div class="osa-filter-item">
                 <label class="osa-filter-label">&nbsp;</label>
                 <button class="btn btn-secondary btn-sm" onclick="clearFoundFilters()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset to default table view">
-                  ↺ Reset Filters
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                  <span>Reset Filters</span>
                 </button>
               </div>
             </div>
@@ -633,18 +710,27 @@
           <div class="table-container-card">
             <div class="table-title-bar">
               <div>
-                <h3 style="font-weight: 800; font-size: 1.1rem; color: #142a6d;">📋 Claims — Ready for Claim</h3>
+                <h3 style="font-weight: 800; font-size: 1.1rem; color: #142a6d; display: flex; align-items: center; gap: 8px;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#142a6d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                  <span>Claims — Ready for Claim</span>
+                </h3>
                 <div style="font-size: 0.8rem; color: var(--text-muted);">Active gadgets currently held in OSA custody vault waiting for verified student handover</div>
               </div>
             </div>
             <!-- Filter & Search Toolbar -->
             <div class="osa-toolbar-filter-grid">
               <div class="osa-filter-item grow">
-                <label class="osa-filter-label" for="claims-search-input">🔍 Claims Search</label>
+                <label class="osa-filter-label" for="claims-search-input">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                  <span>Claims Search</span>
+                </label>
                 <input type="text" id="claims-search-input" class="form-control osa-filter-input" placeholder="Search Owner, Student ID, Gadget, Gadget ID, Serial No., QR Token..." oninput="filterClaimsTable()">
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="claims-status-filter">📋 Claim Status</label>
+                <label class="osa-filter-label" for="claims-status-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="4" rx="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="m9 14 2 2 4-4"></path></svg>
+                  <span>Claim Status</span>
+                </label>
                 <select id="claims-status-filter" class="form-control osa-filter-select" onchange="filterClaimsTable()">
                   <option value="ALL">All Statuses</option>
                   <option value="IN_OSA_CUSTODY">In OSA Custody</option>
@@ -654,7 +740,10 @@
                 </select>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="claims-type-filter">💻 Device Type</label>
+                <label class="osa-filter-label" for="claims-type-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                  <span>Device Type</span>
+                </label>
                 <select id="claims-type-filter" class="form-control osa-filter-select" onchange="filterClaimsTable()">
                   <option value="ALL">All Devices</option>
                   <option value="Smartphone">Smartphone</option>
@@ -666,7 +755,10 @@
                 </select>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="claims-sort-filter">↕️ Sort By</label>
+                <label class="osa-filter-label" for="claims-sort-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"></path><path d="m7 9 5-5 5 5"></path></svg>
+                  <span>Sort By</span>
+                </label>
                 <select id="claims-sort-filter" class="form-control osa-filter-select" onchange="filterClaimsTable()">
                   <option value="NEWEST" selected>Newest First</option>
                   <option value="OLDEST">Oldest First</option>
@@ -677,7 +769,8 @@
               <div class="osa-filter-item">
                 <label class="osa-filter-label">&nbsp;</label>
                 <button class="btn btn-secondary btn-sm" onclick="clearClaimsFilters()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset to default table view">
-                  ↺ Reset Filters
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                  <span>Reset Filters</span>
                 </button>
               </div>
             </div>
@@ -692,18 +785,27 @@
           <div class="table-container-card">
             <div class="table-title-bar">
               <div>
-                <h3 style="font-weight: 800; font-size: 1.1rem; color: #142a6d;">📜 Official Returned Gadgets History</h3>
+                <h3 style="font-weight: 800; font-size: 1.1rem; color: #142a6d; display: flex; align-items: center; gap: 8px;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#142a6d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                  <span>Official Returned Gadgets History</span>
+                </h3>
                 <div style="font-size: 0.8rem; color: var(--text-muted);">Gadgets successfully returned to verified owners with photo proofs, audit timestamps, and receipts</div>
               </div>
             </div>
             <!-- Filter & Search Toolbar -->
             <div class="osa-toolbar-filter-grid">
               <div class="osa-filter-item grow">
-                <label class="osa-filter-label" for="history-search-input">🔍 Search Returns</label>
+                <label class="osa-filter-label" for="history-search-input">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                  <span>Search Returns</span>
+                </label>
                 <input type="text" id="history-search-input" class="form-control osa-filter-input" placeholder="Search Owner, Student ID, Gadget ID, Brand/Model, S/N, Receipt Ref..." oninput="filterReturnedHistoryTable()">
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="history-date-filter">📅 Date Range</label>
+                <label class="osa-filter-label" for="history-date-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                  <span>Date Range</span>
+                </label>
                 <select id="history-date-filter" class="form-control osa-filter-select" onchange="toggleCustomDateInputs('history'); filterReturnedHistoryTable()">
                   <option value="ALL" selected>All Time</option>
                   <option value="TODAY">Today</option>
@@ -713,7 +815,10 @@
                 </select>
               </div>
               <div class="osa-filter-item" id="history-custom-date-wrap" style="display: none;">
-                <label class="osa-filter-label">📆 From – To</label>
+                <label class="osa-filter-label">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                  <span>From – To</span>
+                </label>
                 <div style="display: flex; gap: 6px; align-items: center;">
                   <input type="date" id="history-date-from" class="form-control osa-filter-input" style="width: 135px;" onchange="filterReturnedHistoryTable()">
                   <span style="color: #64748b; font-size: 0.8rem;">–</span>
@@ -721,7 +826,10 @@
                 </div>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="history-type-filter">💻 Device Type</label>
+                <label class="osa-filter-label" for="history-type-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                  <span>Device Type</span>
+                </label>
                 <select id="history-type-filter" class="form-control osa-filter-select" onchange="filterReturnedHistoryTable()">
                   <option value="ALL">All Devices</option>
                   <option value="Smartphone">Smartphone</option>
@@ -733,7 +841,10 @@
                 </select>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="history-sort-filter">↕️ Sort By</label>
+                <label class="osa-filter-label" for="history-sort-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"></path><path d="m7 9 5-5 5 5"></path></svg>
+                  <span>Sort By</span>
+                </label>
                 <select id="history-sort-filter" class="form-control osa-filter-select" onchange="filterReturnedHistoryTable()">
                   <option value="NEWEST" selected>Newest First</option>
                   <option value="OLDEST">Oldest First</option>
@@ -744,7 +855,8 @@
               <div class="osa-filter-item">
                 <label class="osa-filter-label">&nbsp;</label>
                 <button class="btn btn-secondary btn-sm" onclick="clearHistoryFilters()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset to default table view">
-                  ↺ Reset Filters
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                  <span>Reset Filters</span>
                 </button>
               </div>
             </div>
@@ -766,18 +878,27 @@
           <div class="table-container-card">
             <div class="table-title-bar">
               <div>
-                <h3 style="font-weight: 800; font-size: 1.1rem;">👥 Registered Campus User Accounts</h3>
+                <h3 style="font-weight: 800; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#142a6d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                  <span>Registered Campus User Accounts</span>
+                </h3>
                 <div style="font-size: 0.8rem; color: var(--text-muted);">Manage student, faculty, and staff access permissions</div>
               </div>
             </div>
             <!-- Filter & Search Toolbar -->
             <div class="osa-toolbar-filter-grid">
               <div class="osa-filter-item grow">
-                <label class="osa-filter-label" for="users-search-input">🔍 User Search</label>
+                <label class="osa-filter-label" for="users-search-input">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                  <span>User Search</span>
+                </label>
                 <input type="text" id="users-search-input" class="form-control osa-filter-input" placeholder="Search Full Name, Student/Employee ID, School Email..." oninput="filterUsersTable()">
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="users-role-filter">👤 Role</label>
+                <label class="osa-filter-label" for="users-role-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5"></circle><path d="M20 21a8 8 0 1 0-16 0"></path></svg>
+                  <span>Role</span>
+                </label>
                 <select id="users-role-filter" class="form-control osa-filter-select" onchange="filterUsersTable()">
                   <option value="ALL">All Roles</option>
                   <option value="student">Student</option>
@@ -787,13 +908,19 @@
                 </select>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="users-dept-filter">🏛️ Department</label>
+                <label class="osa-filter-label" for="users-dept-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>
+                  <span>Department</span>
+                </label>
                 <select id="users-dept-filter" class="form-control osa-filter-select" onchange="filterUsersTable()">
                   <option value="ALL">All Departments</option>
                 </select>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="users-status-filter">📋 Account Status</label>
+                <label class="osa-filter-label" for="users-status-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                  <span>Account Status</span>
+                </label>
                 <select id="users-status-filter" class="form-control osa-filter-select" onchange="filterUsersTable()">
                   <option value="ALL">All Statuses</option>
                   <option value="ACTIVE">Active</option>
@@ -801,7 +928,10 @@
                 </select>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="users-sort-filter">↕️ Sort By</label>
+                <label class="osa-filter-label" for="users-sort-filter">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"></path><path d="m7 9 5-5 5 5"></path></svg>
+                  <span>Sort By</span>
+                </label>
                 <select id="users-sort-filter" class="form-control osa-filter-select" onchange="filterUsersTable()">
                   <option value="SURNAME_ASC" selected>Surname A–Z</option>
                   <option value="SURNAME_DESC">Surname Z–A</option>
@@ -812,7 +942,8 @@
               <div class="osa-filter-item">
                 <label class="osa-filter-label">&nbsp;</label>
                 <button class="btn btn-secondary btn-sm" onclick="clearUsersFilters()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset to default table view">
-                  ↺ Reset Filters
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                  <span>Reset Filters</span>
                 </button>
               </div>
             </div>
@@ -828,7 +959,8 @@
             <div class="osa-notif-header-toolbar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid var(--card-border);">
               <div>
                 <h3 style="font-weight: 800; font-size: 1.2rem; margin: 0; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-                  <span>🔔</span> OSA Incident Notifications Feed
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+                  <span>OSA Incident Notifications Feed</span>
                 </h3>
                 <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
                   Official administrative incident alerts, registration verification notices, and drop-off logs
@@ -858,7 +990,7 @@
           <div class="table-container-card">
             <div class="table-title-bar">
               <div>
-                <h3 style="font-weight: 800; font-size: 1.1rem;">📍 Administrative QR Scan Telemetry Logs</h3>
+                <h3 style="font-weight: 800; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;"><svg class="ui-icon" style="width:18px;height:18px;color:#0284c7;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg> Administrative QR Scan Telemetry Logs</h3>
                 <div style="font-size: 0.8rem; color: var(--text-muted);">
                   Telemetry audit with scan status, approximate location, device type, browser/OS, and audit IP.
                 </div>
@@ -867,11 +999,11 @@
             <!-- Filter & Search Toolbar -->
             <div class="osa-toolbar-filter-grid">
               <div class="osa-filter-item grow">
-                <label class="osa-filter-label" for="scans-search-input">🔍 Search Scans</label>
+                <label class="osa-filter-label" for="scans-search-input"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Search Scans</label>
                 <input type="text" id="scans-search-input" class="form-control osa-filter-input" placeholder="Search Gadget Name, Gadget ID, QR Token, Owner, Student ID..." oninput="filterScansTable()">
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="scans-status-filter">📋 Scan Status</label>
+                <label class="osa-filter-label" for="scans-status-filter"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg> Scan Status</label>
                 <select id="scans-status-filter" class="form-control osa-filter-select" onchange="filterScansTable()">
                   <option value="ALL">All Scan Statuses</option>
                   <option value="REGISTERED_DEVICE_SCANNED">Registered Gadget Scan</option>
@@ -880,7 +1012,7 @@
                 </select>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="scans-date-filter">📅 Date Range</label>
+                <label class="osa-filter-label" for="scans-date-filter"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Date Range</label>
                 <select id="scans-date-filter" class="form-control osa-filter-select" onchange="toggleCustomDateInputs('scans'); filterScansTable()">
                   <option value="ALL" selected>All Time</option>
                   <option value="TODAY">Today</option>
@@ -890,7 +1022,7 @@
                 </select>
               </div>
               <div class="osa-filter-item" id="scans-custom-date-wrap" style="display: none;">
-                <label class="osa-filter-label">📆 From – To</label>
+                <label class="osa-filter-label"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> From – To</label>
                 <div style="display: flex; gap: 6px; align-items: center;">
                   <input type="date" id="scans-date-from" class="form-control osa-filter-input" style="width: 135px;" onchange="filterScansTable()">
                   <span style="color: #64748b; font-size: 0.8rem;">–</span>
@@ -898,7 +1030,7 @@
                 </div>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="scans-location-source-filter">📍 Location Source</label>
+                <label class="osa-filter-label" for="scans-location-source-filter"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Location Source</label>
                 <select id="scans-location-source-filter" class="form-control osa-filter-select" onchange="filterScansTable()">
                   <option value="ALL">All Sources</option>
                   <option value="GPS">GPS High Accuracy</option>
@@ -907,7 +1039,7 @@
                 </select>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="scans-device-type-filter">📱 Scanner Device</label>
+                <label class="osa-filter-label" for="scans-device-type-filter"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> Scanner Device</label>
                 <select id="scans-device-type-filter" class="form-control osa-filter-select" onchange="filterScansTable()">
                   <option value="ALL">All Devices</option>
                   <option value="MOBILE">Mobile</option>
@@ -916,7 +1048,7 @@
                 </select>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="scans-sort-filter">↕️ Sort By</label>
+                <label class="osa-filter-label" for="scans-sort-filter"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></svg> Sort By</label>
                 <select id="scans-sort-filter" class="form-control osa-filter-select" onchange="filterScansTable()">
                   <option value="NEWEST" selected>Newest First</option>
                   <option value="OLDEST">Oldest First</option>
@@ -925,7 +1057,7 @@
               <div class="osa-filter-item">
                 <label class="osa-filter-label">&nbsp;</label>
                 <button class="btn btn-secondary btn-sm" onclick="clearScansFilters()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset to default table view">
-                  ↺ Reset Filters
+                  <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> Reset Filters
                 </button>
               </div>
             </div>
@@ -941,15 +1073,15 @@
           <!-- Executive Header Card -->
           <div class="reports-header-card">
             <div class="reports-header-info">
-              <h3>📈 Campus Asset Security Analytics & Recovery Report</h3>
+              <h3 style="display: flex; align-items: center; gap: 8px;"><svg class="ui-icon" style="width:20px;height:20px;color:#0284c7;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> Campus Asset Security Analytics & Recovery Report</h3>
               <p>Performance telemetry, recovery resolution rates, and hardware distribution across NCST campus grounds.</p>
             </div>
             <div class="reports-header-actions">
-              <button class="btn btn-secondary btn-sm" onclick="exportAnalyticsSummary()" title="Download executive summary report">
-                📥 Download Summary
+              <button class="btn btn-secondary btn-sm" onclick="exportAnalyticsSummary()" title="Download executive summary report" style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Summary
               </button>
-              <button class="btn btn-primary btn-sm" onclick="printExecutiveReport()" data-action="window.print()" title="Print executive institutional report">
-                🖨️ Print Executive Report
+              <button class="btn btn-primary btn-sm" onclick="printExecutiveReport()" data-action="window.print()" title="Print executive institutional report" style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Print Executive Report
               </button>
             </div>
           </div>
@@ -957,7 +1089,7 @@
           <!-- Report Date Range Filter Toolbar -->
           <div class="osa-toolbar-filter-grid reports-filter-toolbar" style="margin-bottom: 14px;">
             <div class="osa-filter-item">
-              <label class="osa-filter-label" for="reports-date-filter">📅 Reporting Period</label>
+              <label class="osa-filter-label" for="reports-date-filter"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Reporting Period</label>
               <select id="reports-date-filter" class="form-control osa-filter-select" onchange="handleReportDateFilterChange()">
                 <option value="ALL" selected>All Time</option>
                 <option value="TODAY">Today</option>
@@ -968,7 +1100,7 @@
               </select>
             </div>
             <div class="osa-filter-item" id="reports-custom-date-wrap" style="display: none;">
-              <label class="osa-filter-label">📆 Start Date – End Date</label>
+              <label class="osa-filter-label"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Start Date – End Date</label>
               <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
                 <input type="date" id="reports-date-from" class="form-control osa-filter-input" style="width: 135px;" onchange="validateCustomReportDates()">
                 <span style="color: #64748b; font-size: 0.8rem;">–</span>
@@ -981,7 +1113,7 @@
             <div class="osa-filter-item">
               <label class="osa-filter-label">&nbsp;</label>
               <button class="btn btn-secondary btn-sm" id="reports-reset-btn" onclick="resetReportDateFilter()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset reporting period to All Time">
-                ↺ Reset Filter
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> Reset Filter
               </button>
             </div>
           </div>
@@ -989,7 +1121,7 @@
           <!-- Reporting Period Indicator Banner -->
           <div id="reports-period-indicator" style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 10px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: #334155; flex-wrap: wrap; gap: 8px;">
             <div>
-              <span style="color: #64748b; font-weight: 600;">📅 Selected Reporting Period:</span>
+              <span style="color: #64748b; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Selected Reporting Period:</span>
               <strong id="reports-period-label" style="color: #142a6d; margin-left: 4px;">All Time (Complete Historical Archive)</strong>
             </div>
             <div id="reports-period-status-badge" style="font-size: 0.75rem; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; padding: 2px 8px; border-radius: 4px; font-weight: 700;">
@@ -1001,7 +1133,7 @@
           <div class="metrics-grid-4">
             <!-- 1. Recovery Success Rate -->
             <div class="metric-card">
-              <div class="metric-icon-box" style="background:#ecfdf5; color:#047857;">🛡️</div>
+              <div class="metric-icon-box" style="background:#ecfdf5; color:#047857;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px;height:24px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
               <div>
                 <div class="metric-value" id="report-recovery-rate" style="color:#047857;">N/A</div>
                 <div class="metric-label">Recovery Success Rate</div>
@@ -1013,7 +1145,7 @@
 
             <!-- 2. Avg Resolution Speed -->
             <div class="metric-card">
-              <div class="metric-icon-box" style="background:#eff6ff; color:#142a6d;">⚡</div>
+              <div class="metric-icon-box" style="background:#eff6ff; color:#142a6d;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px;height:24px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
               <div>
                 <div class="metric-value" id="report-avg-time" style="color:#142a6d;">N/A</div>
                 <div class="metric-label">Avg. Resolution Speed</div>
@@ -1025,7 +1157,7 @@
 
             <!-- 3. Total Lifecycle Assets -->
             <div class="metric-card">
-              <div class="metric-icon-box" style="background:#f5f3ff; color:#6d28d9;">📋</div>
+              <div class="metric-icon-box" style="background:#f5f3ff; color:#6d28d9;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px;height:24px;"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></div>
               <div>
                 <div class="metric-value" id="report-total-cases" style="color:#6d28d9;">0</div>
                 <div class="metric-label">Total Lifecycle Assets</div>
@@ -1037,7 +1169,7 @@
 
             <!-- 4. Active QR Security Tags -->
             <div class="metric-card">
-              <div class="metric-icon-box" style="background:#fffbeb; color:#b45309;">🏷️</div>
+              <div class="metric-icon-box" style="background:#fffbeb; color:#b45309;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px;height:24px;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
               <div>
                 <div class="metric-value" id="report-active-stickers" style="color:#b45309;">0</div>
                 <div class="metric-label">Active QR Security Tags</div>
@@ -1054,7 +1186,7 @@
             <!-- Column 1: Inventory by Category -->
             <div class="analytics-card">
               <div class="analytics-card-header">
-                <div class="analytics-card-title">💻 Device Inventory by Category</div>
+                <div class="analytics-card-title" style="display: flex; align-items: center; gap: 8px;"><svg class="ui-icon" style="width:18px;height:18px;color:#142a6d;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Device Inventory by Category</div>
                 <span class="analytics-card-sub" id="cat-total-label">Current Inventory Snapshot</span>
               </div>
               <div id="category-distribution-list">
@@ -1114,13 +1246,13 @@
             <!-- Column 2: Security Lifecycle Status Breakdown -->
             <div class="analytics-card">
               <div class="analytics-card-header">
-                <div class="analytics-card-title">🛡️ Asset Recovery Status Breakdown</div>
+                <div class="analytics-card-title" style="display: flex; align-items: center; gap: 8px;"><svg class="ui-icon" style="width:18px;height:18px;color:#047857;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Asset Recovery Status Breakdown</div>
                 <span class="analytics-card-sub" id="status-total-label">Current Inventory Snapshot</span>
               </div>
               <div>
                 <div class="progress-metric-item">
                   <div class="progress-metric-label">
-                    <span>🟢 Registered & Protected</span>
+                    <span><span class="status-indicator-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color:#10b981; margin-right:6px;"></span>Registered & Protected</span>
                     <span id="status-count-registered">0 assets (0%)</span>
                   </div>
                   <div class="progress-metric-bar-bg">
@@ -1130,7 +1262,7 @@
 
                 <div class="progress-metric-item">
                   <div class="progress-metric-label">
-                    <span>🔵 In OSA Custody Vault</span>
+                    <span><span class="status-indicator-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color:#2563eb; margin-right:6px;"></span>In OSA Custody Vault</span>
                     <span id="status-count-custody">0 assets (0%)</span>
                   </div>
                   <div class="progress-metric-bar-bg">
@@ -1140,7 +1272,7 @@
 
                 <div class="progress-metric-item">
                   <div class="progress-metric-label">
-                    <span>🟣 Handed Over & Returned</span>
+                    <span><span class="status-indicator-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color:#8b5cf6; margin-right:6px;"></span>Handed Over & Returned</span>
                     <span id="status-count-returned">0 assets (0%)</span>
                   </div>
                   <div class="progress-metric-bar-bg">
@@ -1150,7 +1282,7 @@
 
                 <div class="progress-metric-item">
                   <div class="progress-metric-label">
-                    <span>🟡 Pending OSA Inspection</span>
+                    <span><span class="status-indicator-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color:#f59e0b; margin-right:6px;"></span>Pending OSA Inspection</span>
                     <span id="status-count-pending">0 assets (0%)</span>
                   </div>
                   <div class="progress-metric-bar-bg">
@@ -1160,7 +1292,7 @@
 
                 <div class="progress-metric-item">
                   <div class="progress-metric-label">
-                    <span>🔴 Active Missing Broadcasts</span>
+                    <span><span class="status-indicator-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color:#ef4444; margin-right:6px;"></span>Active Missing Broadcasts</span>
                     <span id="status-count-missing">0 assets (0%)</span>
                   </div>
                   <div class="progress-metric-bar-bg">
@@ -1194,7 +1326,7 @@
           <div class="table-container-card">
             <div class="table-title-bar">
               <div>
-                <h3 style="font-weight: 800; font-size: 1.1rem; color: #142a6d;">🛡️ Complete System Security Audit Logs</h3>
+                <h3 style="font-weight: 800; font-size: 1.1rem; color: #142a6d; display: flex; align-items: center; gap: 8px;"><svg class="ui-icon" style="width:18px;height:18px;color:#047857;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg> Complete System Security Audit Logs</h3>
                 <div style="font-size: 0.8rem; color: var(--text-muted);">
                   Immutable, read-only audit log tracking security events, role-based operations, and administrative actions.
                 </div>
@@ -1203,23 +1335,23 @@
             <!-- Filter & Search Toolbar -->
             <div class="osa-toolbar-filter-grid">
               <div class="osa-filter-item grow">
-                <label class="osa-filter-label" for="audit-search-input">🔍 Search Audit Logs</label>
+                <label class="osa-filter-label" for="audit-search-input"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Search Audit Logs</label>
                 <input type="text" id="audit-search-input" class="form-control osa-filter-input" placeholder="Search Log ID, Actor Name/ID, Student ID, Details, Audit IP..." oninput="filterAuditLogsTable()">
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="audit-action-filter">⚡ Action Type</label>
+                <label class="osa-filter-label" for="audit-action-filter"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Action Type</label>
                 <select id="audit-action-filter" class="form-control osa-filter-select" onchange="filterAuditLogsTable()">
                   <option value="ALL">All Actions</option>
                 </select>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="audit-role-filter">👤 User Role</label>
+                <label class="osa-filter-label" for="audit-role-filter"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> User Role</label>
                 <select id="audit-role-filter" class="form-control osa-filter-select" onchange="filterAuditLogsTable()">
                   <option value="ALL">All Roles</option>
                 </select>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="audit-date-filter">📅 Date Range</label>
+                <label class="osa-filter-label" for="audit-date-filter"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Date Range</label>
                 <select id="audit-date-filter" class="form-control osa-filter-select" onchange="toggleCustomDateInputs('audit'); filterAuditLogsTable()">
                   <option value="ALL" selected>All Time</option>
                   <option value="TODAY">Today</option>
@@ -1229,7 +1361,7 @@
                 </select>
               </div>
               <div class="osa-filter-item" id="audit-custom-date-wrap" style="display: none;">
-                <label class="osa-filter-label">📆 From – To</label>
+                <label class="osa-filter-label"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> From – To</label>
                 <div style="display: flex; gap: 6px; align-items: center;">
                   <input type="date" id="audit-date-from" class="form-control osa-filter-input" style="width: 135px;" onchange="filterAuditLogsTable()">
                   <span style="color: #64748b; font-size: 0.8rem;">–</span>
@@ -1237,7 +1369,7 @@
                 </div>
               </div>
               <div class="osa-filter-item">
-                <label class="osa-filter-label" for="audit-sort-filter">↕️ Sort By</label>
+                <label class="osa-filter-label" for="audit-sort-filter"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></svg> Sort By</label>
                 <select id="audit-sort-filter" class="form-control osa-filter-select" onchange="filterAuditLogsTable()">
                   <option value="NEWEST" selected>Newest First</option>
                   <option value="OLDEST">Oldest First</option>
@@ -1246,7 +1378,7 @@
               <div class="osa-filter-item">
                 <label class="osa-filter-label">&nbsp;</label>
                 <button class="btn btn-secondary btn-sm" onclick="clearAuditFilters()" style="height: 38px; display: inline-flex; align-items: center; gap: 5px;" title="Reset to default table view">
-                  ↺ Reset Filters
+                  <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> Reset Filters
                 </button>
               </div>
             </div>
@@ -1329,12 +1461,12 @@
                 </div>
               </div>
 
-              <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 16px;">
-                🔒 Passwords must be at least 8 characters long and contain both letters and numbers.
+              <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 16px; display: flex; align-items: center; gap: 6px;">
+                <svg class="ui-icon" style="width:14px;height:14px;color:#64748b;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Passwords must be at least 8 characters long and contain both letters and numbers.
               </div>
 
               <button type="submit" id="btn-osa-pwd-submit" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
-                <span>🔒</span> Update Password
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21 2-2 2m-1.5 1.5L10 13l-4 4-2-2 4-4 7.5-7.5Z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></svg> Update Password
               </button>
             </form>
           </div>
@@ -1376,7 +1508,9 @@
                 <label class="form-label">Operating Hours</label>
                 <input type="text" id="osa-set-hours" class="form-control" required>
               </div>
-              <button type="submit" class="btn btn-primary btn-sm">💾 Save Configuration</button>
+              <button type="submit" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Configuration
+              </button>
             </form>
           </div>
         </section>
@@ -1390,7 +1524,7 @@
     <div class="modal-box" style="max-width: 520px;">
       <div class="modal-header">
         <h3 class="modal-title" style="color: #b91c1c; display:flex; align-items:center; gap:8px;">
-          <span>🚨</span> Report Device as Missing
+          <svg class="ui-icon" style="width:20px;height:20px;color:#b91c1c;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Report Device as Missing
         </h3>
         <button class="btn btn-secondary btn-icon" onclick="closeModal('osa-mark-missing-modal')">&times;</button>
       </div>
@@ -1430,7 +1564,7 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('osa-mark-missing-modal')">Cancel</button>
           <button type="submit" class="btn btn-danger btn-sm" style="display:inline-flex; align-items:center; gap:6px;">
-            🚨 Broadcast Missing Status
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Broadcast Missing Status
           </button>
         </div>
       </form>
@@ -1442,7 +1576,7 @@
     <div class="modal-box" style="max-width: 520px;">
       <div class="modal-header">
         <h3 class="modal-title" style="color: #b91c1c; display: flex; align-items: center; gap: 8px;">
-          <span>⚠️</span> Reject Gadget Registration
+          <svg class="ui-icon" style="width:20px;height:20px;color:#b91c1c;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Reject Gadget Registration
         </h3>
         <button class="btn btn-secondary btn-icon" onclick="closeModal('reject-gadget-modal')">&times;</button>
       </div>
@@ -1497,7 +1631,7 @@
     <div class="modal-box" style="max-width: 520px;">
       <div class="modal-header">
         <h3 class="modal-title" style="color: #142a6d; display: flex; align-items: center; gap: 8px;">
-          🏢 Confirm OSA Receipt (Physical Custody)
+          <svg class="ui-icon" style="width:20px;height:20px;color:#142a6d;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg> Confirm OSA Receipt (Physical Custody)
         </h3>
         <button class="btn btn-secondary btn-icon" onclick="closeModal('receive-custody-modal')">&times;</button>
       </div>
@@ -1542,7 +1676,7 @@
     <div class="modal-box print-qr-target" style="max-width: 540px;">
       <div class="modal-header">
         <h3 class="modal-title" style="color: #6d28d9; display: flex; align-items: center; gap: 8px;">
-          📜 Official Handover &amp; Return Dispatch
+          <svg class="ui-icon" style="width:20px;height:20px;color:#6d28d9;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M14 8H8"/><path d="M16 12H8"/><path d="M13 16H8"/></svg> Official Handover &amp; Return Dispatch
         </h3>
         <button class="btn btn-secondary btn-icon" onclick="closeModal('dispatch-return-modal')">&times;</button>
       </div>
@@ -1571,7 +1705,7 @@
           <!-- Photo Proof of Gadget Handover (Section B & C: Required) -->
           <div class="form-group" style="margin-top: 14px; background: #fbfbfe; border: 1.5px solid #e0e7ff; border-radius: 12px; padding: 14px;">
             <label class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-              <span style="font-weight: 700; color: #1e1b4b; font-size: 0.88rem;">📸 Photo Proof of Gadget Handover <span style="color: #dc2626;">*</span></span>
+              <span style="font-weight: 700; color: #1e1b4b; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 6px;"><svg class="ui-icon" style="width:16px;height:16px;color:#4f46e5;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Photo Proof of Gadget Handover <span style="color: #dc2626;">*</span></span>
               <span style="font-size: 0.72rem; color: #dc2626; font-weight: 800; background: #fee2e2; padding: 2px 7px; border-radius: 4px;">REQUIRED</span>
             </label>
             <p style="font-size: 0.78rem; color: #64748b; margin: 0 0 10px; line-height: 1.4;">
@@ -1584,10 +1718,10 @@
             <!-- Action buttons: Take Photo / Upload Photo -->
             <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
               <button type="button" class="btn btn-secondary btn-sm" onclick="triggerHandoverCamera()" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; border-color: #c7d2fe;">
-                📷 Take Photo / Use Camera
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Take Photo / Use Camera
               </button>
               <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('handover-photo-file-input').click()" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; border-color: #c7d2fe;">
-                📁 Upload Photo
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Upload Photo
               </button>
             </div>
 
@@ -1596,8 +1730,8 @@
               <video id="handover-camera-video" autoplay playsinline style="width: 100%; max-height: 220px; border-radius: 8px; object-fit: cover; background: #000;"></video>
               <canvas id="handover-camera-canvas" style="display: none;"></canvas>
               <div style="margin-top: 8px; display: flex; justify-content: center; gap: 8px;">
-                <button type="button" class="btn btn-primary btn-sm" onclick="captureHandoverPhotoFromCamera()" style="background: #059669; border-color: #059669; font-weight: 700;">
-                  📸 Snap Photo
+                <button type="button" class="btn btn-primary btn-sm" onclick="captureHandoverPhotoFromCamera()" style="background: #059669; border-color: #059669; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+                  <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg> Snap Photo
                 </button>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="stopHandoverCamera()">
                   Cancel
@@ -1612,21 +1746,21 @@
                   <img id="handover-photo-preview-img" src="" alt="Handover Proof Preview" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1.5px solid #16a34a; box-shadow: 0 2px 6px rgba(22,163,74,0.15);">
                   <div>
                     <div style="font-weight: 700; color: #166534; font-size: 0.85rem; display: flex; align-items: center; gap: 4px;">
-                      <span>✓</span> Photo Proof Attached
+                      <svg class="ui-icon" style="width:16px;height:16px;color:#16a34a;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg> Photo Proof Attached
                     </div>
                     <div style="font-size: 0.74rem; color: #15803d; margin-top: 2px;">
                       Ready to link to official handover record
                     </div>
                   </div>
                 </div>
-                <button type="button" class="btn btn-danger btn-sm" onclick="removeHandoverPhoto()" style="padding: 4px 10px; font-size: 0.75rem;" title="Remove / Retake photo">
-                  ✕ Remove
+                <button type="button" class="btn btn-danger btn-sm" onclick="removeHandoverPhoto()" style="padding: 4px 10px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px;" title="Remove / Retake photo">
+                  <svg class="ui-icon" style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Remove
                 </button>
               </div>
             </div>
 
-            <div id="handover-photo-empty-notice" style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 10px; padding: 12px; text-align: center; color: #64748b; font-size: 0.8rem;">
-              ⚠️ Photo proof of gadget handover is required before completing the return.
+            <div id="handover-photo-empty-notice" style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 10px; padding: 12px; text-align: center; color: #64748b; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <svg class="ui-icon" style="width:15px;height:15px;color:#d97706;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Photo proof of gadget handover is required before completing the return.
             </div>
           </div>
         </div>
@@ -1645,7 +1779,7 @@
     <div class="modal-box" style="max-width: 680px;">
       <div class="modal-header">
         <h3 class="modal-title" style="color: #142a6d; display: flex; align-items: center; gap: 8px;">
-          📋 Ownership Claim &amp; Handover Record
+          <svg class="ui-icon" style="width:20px;height:20px;color:#142a6d;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg> Ownership Claim &amp; Handover Record
         </h3>
         <button class="btn btn-secondary btn-icon" onclick="closeModal('claim-details-modal')">&times;</button>
       </div>
@@ -1662,7 +1796,7 @@
   <div id="print-sticker-modal" class="modal-overlay">
     <div class="modal-box" style="max-width: 400px;">
       <div class="modal-header">
-        <h3 class="modal-title">🏷️ Print Official QR Sticker</h3>
+        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;"><svg class="ui-icon" style="width:20px;height:20px;color:#142a6d;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Print Official QR Sticker</h3>
         <button class="btn btn-secondary btn-icon" onclick="closeModal('print-sticker-modal')">&times;</button>
       </div>
       <div class="modal-body text-center" style="padding: 20px 24px;">
@@ -1687,7 +1821,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary btn-sm" onclick="closeModal('print-sticker-modal')">Close</button>
-        <button class="btn btn-primary btn-sm" onclick="printOfficialQrSticker()">🖨️ Print Sticker</button>
+        <button class="btn btn-primary btn-sm" onclick="printOfficialQrSticker()" style="display: inline-flex; align-items: center; gap: 6px;"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Print Sticker</button>
       </div>
     </div>
   </div>
@@ -1698,7 +1832,7 @@
       <div class="modal-header">
         <div>
           <h3 class="modal-title" style="color: #142a6d; display: flex; align-items: center; gap: 8px;">
-            <span>📱</span> Registered Gadgets Vault
+            <svg class="ui-icon" style="width:20px;height:20px;color:#0284c7;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Registered Gadgets Vault
           </h3>
           <div id="user-gadgets-modal-subtitle" style="font-size: 0.82rem; color: #64748b; margin-top: 3px;">
             <!-- Injected by JS -->

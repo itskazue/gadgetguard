@@ -221,7 +221,7 @@
       
       <!-- Notice Banner -->
       <div class="osa-restricted-banner">
-        <span style="font-size: 1.1rem; line-height: 1;">🛡️</span>
+        <svg class="ui-icon" style="width:20px;height:20px;flex-shrink:0;color:#1e40af;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         <div>
           <strong>Authorized Personnel Only:</strong> Access is restricted to NCST Student Affairs staff, security dispatchers, and campus administrators.
         </div>
@@ -241,14 +241,15 @@
           </div>
           <div style="position: relative;">
             <input type="password" id="osa-password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
-            <button type="button" onclick="togglePasswordVisibility()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1rem; cursor: pointer; color: #64748b;">
-              👁️
+            <button type="button" onclick="togglePasswordVisibility()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b; display: flex; align-items: center; justify-content: center; padding: 0;">
+              <svg class="ui-icon" style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
           </div>
         </div>
 
-        <button type="submit" class="btn-osa-login" id="btn-submit-osa">
-          🔑 Sign In to OSA Console
+        <button type="submit" class="btn-osa-login" id="btn-submit-osa" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <svg class="ui-icon" style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+          <span>Sign In to OSA Console</span>
         </button>
       </form>
     </div>
@@ -310,7 +311,7 @@
             'This portal is exclusively for Office of Student Affairs staff. You are signed in as an Enrolled Student (' + res.user.name + '). Please log in via the Student Tech Portal.'
           );
           submitBtn.disabled = false;
-          submitBtn.textContent = '🔑 Sign In to OSA Console';
+          submitBtn.innerHTML = '<svg class="ui-icon" style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg><span>Sign In to OSA Console</span>';
           return;
         }
 
@@ -322,7 +323,7 @@
 
       } catch (err) {
         submitBtn.disabled = false;
-        submitBtn.textContent = '🔑 Sign In to OSA Console';
+        submitBtn.innerHTML = '<svg class="ui-icon" style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg><span>Sign In to OSA Console</span>';
         await SwalHelper.error('Administrative Authentication Failed', err.message || 'Invalid staff email or password.');
       }
     }
@@ -330,13 +331,14 @@
     async function openOsaForgotPasswordModal() {
       const currentEmail = document.getElementById('osa-email').value.trim();
       const { value: email } = await Swal.fire({
-        title: '🔑 OSA Staff Password Reset',
+        title: 'OSA Staff Password Reset',
         html: `
           <p style="font-size:0.85rem; color:#475569; margin-bottom:12px; line-height:1.5;">
             Enter your registered staff email. A password reset link will be sent to your registered email.
           </p>
-          <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:10px 12px; font-size:0.75rem; color:#1e40af; text-align:left; line-height:1.45;">
-            🏢 <strong>Having trouble accessing your NCST school email or Student ID?</strong> Visit <strong>Cubicle 8, Multipurpose Building</strong> for assistance.
+          <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:10px 12px; font-size:0.75rem; color:#1e40af; text-align:left; line-height:1.45; display:flex; align-items:flex-start; gap:8px;">
+            <svg class="ui-icon" style="width:16px;height:16px;flex-shrink:0;color:#2563eb;margin-top:2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><line x1="8" y1="6" x2="8.01" y2="6"/><line x1="16" y1="6" x2="16.01" y2="6"/><line x1="12" y1="6" x2="12.01" y2="6"/><line x1="12" y1="10" x2="12.01" y2="10"/><line x1="12" y1="14" x2="12.01" y2="14"/><line x1="16" y1="10" x2="16.01" y2="10"/><line x1="16" y1="14" x2="16.01" y2="14"/><line x1="8" y1="10" x2="8.01" y2="10"/><line x1="8" y1="14" x2="8.01" y2="14"/></svg>
+            <div><strong>Having trouble accessing your NCST school email or Student ID?</strong> Visit <strong>Cubicle 8, Multipurpose Building</strong> for assistance.</div>
           </div>
         `,
         input: 'email',

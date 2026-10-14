@@ -54,16 +54,16 @@ function updateAuthUI() {
         <span style="font-size:0.875rem; color:#334155; font-weight:500;">
           Hi, <strong style="color:#142a6d;">${escapeHtml(user.name.split(' ')[0])}</strong>
         </span>
-        <a href="${isOsa ? '/osa/' : '/student/'}" class="btn-nav-student-login" style="padding:7px 16px; text-decoration:none;">
-          ${isOsa ? '🏢 Admin Console' : '📱 Student Portal'}
+        <a href="${isOsa ? '/osa/' : '/student/'}" class="btn-nav-student-login" style="padding:7px 16px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+          ${isOsa ? '<svg class="ui-icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Admin Console' : '<svg class="ui-icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>Student Portal'}
         </a>
         <button class="btn btn-secondary btn-sm" onclick="logoutCurrentSession()" style="padding:7px 12px; border-radius:8px;">Sign Out</button>
       </div>
     `;
   } else {
     navContainer.innerHTML = `
-      <button class="btn-nav-student-login" onclick="openLoginModal()">
-        <span>🔐</span> Student Login
+      <button class="btn-nav-student-login" onclick="openLoginModal()" style="display:inline-flex; align-items:center; gap:6px;">
+        <svg class="ui-icon" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Student Login
       </button>
     `;
   }
@@ -122,7 +122,9 @@ async function loadMissingBoard() {
     if (!res.reports || res.reports.length === 0) {
       container.innerHTML = `
         <div style="grid-column: 1/-1; text-align: center; padding: 40px; background: rgba(0,0,0,0.03); border: 1px dashed #cbd5e1; border-radius: var(--radius-lg);">
-          <div style="font-size: 2rem; margin-bottom: 8px;">🎉</div>
+          <div style="display:flex; justify-content:center; margin-bottom: 8px;">
+            <svg class="ui-icon" style="width:36px;height:36px;color:#10b981;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
           <h3 style="font-weight: 700; color: #0f172a;">No Missing Gadgets Currently Reported!</h3>
           <p class="text-muted" style="font-size: 0.85rem; margin-top: 4px;">All registered gadgets on campus are currently safe with their owners.</p>
         </div>
@@ -141,7 +143,7 @@ async function loadMissingBoard() {
           <img src="${escapeHtml(effectivePhoto)}" alt="${escapeHtml(report.gadget?.model || 'Device')}" class="missing-img">
         ` : `
           <div class="missing-img" style="background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #64748b; border-bottom: 1px solid #e2e8f0;">
-            <span style="font-size: 1.5rem; line-height: 1;">📷</span>
+            <svg class="ui-icon" style="width:28px;height:28px;color:#94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
             <span style="font-size: 0.72rem; font-weight: 700; color: #475569;">No Photo Uploaded</span>
           </div>
         `}
@@ -153,8 +155,8 @@ async function loadMissingBoard() {
           <h4 style="font-weight: 700; font-size: 1rem; margin-bottom: 4px;">
             ${escapeHtml(report.gadget?.brand)} ${escapeHtml(report.gadget?.model)}
           </h4>
-          <div style="font-size: 0.8rem; color: #dc2626; font-weight: 600; margin-bottom: 8px;">
-            📍 Last Seen: ${escapeHtml(report.lastSeenLocation)}
+          <div style="font-size: 0.8rem; color: #dc2626; font-weight: 600; margin-bottom: 8px; display:inline-flex; align-items:center; gap:4px;">
+            <svg class="ui-icon" style="width:13px;height:13px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Last Seen: ${escapeHtml(report.lastSeenLocation)}
           </div>
           <p style="font-size: 0.8rem; color: var(--text-muted); line-line: 1.4; margin-bottom: 12px;">
             "${escapeHtml(report.details || 'No special notes provided.')}"
@@ -252,7 +254,7 @@ async function handleForgotPasswordSubmit(e) {
   } finally {
     if (submitBtn) {
       submitBtn.disabled = false;
-      submitBtn.textContent = '🔐 Request Password Reset';
+      submitBtn.innerHTML = '<svg class="ui-icon" style="width:14px;height:14px;margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Request Password Reset';
     }
   }
 }
