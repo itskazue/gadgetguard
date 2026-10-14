@@ -257,11 +257,11 @@ check('Multiple custody finders reject before any mutation', () => {
   assert.equal(officialReturn().code, 409);
   assert.equal(JSON.stringify(data), before);
 });
-check('Multiple open incidents without explicit finder link reject before any mutation', () => {
+check('Multiple exact receipt incidents without explicit finder link reject before any mutation', () => {
   returnFixture();
   delete data.found_reports[3].missingReportId;
   data.found_reports[3].receivedAtOsaDate = receiptTime;
-  data.missing_reports.push({ id: 'ambiguous-missing', gadgetId: 'g1', status: 'ACTIVE' });
+  data.missing_reports.push({ id: 'ambiguous-missing', gadgetId: 'g1', status: 'IN_OSA_CUSTODY', custodyReceivedAt: receiptTime });
   const before = JSON.stringify(data);
   assert.equal(officialReturn().code, 409);
   assert.equal(JSON.stringify(data), before);
@@ -460,5 +460,60 @@ check('History table and View Details display the same derived API source', () =
   vm.runInContext("openClaimDetailsModal('previous-return', 'history')", ui);
   assert.match(elements['returned-history-table'].innerHTML, /QR Finder Report/);
   assert.match(content.innerHTML, /Recovery Source:<\/span> <strong>QR Finder Report/);
+});
+function asusFixture() {
+  returnFixture();
+  const gadgetId = 'gdt_mv7lbtb5pb6';
+  const timestamp = '2026-10-14T12:18:02.812Z';
+  for (const collection of ['missing_reports', 'found_reports', 'claims', 'returns']) {
+    for (const record of data[collection]) record.gadgetId = gadgetId;
+  }
+  Object.assign(data.gadgets[0], { id: gadgetId, receivedAtOsaDate: timestamp });
+  Object.assign(data.missing_reports[0], { status: 'IN_OSA_CUSTODY', custodyReceivedAt: '2026-10-13T10:00:00.000Z' });
+  delete data.missing_reports[0].returnId;
+  Object.assign(data.missing_reports[1], { id: 'msr_mv7wt0a2kim', custodyReceivedAt: timestamp });
+  data.missing_reports.push({ id: 'synthetic-older-asus-incident', gadgetId,
+    status: 'IN_OSA_CUSTODY', custodyReceivedAt: '2026-10-12T10:00:00.000Z' });
+  Object.assign(data.found_reports[3], { id: 'fnd_mv82sjssrvw', missingReportId: null, receivedAtOsaDate: timestamp });
+  return gadgetId;
+}
+check('Verified Asus direct intake resolves only unique exact receipt incident despite stale custody history', () => {
+  const gadgetId = asusFixture();
+  const historicalMissing = JSON.stringify(data.missing_reports.filter(m => m.id !== 'msr_mv7wt0a2kim'));
+  const historicalFinders = JSON.stringify(data.found_reports.filter(f => f.id !== 'fnd_mv82sjssrvw'));
+  const previousReturns = JSON.stringify(data.returns);
+  const result = officialReturn({ gadgetId });
+  assert.equal(result.code, 200);
+  const returnId = result.body.returnRecord.id;
+  assert.equal(db.findById('missing_reports', 'msr_mv7wt0a2kim').status, 'RESOLVED');
+  assert.equal(db.findById('missing_reports', 'msr_mv7wt0a2kim').returnId, returnId);
+  assert.equal(db.findById('found_reports', 'fnd_mv82sjssrvw').returnId, returnId);
+  assert.equal(JSON.stringify(data.missing_reports.filter(m => m.id !== 'msr_mv7wt0a2kim')), historicalMissing);
+  assert.equal(JSON.stringify(data.found_reports.filter(f => f.id !== 'fnd_mv82sjssrvw')), historicalFinders);
+  assert.equal(JSON.stringify(data.returns.slice(0, 1)), previousReturns);
+  assert.equal(returned(returnId).foundReport.id, 'fnd_mv82sjssrvw');
+});
+check('Asus duplicate exact incident timestamps reject without choosing first or latest', () => {
+  const gadgetId = asusFixture();
+  data.missing_reports[2].custodyReceivedAt = data.missing_reports[1].custodyReceivedAt;
+  const before = JSON.stringify(data);
+  assert.equal(officialReturn({ gadgetId }).code, 409);
+  assert.equal(JSON.stringify(data), before);
+});
+check('Asus missing or mismatched exact incident receipt evidence rejects without writes', () => {
+  for (const timestamp of [undefined, '2026-10-14T12:18:02.813Z']) {
+    const gadgetId = asusFixture();
+    data.missing_reports[1].custodyReceivedAt = timestamp;
+    const before = JSON.stringify(data);
+    assert.equal(officialReturn({ gadgetId }).code, 409);
+    assert.equal(JSON.stringify(data), before);
+  }
+});
+check('Asus finder/gadget receipt mismatch still rejects before writes', () => {
+  const gadgetId = asusFixture();
+  data.gadgets[0].receivedAtOsaDate = '2026-10-14T12:18:02.813Z';
+  const before = JSON.stringify(data);
+  assert.equal(officialReturn({ gadgetId }).code, 409);
+  assert.equal(JSON.stringify(data), before);
 });
 console.log(`${checks} focused checks passed; application imports mocked, no DB or server loaded.`);

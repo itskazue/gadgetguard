@@ -152,12 +152,14 @@ router.post('/return', authMiddleware, requireRole('osa_admin'), (req, res) => {
         ? openMissing.some(m => m.id === f.missingReportId)
         : Boolean(gadget.receivedAtOsaDate && f.receivedAtOsaDate === gadget.receivedAtOsaDate)));
     const foundReport = currentFound.length === 1 ? currentFound[0] : null;
-    const missingReport = foundReport && (foundReport.missingReportId
-      ? openMissing.find(m => m.id === foundReport.missingReportId)
-      : openMissing.find(m => m.custodyReceivedAt === foundReport.receivedAtOsaDate));
-    // A unique custody finder's explicit incident ID outranks stale open incidents.
-    // Receipt-only matching still requires a single open incident.
-    if (!foundReport || (openMissing.length > 1 && !foundReport.missingReportId) ||
+    const matchingMissing = foundReport ? openMissing.filter(m => foundReport.missingReportId
+      ? m.id === foundReport.missingReportId
+      : m.status === 'IN_OSA_CUSTODY' && Boolean(foundReport.receivedAtOsaDate) &&
+        m.custodyReceivedAt === foundReport.receivedAtOsaDate) : [];
+    const missingReport = matchingMissing.length === 1 ? matchingMissing[0] : null;
+    // Exact incident ID or a unique exact custody receipt can identify this cycle.
+    // Other open incidents remain untouched; duplicate receipt matches still block.
+    if (!foundReport || matchingMissing.length > 1 ||
       (openMissing.length && !missingReport)) {
       return res.status(409).json({
         success: false,
