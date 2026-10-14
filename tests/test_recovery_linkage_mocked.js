@@ -256,8 +256,10 @@ check('Multiple custody finders reject before any mutation', () => {
   assert.equal(officialReturn().code, 409);
   assert.equal(JSON.stringify(data), before);
 });
-check('Multiple open incidents reject before any mutation', () => {
+check('Multiple open incidents without explicit finder link reject before any mutation', () => {
   returnFixture();
+  delete data.found_reports[3].missingReportId;
+  data.found_reports[3].receivedAtOsaDate = receiptTime;
   data.missing_reports.push({ id: 'ambiguous-missing', gadgetId: 'g1', status: 'ACTIVE' });
   const before = JSON.stringify(data);
   assert.equal(officialReturn().code, 409);
@@ -304,5 +306,43 @@ check('Proof remains mandatory and duplicate return remains rejected', () => {
   const after = JSON.stringify(data);
   assert.equal(officialReturn().code, 400);
   assert.equal(JSON.stringify(data), after);
+});
+check('Verified iPhone configuration uses exact incident link despite five custody incidents', () => {
+  returnFixture();
+  const gadgetId = 'gdt_mv7iy1er4ut';
+  const linkedId = 'msr_mv7ynavb4i0';
+  data.gadgets[0].id = gadgetId;
+  data.gadgets[0].brand = 'Apple';
+  data.gadgets[0].model = 'iPhone 14 Pro Max';
+  // Only supplied IDs/statuses are live facts; historical IDs below are synthetic.
+  data.missing_reports = [
+    ...[1, 2, 3].map(n => ({ id: `stale-incident-${n}`, gadgetId, status: 'IN_OSA_CUSTODY' })),
+    { id: linkedId, gadgetId, status: 'IN_OSA_CUSTODY' },
+    { id: 'msr_mv7yn90n1fm', gadgetId, status: 'IN_OSA_CUSTODY' }
+  ];
+  data.found_reports = [
+    { id: 'historical-cancelled', gadgetId, status: 'CANCELLED', missingReportId: 'stale-incident-1' },
+    ...[1, 2, 3].map(n => ({ id: `historical-finder-${n}`, gadgetId, status: 'RETURNED',
+      missingReportId: `stale-incident-${n}`, returnId: `historical-return-${n}` })),
+    { id: 'fnd_mv7yp4jh5c2548', gadgetId, status: 'IN_OSA_CUSTODY', missingReportId: linkedId }
+  ];
+  data.returns = [1, 2, 3].map(n => ({ id: `historical-return-${n}`, gadgetId, userId: 'u1' }));
+  data.claims[0].gadgetId = gadgetId;
+  const previousReturns = JSON.stringify(data.returns);
+  const historicalFinders = JSON.stringify(data.found_reports.slice(0, 4));
+  const untouchedMissing = JSON.stringify(data.missing_reports.filter(m => m.id !== linkedId));
+  const result = officialReturn({ gadgetId });
+  assert.equal(result.code, 200);
+  const returnId = result.body.returnRecord.id;
+  assert.equal(data.returns.length, 4);
+  assert.equal(JSON.stringify(data.returns.slice(0, 3)), previousReturns);
+  assert.equal(JSON.stringify(data.found_reports.slice(0, 4)), historicalFinders);
+  assert.equal(JSON.stringify(data.missing_reports.filter(m => m.id !== linkedId)), untouchedMissing);
+  assert.equal(db.findById('missing_reports', linkedId).status, 'RESOLVED');
+  assert.equal(db.findById('missing_reports', linkedId).returnId, returnId);
+  assert.equal(data.found_reports[4].returnId, returnId);
+  assert.equal(data.claims[0].returnId, returnId);
+  assert.equal(returned(returnId).foundReport.id, 'fnd_mv7yp4jh5c2548');
+  assert.equal(returned('historical-return-1').foundReport.id, 'historical-finder-1');
 });
 console.log(`${checks} focused checks passed; application imports mocked, no DB or server loaded.`);

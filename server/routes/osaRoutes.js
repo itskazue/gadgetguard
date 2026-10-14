@@ -138,7 +138,10 @@ router.post('/return', authMiddleware, requireRole('osa_admin'), (req, res) => {
     const missingReport = foundReport && (foundReport.missingReportId
       ? openMissing.find(m => m.id === foundReport.missingReportId)
       : openMissing.find(m => m.custodyReceivedAt === foundReport.receivedAtOsaDate));
-    if (!foundReport || openMissing.length > 1 || (openMissing.length && !missingReport)) {
+    // A unique custody finder's explicit incident ID outranks stale open incidents.
+    // Receipt-only matching still requires a single open incident.
+    if (!foundReport || (openMissing.length > 1 && !foundReport.missingReportId) ||
+      (openMissing.length && !missingReport)) {
       return res.status(409).json({
         success: false,
         error: 'Cannot establish a unique current recovery cycle. Return was not processed.'
